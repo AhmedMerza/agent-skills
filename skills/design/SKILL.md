@@ -1,3 +1,8 @@
+---
+name: design
+description: Give industry-specific UI/UX recommendations BEFORE building — color palettes (hex), font pairings, layout patterns, and anti-pattern warnings drawn from curated design data. Invoke with /design when starting new UI, choosing a visual direction, or picking colors/typography for a product, and you want grounded, industry-appropriate choices instead of generic defaults.
+---
+
 # Design Advisor
 
 ## Overview

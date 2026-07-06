@@ -1,4 +1,6 @@
 ---
+name: fix-review
+version: 1.0.0
 description: Post review notes on a GitHub PR or GitLab MR, fix the issues in code, reply to the threads, and resolve them.
 ---
 

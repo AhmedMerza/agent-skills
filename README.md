@@ -50,23 +50,6 @@ cp ~/claude-skills/commands/*.md ~/.claude/commands/
 
 Restart Claude Code to pick up newly-added skills/commands. Invoke any of them with `/<name>`.
 
-Clone anywhere, then symlink the skills into your Claude config so edits stay in sync:
-
-```sh
-git clone git@github.com:<your-username>/claude-skills.git ~/claude-skills
-
-# back up an existing skills dir if you have one, then link:
-ln -s ~/claude-skills/skills ~/.claude/skills
-```
-
-Or copy them if you'd rather not symlink:
-
-```sh
-cp -r ~/claude-skills/skills/. ~/.claude/skills/
-```
-
-Restart Claude Code to pick up newly-added skills. Invoke any of them with `/<skill-name>`.
-
 ## Updating
 
 Edit a skill or command (in either `~/.claude/...` or `~/claude-skills/...` — they're the same files if symlinked), then:
