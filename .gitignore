@@ -1,0 +1,13 @@
+# Never sync Claude Code state, credentials, or work-specific memory.
+# This repo tracks skills ONLY.
+.DS_Store
+*.log
+
+# Belt-and-suspenders: if anyone ever drops these in, don't commit them.
+settings.json
+settings.local.json
+.claude.json
+**/gitlab-config.json
+**/browse-config.json
+.env
+.env.*
