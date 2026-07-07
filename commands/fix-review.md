@@ -82,27 +82,24 @@ Once the user approves the CRITICAL+IMPORTANT fixes, do ALL of the following in 
 4. Resolve all fixed threads (see "Resolve a thread" below).
 5. Show a summary of what was committed, pushed, replied to, and resolved.
 
-### Phase 4: Ask About MINORs (mandatory — never skip)
-After Phase 3 completes, **always pause and ask the user** whether they want to fix the MINOR findings in the same MR/PR too. Do NOT decide unilaterally, and do NOT just acknowledge them and move on. The user wants to decide per-MR/PR because sometimes a MINOR is a 1-line quick-win worth bundling, and sometimes it's tech debt that belongs in a separate MR/PR.
-
-Present the MINORs grouped by effort / scope to make the decision easy:
-- **Quick wins** (1–5 lines each, high value/effort ratio)
-- **Small refactors** (10–30 lines, stylistic or moderate impact)
-- **Tech debt / pre-existing** (recommend separate follow-up MR/PR)
-- **Security / out-of-scope** (definitely separate MR/PR)
+### Phase 4: Handle MINORs (auto-fix the safe ones, ask about the rest)
+After Phase 3 completes, triage the MINOR findings by effort / scope:
+- **Quick wins** (1–5 lines each, high value/effort ratio) — **auto-fix**
+- **Small refactors** (10–30 lines, stylistic or moderate impact) — **auto-fix**
+- **Tech debt / pre-existing** (recommend separate follow-up MR/PR) — **do NOT auto-fix; ask**
+- **Security / out-of-scope** (definitely separate MR/PR) — **do NOT auto-fix; ask**
 - **Intent questions** (per Phase 0) — list these SEPARATELY, phrased as questions, NOT as fixable options. For each, ask "Is X intended?" and present the alternative behavior neutrally. Do NOT pre-write or stage a change for these, and do NOT mark one "(Recommended)". Only fix one if the user confirms the current behavior is actually wrong.
 
-Then ask something like: "Want me to fix any of these MINOR defects in this MR/PR? Pick a subset or say 'none'." Ask the intent questions as plain questions, separately from the fix picklist.
-
-**If the user picks a subset:**
-1. Fix only those items.
+**Auto-fix the quick wins and small refactors** in this same MR/PR — do not ask first:
+1. Fix all quick-win and small-refactor MINORs.
 2. Commit as a separate commit (keeps the MINOR fixes separately traceable from the IMPORTANT fixes).
 3. Push.
 4. If any of the fixed MINORs had been posted as threads, reply and resolve them too.
 5. Show a summary of what was fixed.
 
-**If the user says none / skip:**
-Stop. Do not fix any MINORs. Do not lecture about why they should.
+**Then, if any tech debt / out-of-scope MINORs or intent questions remain**, present them to the user: recommend a separate follow-up MR/PR for the tech-debt/out-of-scope items, and ask the intent questions as plain questions. Only fix these if the user opts in.
+
+Skip Phase 4 entirely only if there are no MINORs at all.
 
 ## API Reference (provider-aware)
 
@@ -179,6 +176,6 @@ Use this when the finding cannot be mapped to a specific diff line, or as a fall
 - Always post notes BEFORE fixing, so the MR/PR has a record of what was found.
 - If a line-specific comment fails (wrong position), fall back to a general comment/thread with file:line in the body.
 - **CRITICAL and IMPORTANT**: always fix in Phase 2, after confirming the plan with the user.
-- **MINOR**: never auto-fix. Phase 4 is mandatory — always ask the user whether to bundle them into this MR/PR or defer to a follow-up. Group them by effort (quick wins / small refactors / tech debt / out-of-scope) so the user can pick selectively.
+- **MINOR**: auto-fix quick wins and small refactors in Phase 4 (bundle into this MR/PR as a separate commit, no need to ask). Do NOT auto-fix tech-debt/pre-existing or security/out-of-scope MINORs — recommend a separate follow-up MR/PR and ask. Group them by effort (quick wins / small refactors / tech debt / out-of-scope) so the split is clear.
 - On GitHub, resolving threads may require GraphQL or the web UI — surface this to the user rather than silently skipping resolution.
 - Always ask the user to confirm fixes before committing.
