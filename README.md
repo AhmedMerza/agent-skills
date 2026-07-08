@@ -16,6 +16,7 @@ My personal collection of [Claude Code](https://docs.claude.com/en/docs/claude-c
 | `ui-audit` | Technical UI quality checks (a11y, performance, theming, responsive, interaction states) → scored report. |
 | `ui-polish` | UI polish, animation decisions, and the invisible details that make interfaces feel right. Adapted from Emil Kowalski's design engineering philosophy. |
 | `validate-plan` | Adversarially stress-tests an existing plan before executing — verifies assumptions against the real codebase, surfaces alternatives, red-teams failure modes, returns a proceed/reconsider verdict. |
+| `ship-check` | The final gate before merging — audits a finished diff against the problem it claims to solve: what's missing (unpatched sibling caller, unhandled branch, no backfill), where it breaks on edge cases, whether the approach is right. `validate-plan`'s bookend. Returns a merge/fix-first/reconsider verdict. |
 
 ## Commands
 
