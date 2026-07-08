@@ -39,13 +39,16 @@ root-cause  →  validate-plan  →  ponytail  →  ship-check  →  mr-review
 
 ## Commands
 
-Slash-commands that work on **either GitHub or GitLab** (self-hosted or SaaS). They auto-detect the provider from the git remote — `github.com` → `gh`/PR, everything else → `glab`/MR — with an optional `.claude/repo-config.json` `"provider"` override. See [docs/provider-resolution.md](docs/provider-resolution.md) for the detection rule + the GitLab↔GitHub CLI cheat-sheet embedded in each command.
+The MR/PR commands work on **either GitHub or GitLab** (self-hosted or SaaS). They auto-detect the provider from the git remote — `github.com` → `gh`/PR, everything else → `glab`/MR — with an optional `.claude/repo-config.json` `"provider"` override. See [docs/provider-resolution.md](docs/provider-resolution.md) for the detection rule + the GitLab↔GitHub CLI cheat-sheet embedded in each command.
 
 | Command | What it does |
 | --- | --- |
 | `mr-create` | Create a PR/MR for the current branch — commit-analysis title/body, stack-agnostic pre-flight checks, reviewer/label suggestions, fork-aware. |
 | `mr-review` | Comprehensive code review of a PR/MR — fetches the diff, posts inline + summary comments. |
 | `fix-review` | Read review threads on a PR/MR, fix the issues in code, reply, and resolve. |
+| `commit` | Smart commit — auto-branches off the detected default branch, stack-aware format/test, conventional message, push. Provider-agnostic. |
+| `issue` | Turn a natural-language description into a structured issue with codebase context, labels, and template selection. **GitLab-only** (`glab`). |
+| `browse` | Authenticated, scrolling Playwright screenshots of a running app page. Needs the `scripts/browse.mjs` helper (see Install) + Playwright installed in the target repo; app-specifics come from an optional `.claude/browse-config.json`, credentials only from `PW_EMAIL`/`PW_PASS` env. |
 
 ## Install
 
@@ -58,7 +61,10 @@ git clone git@github.com:<your-username>/claude-skills.git ~/claude-skills
 ln -s ~/claude-skills/skills ~/.claude/skills
 
 # commands: link the individual files (your ~/.claude/commands may hold other, local-only commands)
-for f in mr-create mr-review fix-review; do ln -sf ~/claude-skills/commands/$f.md ~/.claude/commands/$f.md; done
+for f in mr-create mr-review fix-review commit issue browse; do ln -sf ~/claude-skills/commands/$f.md ~/.claude/commands/$f.md; done
+
+# the /browse command needs its helper script on the standard path:
+mkdir -p ~/.claude/scripts && ln -sf ~/claude-skills/scripts/browse.mjs ~/.claude/scripts/browse.mjs
 ```
 
 Or copy them if you'd rather not symlink:
