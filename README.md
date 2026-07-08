@@ -15,8 +15,27 @@ My personal collection of [Claude Code](https://docs.claude.com/en/docs/claude-c
 | `ponytail` | Lazy-senior-dev coding discipline — YAGNI, reuse/stdlib first, no unrequested abstractions. Adapted from [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) (MIT). |
 | `ui-audit` | Technical UI quality checks (a11y, performance, theming, responsive, interaction states) → scored report. |
 | `ui-polish` | UI polish, animation decisions, and the invisible details that make interfaces feel right. Adapted from Emil Kowalski's design engineering philosophy. |
+| `ux-audit` | Judges whether a page/flow actually works for the human using it — cognitive load, friction, clarity — tied to the page's one real goal. Advisory, ethics-gated (flags dark patterns). |
 | `validate-plan` | Adversarially stress-tests an existing plan before executing — verifies assumptions against the real codebase, surfaces alternatives, red-teams failure modes, returns a proceed/reconsider verdict. |
 | `ship-check` | The final gate before merging — audits a finished diff against the problem it claims to solve: what's missing (unpatched sibling caller, unhandled branch, no backfill), where it breaks on edge cases, whether the approach is right. `validate-plan`'s bookend. Returns a merge/fix-first/reconsider verdict. |
+
+## When to reach for which
+
+Most of these skills guard a different stage of *"am I doing the right thing?"* — chained across the life of a change:
+
+```
+root-cause  →  validate-plan  →  ponytail  →  ship-check  →  mr-review
+(diagnose)     (vet the plan)    (build)     (vet the diff)  (review code)
+```
+
+`grill-me` goes up front when the requirements themselves are fuzzy; `second-opinion` spot-checks any single decision along the way.
+
+**Commonly confused — same spirit, different moment:**
+
+- `validate-plan` vs `ship-check` vs `mr-review` — adversarial review at three points: the **plan** (pre-code) → the **finished diff** (pre-merge) → the **code lines** (review).
+- `second-opinion` vs `validate-plan` — one **decision** judged head-to-head vs a whole **plan** stress-tested.
+- `ui-audit` vs `ux-audit` — "is the UI built **correctly**?" (a11y/perf/theming) vs "does it actually **work for the human**?" (friction/cognitive load).
+- `design` / `animate` / `ui-polish` — *before* building (colors/type/layout) vs *while* building (motion, interaction details).
 
 ## Commands
 
