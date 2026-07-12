@@ -50,8 +50,11 @@ Motion is not the default-good answer; **the most professional outcome is someti
 
 If you're gating to "do nothing," **say so plainly and briefly explain why** (cite what's already there). Offer the smallest possible alternative if one exists ("the only thing I'd consider is X, and even that is optional") — but don't manufacture 2–4 ideas just to fill the menu. A confident "this doesn't need it, and here's the one-line reason" is a valid, valued result. Only proceed to step 4 once the target genuinely clears this gate.
 
+### 3.5. Choose the pattern with judgment, not vibes — [decision-map.md](reference/decision-map.md)
+Once the target clears the gate, don't jump to a favourite effect. Run the **[motion decision map](reference/decision-map.md)**: name the state change in one sentence (*"X went from A to B"*), collect its 7 context facts (change class, relationship, origin, tone, frequency, initiator, constraints — infer from code, ask only the unknowns, usually just tone + frequency), then look up the ranked pattern(s). This is the layer that makes proposals *reasoned* — it enforces the duration-by-frequency budget, the tone rule (never bounce an error), enter-slow-exit-fast, opacity-leads-position, and picks fade-vs-push-up-vs-morph from the relationship rather than taste. The combo table below is the vocabulary; the decision map is the grammar that selects from it.
+
 ### 4. Propose 2–4 ideas (don't just pick one)
-Present a short menu. For each: a name, one-line description of the choreography, the **combo** it draws from, and rough timing/easing. Recommend one. Keep it skimmable. Example format:
+Present a short menu. For each: a name, one-line description of the choreography, the **combo** it draws from, rough timing/easing, and **the fact(s) that drove it** (per the decision map — e.g. "≤200ms, no overshoot, because it's high-frequency"). Recommend one. Keep it skimmable. Example format:
 
 > **A. Spring press + success morph** *(press-release + success-morph)* — button dips to 0.96 on press, springs back past 1.0 on release; on submit it morphs to a spinner then a self-drawing check. ~140ms press / 220ms settle / 400ms morph. **← my pick: high-value, low-risk on a primary CTA.**
 > **B. …**
@@ -100,6 +103,7 @@ Each combo has a full Vue and Flutter recipe in the references. Pick and adapt; 
 Default intensities: spring `{ stiffness: 300, damping: 20 }` (snappy) or Apple-style `{ duration: 0.45, bounce: 0.2 }`. Overshoot CSS: `cubic-bezier(0.34, 1.56, 0.64, 1)`. Strong ease-out: `cubic-bezier(0.23, 1, 0.32, 1)`. Flutter: `Curves.easeOutBack` (overshoot), `Curves.elasticOut` (bouncy, use sparingly), `Curves.fastOutSlowIn` (movement).
 
 ## References
+- [Motion decision map](reference/decision-map.md) — **the judgment layer**: 7 context facts + 8 laws + change→pattern table that picks *which* motion and *why*. Consult in step 3.5, before proposing.
 - [Vue / Vuetify recipes](reference/web.md) — WAAPI/FLIP, `<Transition>`, springs, every combo as copy-adaptable code.
 - [Flutter recipes](reference/flutter.md) — `flutter_animate`, `AnimationController`, `Hero`, every combo.
 - Deep web motion theory → the `ui-polish` skill.
