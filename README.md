@@ -49,6 +49,11 @@ The MR/PR commands work on **either GitHub or GitLab** (self-hosted or SaaS). Th
 | `commit` | Smart commit — auto-branches off the detected default branch, stack-aware format/test, conventional message, push. Provider-agnostic. |
 | `issue` | Turn a natural-language description into a structured issue with codebase context, labels, and template selection. **GitLab-only** (`glab`). |
 | `browse` | Authenticated, scrolling Playwright screenshots of a running app page. Needs the `scripts/browse.mjs` helper (see Install) + Playwright installed in the target repo; app-specifics come from an optional `.claude/browse-config.json`, credentials only from `PW_EMAIL`/`PW_PASS` env. |
+| `handover-save` | Materialize the current conversation's plan into a durable, gitignored doc under the project's `.claude/handover/` — status, decisions, checkboxed steps, `file:line` anchors, gotchas — so it survives `/clear` and session handoffs. |
+| `handover-resume` | Reload a saved handover plan and re-anchor the session — re-verifies its `file:line` anchors against current code, reconciles checkbox state, then continues from the first unblocked step. |
+| `handover-list` | List the saved handover plans in the current project (slug / title / status, newest first) so you can pick one to resume. |
+
+The `handover-*` trio is a self-contained local workflow (no GitHub/GitLab involved): `save` writes a plan, `list` finds them, `resume` reloads and continues one. The docs live in each project's gitignored `.claude/handover/`, so they're personal scratch — never committed.
 
 ## Install
 
@@ -61,7 +66,7 @@ git clone git@github.com:<your-username>/claude-skills.git ~/claude-skills
 ln -s ~/claude-skills/skills ~/.claude/skills
 
 # commands: link the individual files (your ~/.claude/commands may hold other, local-only commands)
-for f in mr-create mr-review fix-review commit issue browse; do ln -sf ~/claude-skills/commands/$f.md ~/.claude/commands/$f.md; done
+for f in mr-create mr-review fix-review commit issue browse handover-save handover-resume handover-list; do ln -sf ~/claude-skills/commands/$f.md ~/.claude/commands/$f.md; done
 
 # the /browse command needs its helper script on the standard path:
 mkdir -p ~/.claude/scripts && ln -sf ~/claude-skills/scripts/browse.mjs ~/.claude/scripts/browse.mjs
