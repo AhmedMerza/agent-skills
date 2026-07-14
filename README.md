@@ -60,7 +60,7 @@ The `handover-*` trio is a self-contained local workflow (no GitHub/GitLab invol
 Clone anywhere, then symlink into your Claude config so edits stay in sync:
 
 ```sh
-git clone git@github.com:<your-username>/claude-skills.git ~/claude-skills
+git clone https://github.com/AhmedMerza/claude-skills.git ~/claude-skills
 
 # back up existing dirs if you have them, then link:
 ln -s ~/claude-skills/skills ~/.claude/skills
