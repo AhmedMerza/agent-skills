@@ -4,14 +4,15 @@ argument-hint: "[slug]  (optional; lists available plans if omitted or ambiguous
 allowed-tools: Bash(git branch:*), Bash(ls:*), Bash(git status:*), Read, Grep, Glob
 ---
 
-You are resuming work from a previously saved handover plan (written by `/plan-save`).
+You are resuming work from a previously saved handover plan (written by `/handover-save`).
 
 ## 1. Locate the plan
 
 - If `$ARGUMENTS` names a slug, read `.claude/handover/<slug>.md`.
 - If no argument: run `git branch --show-current`, derive a slug, and try `.claude/handover/<slug>.md`.
 - If neither resolves, list the files in `.claude/handover/` (with their `# Title` and `**Status:**`
-  lines) and ask the user which one — do not guess.
+  lines) and ask the user which one — do not guess. If the directory is missing or empty, tell the
+  user there are no saved handovers yet.
 
 ## 2. Re-anchor — verify before trusting
 
@@ -31,5 +32,8 @@ Give a short briefing:
 - **Any drift you found:** stale anchors, already-completed steps, changed assumptions.
 - **Next step:** the first unchecked, unblocked item.
 
-Then proceed with that next step (or ask which item to start on if several are unblocked). As you
-complete steps, keep the handover doc's checkboxes updated so it stays an accurate resume point.
+If every step is already checked (or the Status line says the work is complete), don't invent new
+work — report that the plan is done and ask the user what they want next.
+
+Otherwise proceed with that next step (or ask which item to start on if several are unblocked). As
+you complete steps, keep the handover doc's checkboxes updated so it stays an accurate resume point.
