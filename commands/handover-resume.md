@@ -1,7 +1,7 @@
 ---
-description: Reload a saved handover plan from .claude/handover/ and re-anchor this session to continue the work.
+description: Reload a saved handover plan from .claude/handover/, re-sync it against current code, and re-anchor this session to continue the work.
 argument-hint: "[slug]  (optional; lists available plans if omitted or ambiguous)"
-allowed-tools: Bash(git branch:*), Bash(ls:*), Bash(git status:*), Read, Grep, Glob
+allowed-tools: Bash(git branch:*), Bash(ls:*), Bash(git status:*), Read, Grep, Glob, Edit
 ---
 
 You are resuming work from a previously saved handover plan (written by `/handover-save`).
@@ -24,6 +24,18 @@ continue:
   the doc claims (Read/grep them). Note any that have drifted.
 - Check the branch matches; if `git status` shows relevant uncommitted work, reconcile it against
   the plan's checkbox state (something may already be done that isn't checked off).
+
+**Persist the corrections — don't just report them.** As you verify, update the doc in place so it
+stays a trustworthy resume point:
+
+- Refresh drifted `file:line` anchors to their current values (grep the symbol, rewrite the number).
+- Check off steps that are already done, and update the **Status** line.
+- For *structural* drift — new code that expands or invalidates the plan, not just moved lines (e.g.
+  a sibling feature now needs the same fix) — do NOT silently rewrite the plan. Add a dated note under
+  **Open questions** (or a short `## Drift since save` section) describing what changed and its impact,
+  and flag it in your briefing so the user decides how to adjust scope.
+
+Leave the doc more accurate than you found it — whether or not you go on to execute it this session.
 
 ## 3. Report back, then continue
 
