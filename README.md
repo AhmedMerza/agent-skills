@@ -18,6 +18,8 @@ My personal collection of [Claude Code](https://docs.claude.com/en/docs/claude-c
 | `ux-audit` | Judges whether a page/flow actually works for the human using it — cognitive load, friction, clarity — tied to the page's one real goal. Advisory, ethics-gated (flags dark patterns). |
 | `validate-plan` | Adversarially stress-tests an existing plan before executing — verifies assumptions against the real codebase, surfaces alternatives, red-teams failure modes, returns a proceed/reconsider verdict. |
 | `ship-check` | The final gate before merging — audits a finished diff against the problem it claims to solve: what's missing (unpatched sibling caller, unhandled branch, no backfill), where it breaks on edge cases, whether the approach is right. `validate-plan`'s bookend. Returns a merge/fix-first/reconsider verdict. |
+| `changelog-generate` | Generates changelogs & release notes from commits/PRs/MRs. Auto-detects the forge (GitHub `#` vs GitLab `!`, including self-hosted) and whether the repo uses tags — skipping all tag/version/semver noise for tag-less repos. Adapted from [patricio0312rev/skills](https://github.com/patricio0312rev/skills) changelog-writer, then customized. |
+| `i18n-sync` | Keeps a project's translations in locale parity. Bundled scanner deep-diffs nested keys to find strings present in one locale but missing/empty in another (a silent fallback that ships the wrong language); mirrors new keys to every locale. |
 
 ## When to reach for which
 
