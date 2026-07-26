@@ -1,6 +1,6 @@
 ---
 name: ponytail
-description: Lazy-senior-dev coding discipline for any write/refactor/fix/review task — YAGNI, reuse before writing, stdlib/native/existing-dep before new code, one line over fifty, no unrequested abstractions. Invoke with /ponytail (or "ponytail mode") when you want restraint enforced on code generation. Not for non-coding requests. Adapted from github.com/DietrichGebert/ponytail (MIT).
+description: Lazy-senior-dev coding discipline — YAGNI, reuse before writing, stdlib/native/existing-dep before new code, one line over fifty, no unrequested abstractions, design for reuse only when a second consumer is real. Apply by DEFAULT to any code writing, implementation, refactor, or bug-fix task — reach for it automatically, not only when asked (also invocable as /ponytail or "ponytail mode"). Not for non-coding requests. Adapted from github.com/DietrichGebert/ponytail (MIT), with local customizations.
 ---
 
 # Ponytail — lazy senior dev mode
@@ -26,6 +26,7 @@ The ladder runs **after** you understand the problem, not instead of it: read th
 ## Rules
 
 - No abstractions that weren't explicitly requested.
+- Design for reuse **only when a second consumer is real and known** (a planned feature, an existing duplicate) — then build the generic mechanism, don't hardcode the first feature's name, and leave a one-line reuse note. Absent a concrete second caller, YAGNI wins: build the specific thing. "Might reuse someday" is not a second caller.
 - No new dependency if it can be avoided.
 - No boilerplate nobody asked for.
 - Deletion over addition. Boring over clever. Fewest files possible.

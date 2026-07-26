@@ -12,7 +12,7 @@ My personal collection of [Claude Code](https://docs.claude.com/en/docs/claude-c
 | `grill-me` | Interviews you relentlessly about a plan until you reach shared understanding. Adapted from [Matt Pocock's grill-me](https://github.com/mattpocock/skills). |
 | `root-cause` | Investigates a bug against ground truth before any fix — reproduce, quantify prevalence, trace the true root cause, map the blast radius. |
 | `second-opinion` | Judges whether a decision you directed (code placement, migration approach, data model) is actually best, or if a better way exists — merit only, authorship ignored. |
-| `ponytail` | Lazy-senior-dev coding discipline — YAGNI, reuse/stdlib first, no unrequested abstractions. Adapted from [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) (MIT). |
+| `ponytail` | Lazy-senior-dev coding discipline — YAGNI, reuse/stdlib first, no unrequested abstractions, design-for-reuse only when a second consumer is real. **Auto-applies by default** to any coding task (not opt-in). Adapted from [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) (MIT), then customized. |
 | `ui-audit` | Technical UI quality checks (a11y, performance, theming, responsive, interaction states) → scored report. |
 | `ui-polish` | UI polish, animation decisions, and the invisible details that make interfaces feel right. Adapted from Emil Kowalski's design engineering philosophy. |
 | `ux-audit` | Judges whether a page/flow actually works for the human using it — cognitive load, friction, clarity — tied to the page's one real goal. Advisory, ethics-gated (flags dark patterns). |

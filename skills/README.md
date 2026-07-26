@@ -27,7 +27,7 @@ Invoke any skill with `/<name>` or by describing the task so its trigger fires.
 
 | Skill | What it does |
 |-------|--------------|
-| `ponytail` | Lazy-senior-dev restraint on any write/refactor/fix — YAGNI, reuse before writing, one line over fifty, no unrequested abstractions. *(adapted from DietrichGebert/ponytail, MIT)* |
+| `ponytail` | Lazy-senior-dev restraint on any write/refactor/fix — YAGNI, reuse before writing, one line over fifty, no unrequested abstractions, design-for-reuse only when a second consumer is real. Auto-applies by default (not opt-in). *(adapted from DietrichGebert/ponytail, MIT)* |
 
 ## UI / UX
 
