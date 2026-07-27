@@ -39,7 +39,19 @@ Record the worktree path, branch and both ports in the ledger so a resumed sessi
 
 `.claude/qa-crawl/ledger.json` (`.claude` is gitignored — this is personal state, never committed).
 
-Build the route inventory **once**, at crawl start, and store it. Enumerate real pages only — for a Laravel app, `php artisan route:list --method=GET`, then drop parameterised paths (`{id}`), exports/downloads, and **JSON endpoints**, which are not pages: tells are a controller returning `JsonResponse` rather than an Inertia/view response, or a path that reads like data (`get-*`, `*-list`, `*/search`, `*/data`). Navigating to one of those produces a "failure" you invented yourself.
+Build the route inventory **once**, at crawl start, and store it. Do this by **classifying each route from its controller method's return**, not by pattern-matching the URL — resolve the class from the route's action, find the method, and read what it returns:
+
+| Returns | Class | Crawl it? |
+|---|---|---|
+| `Inertia::render(...)` / `inertia(...)` | Vue page | **yes** |
+| `view(...)` | Blade page | no — legacy, being retired |
+| `JsonResponse` / `->json(...)` | data endpoint | no — not a page |
+| `redirect(...)` / `back()` | redirect | no |
+| nothing matched | unknown | triage, don't blind-crawl |
+
+This is not a marginal filter. Measured on a real Laravel + Inertia admin app: **528** parameterless admin GET routes classified as **172 Vue pages, 242 JSON endpoints, 50 Blade, 6 redirects, 55 unknown** — so two thirds of what `route:list` hands you is not a page at all, and navigating a browser to a JSON endpoint manufactures a failure you invented yourself. URL shape is an unreliable proxy for this: a route named like a page can return JSON, and `/admin/dashboard` turned out to be Blade.
+
+Also drop parameterised paths (`{id}`) and exports/downloads. Record the classification in the ledger so a resume doesn't redo it, and so a route that changes class later is visible.
 
 One entry per route:
 
