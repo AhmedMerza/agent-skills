@@ -21,11 +21,15 @@ Run in a **dedicated git worktree on its own branch**, created once at the start
 
 ```bash
 git worktree add -b <branch> <path> upstream/<base>
-ln -sfn <main>/vendor <path>/vendor            # symlink, don't reinstall
+cp -a <main>/vendor <path>/vendor              # COPY — see below, must not be a symlink
 ln -sfn <main>/node_modules <path>/node_modules
 cp <main>/.env <path>/.env                     # copy — may need per-instance edits
 php artisan serve --port=<free-port>           # from <path>
 ```
+
+**`vendor` must be a real directory, never a symlink.** Composer's autoloader computes its root at runtime as `$vendorDir = dirname(__DIR__); $baseDir = dirname($vendorDir)`, and PHP resolves `__DIR__` *through symlinks to the real path*. So a symlinked `vendor` makes the worktree's autoloader map `App\*` to the **main checkout's** `app/` directory — the worktree serves the user's code, every backend fix in it is invisible, and step 6 silently verifies the wrong file. This cost a real debugging session: a verified fix kept returning the pre-fix response, through a server restart and with opcache disabled, until the autoload map was inspected. Copying `vendor` fixes it outright (~320 MB) and needs no `dump-autoload`, because those paths are derived from `__DIR__` rather than baked in. Do **not** hard-link (`cp -al`) — a later `dump-autoload` would write through into the main checkout.
+
+`node_modules` is safe to symlink: it holds no absolute-path root resolution of this kind.
 
 Then pick how assets are served, because **the two modes have opposite cost profiles** and the crawl needs both:
 
@@ -114,6 +118,7 @@ Attach images by uploading them to the project first (`glab api projects/:id/upl
 ## Guardrails
 
 - **Never touch the user's working tree, index, or branch.** Own worktree, own branch, or don't run.
+- **Prove the isolated stack actually runs the isolated code before trusting a single verification.** Both failure modes found here were silent — a symlinked `vendor` served the main checkout's PHP, and a copied `public/hot` served its frontend assets. In each case the page loaded fine and the fix appeared to do nothing. Once per crawl, change something visible in the worktree and confirm the served response changes. If it doesn't, every "verified" result in the ledger is worthless.
 - **Errors auto-fix; UI is proposed.** The line is objectivity: a 500 is verifiable, "cleaner hierarchy" is not. Don't cross it because a change looks obviously good — intentional design choices read as bugs to a crawler.
 - **Horizontal overflow is on the objective side of that line.** A page wider than the phone it's on is broken by measurement, not opinion, and gets fixed and re-verified like any error. Only chase culprit elements once the page-level number is positive — element-level clipping on a page that doesn't overflow is almost always intentional.
 - **Diagnose before fixing.** A fix that makes the symptom disappear without a cause is a second bug.
