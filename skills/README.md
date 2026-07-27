@@ -22,6 +22,7 @@ Invoke any skill with `/<name>` or by describing the task so its trigger fires.
 |-------|--------------|
 | `explain` | Reverse-engineers an unfamiliar feature/flow end-to-end into a navigable map with `file:line` anchors. Surfaces the surprising, load-bearing coupling. |
 | `root-cause` | Investigates a bug against ground truth BEFORE any fix — reproduce, quantify, trace to true root cause, map blast radius. Output is a diagnosis, not a fix. *(symptom-triage table, upstream-bug search and the 3-strike stop grafted from garrytan/gstack@investigate)* |
+| `qa-sweep` | Drives the running app in a real browser to find what's actually broken — dead controls, failing forms, console errors, missing states, regressions one route over. Diff-aware by default: maps the branch diff to routes via `artisan route:list` / Inertia render sites, then tests those. Findings with repro steps + screenshot evidence; no fixes. *(diff-aware routing, two evidence tiers and the smoke-fallback guard grafted from garrytan/gstack@qa)* |
 
 ## Code Discipline
 

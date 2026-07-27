@@ -12,6 +12,7 @@ My personal collection of [Claude Code](https://docs.claude.com/en/docs/claude-c
 | `grill-me` | Interviews you relentlessly about a plan until you reach shared understanding. Adapted from [Matt Pocock's grill-me](https://github.com/mattpocock/skills). |
 | `root-cause` | Investigates a bug against ground truth before any fix — reproduce, quantify prevalence, trace the true root cause, map the blast radius. Symptom-triage table, upstream/known-dependency-bug search (sanitize before searching), and a 3-strike stop rule grafted from [garrytan/gstack](https://github.com/garrytan/gstack) `investigate`. |
 | `second-opinion` | Judges whether a decision you directed (code placement, migration approach, data model) is actually best, or if a better way exists — merit only, authorship ignored. |
+| `qa-sweep` | Drives the running app in a real browser and hunts for what's actually broken — dead controls, failing forms, console errors, unbuilt empty states, regressions on adjacent routes. Diff-aware by default: derives scope from the branch diff and looks routes up (`artisan route:list`, Inertia render sites) rather than guessing them. Reports findings with repro steps and screenshot evidence; never fixes. Driver-agnostic (claude-in-chrome, or Playwright via the project's own install). Diff-aware routing, two evidence tiers and the smoke-fallback guard grafted from [garrytan/gstack](https://github.com/garrytan/gstack) `qa`. |
 | `ponytail` | Lazy-senior-dev coding discipline — YAGNI, reuse/stdlib first, no unrequested abstractions, design-for-reuse only when a second consumer is real. **Auto-applies by default** to any coding task (not opt-in). Adapted from [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) (MIT), then customized. |
 | `ui-audit` | Technical UI quality checks (a11y, performance, theming, responsive, interaction states) → scored report. |
 | `ui-polish` | UI polish, animation decisions, and the invisible details that make interfaces feel right. Adapted from Emil Kowalski's design engineering philosophy. |
@@ -27,8 +28,8 @@ My personal collection of [Claude Code](https://docs.claude.com/en/docs/claude-c
 Most of these skills guard a different stage of *"am I doing the right thing?"* — chained across the life of a change:
 
 ```
-root-cause  →  validate-plan  →  ponytail  →  ship-check  →  mr-review
-(diagnose)     (vet the plan)    (build)     (vet the diff)  (review code)
+root-cause → validate-plan → ponytail → qa-sweep → ship-check → mr-review
+(diagnose)   (vet the plan)   (build)   (run it)   (vet the diff) (review code)
 ```
 
 `grill-me` goes up front when the requirements themselves are fuzzy; `second-opinion` spot-checks any single decision along the way. `skill-compare` sits outside that chain — it judges the *toolkit* rather than the work, for when someone hands you a link to their skills and asks whether any of it is worth adding.
@@ -37,7 +38,7 @@ root-cause  →  validate-plan  →  ponytail  →  ship-check  →  mr-review
 
 - `validate-plan` vs `ship-check` vs `mr-review` — adversarial review at three points: the **plan** (pre-code) → the **finished diff** (pre-merge) → the **code lines** (review).
 - `second-opinion` vs `validate-plan` — one **decision** judged head-to-head vs a whole **plan** stress-tested.
-- `ui-audit` vs `ux-audit` — "is the UI built **correctly**?" (a11y/perf/theming) vs "does it actually **work for the human**?" (friction/cognitive load).
+- `qa-sweep` vs `ui-audit` vs `ux-audit` — three questions about the same screen: does it **work at all** (drive it in a browser, find what's broken) vs is it **built correctly** (a11y/perf/theming, read statically) vs does it **work for the human** (friction/cognitive load).
 - `design` / `animate` / `ui-polish` — *before* building (colors/type/layout) vs *while* building (motion, interaction details).
 
 ## Commands
