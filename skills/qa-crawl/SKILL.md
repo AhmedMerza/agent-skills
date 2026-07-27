@@ -17,19 +17,30 @@ The whole point is that it runs while someone is working. It must therefore neve
 
 Run in a **dedicated git worktree on its own branch**, created once at the start of a crawl and reused on every resume. Never `git checkout` in the user's working copy, never stage or commit files you did not change, and never assume the branch you find is the one you should commit to. If a worktree can't be created, stop and say so rather than falling back to the shared tree.
 
-**A worktree alone silently breaks verification.** The dev server the user has running serves *their* checkout, so a fix made in the worktree isn't what the browser loads — step 6 would re-test unfixed code and report the fix as failed, or pass it for the wrong reason. The worktree needs its own stack on its own ports. Verified recipe for a Laravel + Inertia + Vite app:
+**A worktree alone silently breaks verification.** The dev server the user has running serves *their* checkout, so a fix made in the worktree isn't what the browser loads — step 6 would re-test unfixed code and report the fix as failed, or pass it for the wrong reason. The worktree needs its own stack. Common base, for a Laravel + Inertia + Vite app:
 
 ```bash
 git worktree add -b <branch> <path> upstream/<base>
-ln -sfn <main>/vendor <path>/vendor          # symlink, don't reinstall
+ln -sfn <main>/vendor <path>/vendor            # symlink, don't reinstall
 ln -sfn <main>/node_modules <path>/node_modules
-cp <main>/.env <path>/.env                   # copy — it may need per-instance edits
-php artisan serve --port=<free-port>         # from <path>
-npx vite --port=<free-vite-port> --strictPort # from <path>
+cp <main>/.env <path>/.env                     # copy — may need per-instance edits
+php artisan serve --port=<free-port>           # from <path>
+```
+
+Then pick how assets are served, because **the two modes have opposite cost profiles** and the crawl needs both:
+
+**Sweeping (most of the run) — build once.** No `public/hot` at all; the app falls back to `public/build/manifest.json`. One `npm run build` up front, then every page load is self-contained: no second process, no port, no `hot` file. It also tests the assets users actually get, which catches production-only failures (tree-shaking, chunk loading) that dev mode hides.
+
+**Verifying a frontend fix — dev server.** Rebuilding per fix is the expensive path, so start Vite in the worktree only when a page actually needs a Vue change verified:
+
+```bash
+npx vite --port=<free-vite-port> --strictPort   # from <path>
 printf 'http://[::1]:<free-vite-port>' > <path>/public/hot
 ```
 
-The `public/hot` line is the one that's easy to miss and expensive to get wrong: without it the app 500s (no build manifest in dev), and if it's *copied* from the main checkout instead of rewritten, the worktree renders **the main checkout's frontend assets** — so every Vue fix looks like it changed nothing. Note the IPv6 `[::1]` form; Vite binds there by default and `127.0.0.1` will refuse the connection.
+Measure the build before assuming; on one real Vuexy-based app it was **3m58s and 5.9 GB peak RSS** for 356 files → 77 MB / 907 assets. At that cost, rebuilding for each of ~34 frontend fixes across 172 pages is over two hours of pure waiting, while HMR is instant. But a one-off build for the whole sweep is trivially worth it.
+
+Two traps in the dev path. Without `public/hot` **and** without a build the app 500s (no manifest either way). And if `public/hot` is *copied* from the main checkout rather than rewritten, the worktree renders **the main checkout's frontend assets** — so every Vue fix appears to change nothing while the page loads perfectly. Note the IPv6 `[::1]` form; Vite binds there and `127.0.0.1` refuses the connection. Delete `public/hot` when returning to sweep mode.
 
 Then **sweep against the worktree's port**, never the user's. Copy their saved browser session in for authenticated pages.
 
