@@ -17,7 +17,23 @@ The whole point is that it runs while someone is working. It must therefore neve
 
 Run in a **dedicated git worktree on its own branch**, created once at the start of a crawl and reused on every resume. Never `git checkout` in the user's working copy, never stage or commit files you did not change, and never assume the branch you find is the one you should commit to. If a worktree can't be created, stop and say so rather than falling back to the shared tree.
 
-Record the worktree path and branch in the ledger so a resumed session finds them instead of creating a second one.
+**A worktree alone silently breaks verification.** The dev server the user has running serves *their* checkout, so a fix made in the worktree isn't what the browser loads — step 6 would re-test unfixed code and report the fix as failed, or pass it for the wrong reason. The worktree needs its own stack on its own ports. Verified recipe for a Laravel + Inertia + Vite app:
+
+```bash
+git worktree add -b <branch> <path> upstream/<base>
+ln -sfn <main>/vendor <path>/vendor          # symlink, don't reinstall
+ln -sfn <main>/node_modules <path>/node_modules
+cp <main>/.env <path>/.env                   # copy — it may need per-instance edits
+php artisan serve --port=<free-port>         # from <path>
+npx vite --port=<free-vite-port> --strictPort # from <path>
+printf 'http://[::1]:<free-vite-port>' > <path>/public/hot
+```
+
+The `public/hot` line is the one that's easy to miss and expensive to get wrong: without it the app 500s (no build manifest in dev), and if it's *copied* from the main checkout instead of rewritten, the worktree renders **the main checkout's frontend assets** — so every Vue fix looks like it changed nothing. Note the IPv6 `[::1]` form; Vite binds there by default and `127.0.0.1` will refuse the connection.
+
+Then **sweep against the worktree's port**, never the user's. Copy their saved browser session in for authenticated pages.
+
+Record the worktree path, branch and both ports in the ledger so a resumed session reuses them instead of standing up a second stack.
 
 ## The ledger
 
