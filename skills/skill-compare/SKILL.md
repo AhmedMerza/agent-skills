@@ -31,6 +31,8 @@ Big skill files are usually mostly shared boilerplate. Look for the tell: a `SKI
 
 Quantify it — `wc -l` on both, per skill — and report unique content vs. boilerplate as a ratio. This is what tells you whether a 100 KB skill is 100 KB of thinking or 15 KB of thinking wrapped in 85 KB of framework preamble replicated across every skill in the repo. It also tells you the real context cost of invoking it.
 
+**Then resolve the includes before you trust that number.** A template can itself be mostly `{{DIRECTIVE}}` markers, with the substance living in whatever generates them — a resolver function, a partials directory, a shared snippet file. Grep the repo for each marker's *definition site* and read it. A template that measures as 114 lines can carry a 200-line methodology in one include; scoring it on the template alone under-rates it badly. The rule is **authored content wherever it lives**, minus boilerplate replicated across every skill.
+
 ### 3. Price the infrastructure tax
 
 Skills are markdown; they have no plugin API. So any "tooling" a skill appears to have is really *the prompt instructing the model to run shell commands*. Find out what those commands need before you assume the skill is portable:
@@ -89,8 +91,9 @@ One verdict per candidate that survived triage, plus a one-line dismissal for th
 
 ## Guardrails
 
-- **The README is marketing; the steps are the product.** Never issue a verdict from a description or a skill list alone.
-- **File size is not content size.** Check for a template/generator before quoting any number.
+- **The README is marketing; the steps are the product.** Never issue a verdict from a description or a skill list alone — a one-line gloss can describe a completely different skill from the one on disk.
+- **File size is not content size.** Check for a template/generator before quoting any number, and resolve its includes before trusting the result.
+- **Check what a skill's mechanics assume, not just what it reasons about.** A sound methodology written against a tool you don't run is a graft candidate, never an adopt.
 - **Compare against everything** — skills, commands, subagents, and Claude Code built-ins. Most "gaps" are already covered somewhere.
 - **Never install a framework to evaluate one of its skills.** Extract the core and run that; it's what you'd adopt from anyway.
 - **Run the unknown skill first**, and label any second-run result as contaminated.
