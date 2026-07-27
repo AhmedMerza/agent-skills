@@ -69,7 +69,23 @@ Per page: does it render, and then —
 - **Navigation** — every route in, every route out, plus browser back.
 - **Console** — re-check after interactions, not just on load.
 - **Locale** — this app ships `en` and `ar`. Switch locale and re-check the page: untranslated keys, and layout that breaks under RTL.
-- **Responsive** — only where the view is genuinely used on mobile.
+- **Responsive** — measure, don't eyeball. See below.
+
+**Responsive: measure overflow, don't judge screenshots.** Load the page at a spread of viewports — mobile 375, tablet 768, laptop 1280, ultra-wide 2560 — and take the objective reading at each:
+
+```js
+document.documentElement.scrollWidth - document.documentElement.clientWidth   // > 1 = the page overflows
+```
+
+That number is a fact, and a page that overflows horizontally on a phone is broken regardless of anyone's taste. **Only hunt for culprit elements once that page-level number is positive.** Scanning every element for clipping on a page that doesn't overflow returns hundreds of intentional hits and buries the real signal — measured here at 346 false positives on one clean page. When it is positive, find the offenders by right edge past the viewport (`getBoundingClientRect().right - clientWidth`), excluding three things that clip by design:
+
+- `text-overflow: ellipsis` — deliberate truncation
+- anything with a scrollable ancestor (`overflow-x: auto|scroll`) — it lives inside a scroller on purpose
+- anything with a `transform` — off-canvas drawers sit outside the viewport by design
+
+Report the outermost offenders with how far each sticks out. Children inherit their parent's overflow, so the parent is the fix site.
+
+Ultra-wide is a separate question: at 2560 the objective failure is still overflow or content that becomes unreachable — a layout that merely *looks* sparse or over-stretched is a judgement call and belongs in `ui-audit`, not here.
 
 **Filter dev-server noise.** Under Vite dev the console carries HMR chatter, `[vite] connected`, and source-map warnings — none are bugs. Unbundled modules and `transferSize: 0` are dev-mode artifacts, not performance findings. Report only errors originating in application code.
 
