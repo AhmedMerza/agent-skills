@@ -21,7 +21,7 @@ Invoke any skill with `/<name>` or by describing the task so its trigger fires.
 | Skill | What it does |
 |-------|--------------|
 | `explain` | Reverse-engineers an unfamiliar feature/flow end-to-end into a navigable map with `file:line` anchors. Surfaces the surprising, load-bearing coupling. |
-| `root-cause` | Investigates a bug against ground truth BEFORE any fix — reproduce, quantify, trace to true root cause, map blast radius. Output is a diagnosis, not a fix. |
+| `root-cause` | Investigates a bug against ground truth BEFORE any fix — reproduce, quantify, trace to true root cause, map blast radius. Output is a diagnosis, not a fix. *(symptom-triage table, upstream-bug search and the 3-strike stop grafted from garrytan/gstack@investigate)* |
 
 ## Code Discipline
 
@@ -50,6 +50,12 @@ Invoke any skill with `/<name>` or by describing the task so its trigger fires.
 | Skill | What it does |
 |-------|--------------|
 | `i18n-sync` | Keeps en/ar translations in parity. Bundled scanner deep-diffs nested keys to find strings missing/empty in `ar` (silent English fallback); mirrors new keys to both locales. Tuned to the app Vue-i18n + Laravel-lang layout. *(custom, local)* |
+
+## Meta
+
+| Skill | What it does |
+|-------|--------------|
+| `skill-compare` | Judges an external skill or skills repo against this collection — measures real content vs. framework boilerplate, prices the infrastructure it assumes, diffs it against the incumbent by procedure step, and tests the runnable core on a real repo fixture. Verdict: adopt / graft these mechanisms / skip. Restraint-gated — "skip, yours is leaner" is the common answer. |
 
 ---
 

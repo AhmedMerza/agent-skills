@@ -16,6 +16,19 @@ This is the investigation slot that runs *before* a plan exists. It hands off to
 ### 1. Reproduce / locate the mechanism
 Pin down *where* in the code the wrong thing happens — the actual line, query, branch, or state transition, not the general area. Read the real flow end to end: what triggers it, what data it operates on, what it produces. If you can reproduce it (a failing input, a query that returns the bad row, a test that fails), do — a reproduction you can point at beats a theory. Trace from the symptom the user sees back to the code that produces it.
 
+**Triage on the symptom's shape first.** Before reading code, check whether the failure signature already names its category — it usually points at the right layer in one step:
+
+| Signature | Likely category | Look at |
+|---|---|---|
+| Intermittent, timing-dependent, "sometimes" | Race / concurrency | Shared state, concurrent writes, missing locks |
+| Null/type error on a value that's usually fine | Optional-value propagation | Where the value is *set*, not where it crashes |
+| Inconsistent or partial data | State corruption | Transactions, observers, model events, callbacks |
+| Timeout, hang, unexpected response shape | Integration boundary | External calls, sockets, vendored clients, queues |
+| Works locally, fails in prod | Configuration drift | Env vars, feature flags, DB state, cached config |
+| Stale values that fix themselves on clear | Cache | Redis, config/route cache, CDN, browser, computed props |
+
+A hint, not a verdict — confirm the category against the code before building on it.
+
 ### 2. Quantify — how often, how bad, since when
 **A bug's severity is a fact, not a vibe — measure it.** Before treating something as *the* problem, check its actual prevalence against real data:
 - How many rows / orders / users are affected? Query it. "3 orders since April" and "18% of all orders" are different bugs with different urgency.
@@ -29,6 +42,10 @@ Ask *why* until you hit the real cause, then confirm it against the code — don
 - Is the reported location the cause, or just where it *surfaces*? Often the bad value is set upstream and only *observed* downstream.
 - If the culprit is a shared function, **the bug is in the function, not the one caller the ticket named** — grep every caller and check which others are silently affected. One fix at the source beats one patch per caller and won't leave a sibling broken.
 - Distinguish *cause* from *contributing conditions* — the null that crashes vs. the missing guard that let it through. Name both, but be clear which is which.
+
+**If the trail ends inside a dependency, check whether it's a known upstream bug** before assuming it's your misuse — and before designing a workaround around behaviour that may already be fixed. Pin the installed version (`composer.lock` / `package-lock.json`), then search the library + component + generic error category, and check the project's issue tracker and changelog for that version.
+
+**Sanitize before any external search.** Production traces carry hostnames, IPs, customer identifiers, internal paths, SQL fragments and payload data — the report you were handed almost certainly does. Search the *category* ("php-mqtt blocking read timeout"), never the raw message. If a message can't be stripped down without losing what makes it searchable, skip the search and say so; it is not worth leaking internals to save a lookup.
 
 ### 4. Blast radius
 Now that you know the true cause, map what it touches: every caller of the broken function, every consumer of the bad data, other orgs/tenants, cached/derived values already poisoned by it, downstream records written from it. This is what a fix will have to account for — and often what needs a *backfill*, not just a forward fix.
@@ -54,4 +71,5 @@ Keep it a diagnosis, skimmable:
 - **Prevalence before priority.** Don't escalate or dismiss severity without measuring it.
 - **Root cause over nearest cause.** Grep the callers; fix-worthy is the shared source, not the surfacing path.
 - **Diagnose, don't patch.** The deliverable is understanding + blast radius. Propose the fix as a *next step*, not inline — unless it's a verified one-liner, then name it and stop.
+- **Three strikes, then stop.** If three hypotheses have been tested against evidence and all three failed, stop investigating and hand the decision back: report what was ruled out (that's real information), and offer *continue with a named new hypothesis* / *escalate to someone who knows the system* / *instrument the area and catch it on the next occurrence*. Three failures usually means the model of the system is wrong, not that the next guess will land — and a fourth guess costs more than admitting that.
 - **Restraint gate applies.** Stop when the mechanism is proven and the radius is mapped. Not every subsystem needs a tour.

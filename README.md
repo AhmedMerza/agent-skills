@@ -10,7 +10,7 @@ My personal collection of [Claude Code](https://docs.claude.com/en/docs/claude-c
 | `design` | Industry-specific UI/UX recommendations (colors, type pairings, layout patterns) before building. |
 | `explain` | Reverse-engineers an unfamiliar feature end-to-end into a navigable `file:line` map — flow, key components, and the non-obvious coupling/gotchas. |
 | `grill-me` | Interviews you relentlessly about a plan until you reach shared understanding. Adapted from [Matt Pocock's grill-me](https://github.com/mattpocock/skills). |
-| `root-cause` | Investigates a bug against ground truth before any fix — reproduce, quantify prevalence, trace the true root cause, map the blast radius. |
+| `root-cause` | Investigates a bug against ground truth before any fix — reproduce, quantify prevalence, trace the true root cause, map the blast radius. Symptom-triage table, upstream/known-dependency-bug search (sanitize before searching), and a 3-strike stop rule grafted from [garrytan/gstack](https://github.com/garrytan/gstack) `investigate`. |
 | `second-opinion` | Judges whether a decision you directed (code placement, migration approach, data model) is actually best, or if a better way exists — merit only, authorship ignored. |
 | `ponytail` | Lazy-senior-dev coding discipline — YAGNI, reuse/stdlib first, no unrequested abstractions, design-for-reuse only when a second consumer is real. **Auto-applies by default** to any coding task (not opt-in). Adapted from [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) (MIT), then customized. |
 | `ui-audit` | Technical UI quality checks (a11y, performance, theming, responsive, interaction states) → scored report. |
@@ -20,6 +20,7 @@ My personal collection of [Claude Code](https://docs.claude.com/en/docs/claude-c
 | `ship-check` | The final gate before merging — audits a finished diff against the problem it claims to solve: what's missing (unpatched sibling caller, unhandled branch, no backfill), where it breaks on edge cases, whether the approach is right. `validate-plan`'s bookend. Returns a merge/fix-first/reconsider verdict. |
 | `changelog-generate` | Generates changelogs & release notes from commits/PRs/MRs. Auto-detects the forge (GitHub `#` vs GitLab `!`, including self-hosted) and whether the repo uses tags — skipping all tag/version/semver noise for tag-less repos. Adapted from [patricio0312rev/skills](https://github.com/patricio0312rev/skills) changelog-writer, then customized. |
 | `i18n-sync` | Keeps a project's translations in locale parity. Bundled scanner deep-diffs nested keys to find strings present in one locale but missing/empty in another (a silent fallback that ships the wrong language); mirrors new keys to every locale. |
+| `skill-compare` | Judges an external skill or skills repo against this collection — measures real content vs. framework boilerplate, prices the infrastructure it assumes (runtime deps, state dirs, `settings.json` mutation), diffs it against the incumbent by procedure step rather than description, and tests the runnable core on a real repo fixture. Verdict: adopt / graft these mechanisms / skip. |
 
 ## When to reach for which
 
@@ -30,7 +31,7 @@ root-cause  →  validate-plan  →  ponytail  →  ship-check  →  mr-review
 (diagnose)     (vet the plan)    (build)     (vet the diff)  (review code)
 ```
 
-`grill-me` goes up front when the requirements themselves are fuzzy; `second-opinion` spot-checks any single decision along the way.
+`grill-me` goes up front when the requirements themselves are fuzzy; `second-opinion` spot-checks any single decision along the way. `skill-compare` sits outside that chain — it judges the *toolkit* rather than the work, for when someone hands you a link to their skills and asks whether any of it is worth adding.
 
 **Commonly confused — same spirit, different moment:**
 
