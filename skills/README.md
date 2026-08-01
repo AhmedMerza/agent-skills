@@ -7,12 +7,50 @@ customized; provenance is noted where it applies.
 
 Invoke any skill with `/<name>` or by describing the task so its trigger fires.
 
+## Flows — which one do I reach for?
+
+Chains that actually get used, start to finish. `→` is "then". Items in `backticks-with-slash`
+(`/mr-create`) are commands in `~/.claude/commands/`, not skills.
+
+**Something's broken**
+`/root-cause` → plan → `/validate-plan` → build → `/qa-sweep` → `/ship-check` → `/mr-create` → `/mr-review` or `/nitpick` → `/fix-review`
+
+**New work, and you know the shape of it**
+`/grill-me` → plan → `/validate-plan` → build → `/ship-check` → `/mr-create`
+UI in the mix: `/design` before building → `/ui-polish` · `/animate` while → `/ui-audit` · `/ux-audit` after.
+
+**New work, and you *don't* know the shape of it**
+`/scout` → destination named, route clear → rejoins the flow above (at `/grill-me`, or straight at plan if scout already settled it)
+
+**Code you didn't write**
+`/explain` → then whichever flow above fits
+
+**You already made the call and want it challenged**
+`/second-opinion` — one decision, head-to-head. Standalone; no chain.
+
+**Stopping mid-work / session getting long**
+`/handover-save` → `/clear` → `/handover-resume` (re-syncs drift before continuing)
+
+**Release** — `/changelog-generate` → tag
+**Translations** — `/i18n-sync`
+**Unattended page sweep** — `/qa-crawl` + `/loop`
+**Someone published a skill** — `/skill-compare`
+
+### Traps in the chains
+
+- **`/root-cause` diagnoses; it does not fix.** Its output is a diagnosis on purpose — plan *after* it, don't let it slide into patching.
+- **`/validate-plan` and `/ship-check` are bookends, not substitutes.** Plan before code, diff before merge. Running one is not running the other.
+- **`/mr-review` / `/nitpick` are line-level; `/ship-check` is holistic.** Clean, well-tested code that fixes the *wrong problem* passes review and fails ship-check. Run both before a risky merge.
+- **`/scout` produces decisions, not code.** If it starts building, it overran — hand off to plan mode.
+- **`/ponytail` is not a step.** It applies by default to any write/refactor/fix; you don't invoke it.
+
 ## Planning & Judgment
 
 | Skill | What it does |
 |-------|--------------|
 | `validate-plan` | Adversarially stress-tests an existing plan before you execute it. Verdict: proceed / proceed-with-changes / reconsider. Restraint-gated — a clean "proceed" is valid. |
 | `second-opinion` | Independently judges a decision you already made purely on technical merit (your instruction carries zero weight). "Ship it" is a real verdict. |
+| `scout` | For when you don't know how to handle it *yet* — names what "done" looks like, fans out **breadth-first** over every open question, sorts them sharp / foggy / out-of-scope, then settles them one at a time until the route is clear. Produces decisions, not code; hands off to plan mode. One session by default, `/handover-save` only if it outgrows one. *(destination-first, the fan-out, the fog test and the scope split grafted from Matt Pocock's `wayfinder`; its tracker map and one-ticket-per-session rule dropped)* |
 | `grill-me` | Interviews you relentlessly about a plan until shared understanding. **Manual only** — never auto-triggers. *(adapted from Matt Pocock)* |
 | `ship-check` | The final gate before merging — checks a finished diff against the problem it claims to solve. Verdict: merge / fix-first / reconsider. Bookend to `validate-plan`. |
 
