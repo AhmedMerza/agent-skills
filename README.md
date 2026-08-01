@@ -9,6 +9,7 @@ My personal collection of [Claude Code](https://docs.claude.com/en/docs/claude-c
 | `animate` | Adds professional, physical, choreographed motion to a UI target (Vue 3 / Vuetify or Flutter). |
 | `design` | Industry-specific UI/UX recommendations (colors, type pairings, layout patterns) before building. |
 | `explain` | Reverse-engineers an unfamiliar feature end-to-end into a navigable `file:line` map — flow, key components, and the non-obvious coupling/gotchas. |
+| `scout` | For a problem you don't yet know how to handle. Names what *done* actually looks like, fans out **breadth-first** over every open question between here and there, sorts them **sharp / foggy / out-of-scope** (the test is whether you can *state* the question, not *answer* it), then settles them one at a time until the route is clear. Produces decisions, not code — hands off to plan mode. Runs in one session by default, escalating to `/handover-save` only if the work genuinely outgrows one. Destination-first framing, the breadth-first fan-out, the fog test and the scope/sharpness split grafted from [Matt Pocock's wayfinder](https://github.com/mattpocock/skills); its issue-tracker map and one-ticket-per-session rule deliberately dropped. |
 | `grill-me` | Interviews you relentlessly about a plan until you reach shared understanding. Adapted from [Matt Pocock's grill-me](https://github.com/mattpocock/skills). |
 | `root-cause` | Investigates a bug against ground truth before any fix — reproduce, quantify prevalence, trace the true root cause, map the blast radius. Symptom-triage table, upstream/known-dependency-bug search (sanitize before searching), and a 3-strike stop rule grafted from [garrytan/gstack](https://github.com/garrytan/gstack) `investigate`. |
 | `second-opinion` | Judges whether a decision you directed (code placement, migration approach, data model) is actually best, or if a better way exists — merit only, authorship ignored. |
@@ -29,15 +30,22 @@ My personal collection of [Claude Code](https://docs.claude.com/en/docs/claude-c
 Most of these skills guard a different stage of *"am I doing the right thing?"* — chained across the life of a change:
 
 ```
-root-cause → validate-plan → ponytail → qa-sweep → ship-check → mr-review
-(diagnose)   (vet the plan)   (build)   (run it)   (vet the diff) (review code)
+something's broken:
+  root-cause → validate-plan → ponytail → qa-sweep → ship-check → mr-review
+  (diagnose)   (vet the plan)   (build)   (run it)   (vet the diff) (review code)
+
+a new idea:
+  scout → grill-me → validate-plan → …same tail…
+  (find the   (sharpen
+   destination) the plan)
 ```
 
-`grill-me` goes up front when the requirements themselves are fuzzy; `second-opinion` spot-checks any single decision along the way. `skill-compare` sits outside that chain — it judges the *toolkit* rather than the work, for when someone hands you a link to their skills and asks whether any of it is worth adding.
+How far up front you start depends on how much fog there is. `scout` is the furthest upstream — reach for it when you can't yet say what *done* looks like, so there's no plan to sharpen; it ends by naming that destination. `grill-me` picks up from a plan you can already state and stress-tests it into shared understanding. `second-opinion` spot-checks any single decision along the way. `skill-compare` sits outside the chain entirely — it judges the *toolkit* rather than the work, for when someone hands you a link to their skills and asks whether any of it is worth adding.
 
 **Commonly confused — same spirit, different moment:**
 
 - `validate-plan` vs `ship-check` vs `mr-review` — adversarial review at three points: the **plan** (pre-code) → the **finished diff** (pre-merge) → the **code lines** (review).
+- `scout` vs `grill-me` — **no destination yet** (fan out breadth-first to find it) vs **a plan you can already state** (walk its decision tree depth-first). Running `grill-me` on fog interrogates the first branch you happened to notice; running `scout` on a clear plan is pure ceremony.
 - `second-opinion` vs `validate-plan` — one **decision** judged head-to-head vs a whole **plan** stress-tested.
 - `qa-sweep` vs `ui-audit` vs `ux-audit` — three questions about the same screen: does it **work at all** (drive it in a browser, find what's broken) vs is it **built correctly** (a11y/perf/theming, read statically) vs does it **work for the human** (friction/cognitive load).
 - `design` / `animate` / `ui-polish` — *before* building (colors/type/layout) vs *while* building (motion, interaction details).
