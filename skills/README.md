@@ -33,6 +33,7 @@ UI in the mix: `/design` before building → `/ui-polish` · `/animate` while �
 `/handover-save` → `/clear` → `/handover-resume` (re-syncs drift before continuing)
 
 **Release** — `/changelog-generate` → tag
+**Shipped an API endpoint** — annotate the happy path → `/api-docs-complete` (the 401/429/403/422/500 you didn't write) → regenerate
 **Translations** — `/i18n-sync`
 **Unattended page sweep** — `/qa-crawl` + `/loop`
 **Someone published a skill** — `/skill-compare`
@@ -89,6 +90,7 @@ UI in the mix: `/design` before building → `/ui-polish` · `/animate` while �
 
 | Skill | What it does |
 |-------|--------------|
+| `api-docs-complete` | Finishes an API docblock that already has its happy path. Hunts the statuses that are real but **invisible in the handler** — `401` from auth middleware, `429` from a throttle inherited by a middleware *group*, `403` from a policy/guard object, `422` from validation, `500` from the catch-all, plus anything a same-class helper returns. Bodies are **captured from a real run**, never invented; the **generated output is then read back per endpoint**, because a malformed annotation block usually yields wrong docs rather than an error. Pairs with a CI floor check, but that check can't see middleware — which is the whole point. Restraint-gated: 200-or-401 only means done at two. |
 | `changelog-generate` | Changelogs & release notes from commits/MRs. Auto-detects forge (GitHub `#` vs GitLab `!`, incl. self-hosted) and whether the repo uses tags — skips tag/version noise for tag-less repos. *(adapted from patricio0312rev/skills@changelog-writer, then customized)* |
 
 ## Localization
