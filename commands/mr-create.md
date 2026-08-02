@@ -75,6 +75,7 @@ Creates a merge/pull request for the current branch using the resolved provider'
 ```
 
 ## What it does
+0. Checks whether an open MR/PR already exists for the branch — if so, reports it and stops, rather than opening a duplicate
 1. Detects current branch
 2. Analyzes commits since target branch diverged
 3. Generates title and description from commits
@@ -84,7 +85,7 @@ Creates a merge/pull request for the current branch using the resolved provider'
 7. OR assigns to developer (if using --assignee flag)
 8. Returns the MR/PR URL with reviewer/assignee info
 
-**Auto-create:** This command creates the merge/pull request immediately without asking for confirmation. Use `--dry-run` if you want to preview without creating.
+**Auto-create:** This command creates the merge/pull request immediately without asking for confirmation — *provided the branch does not already have one open* (see Process step 4). Use `--dry-run` if you want to preview without creating.
 
 ## Reviewer vs Assignee - When to Use What
 
@@ -104,7 +105,7 @@ Creates a merge/pull request for the current branch using the resolved provider'
 1. **Parse arguments**: Extract target branch and/or reviewer/assignee from arguments
 2. **Resolve provider**: Detect GitHub vs GitLab (see "Provider resolution" above)
 3. **Resolve developers** (if provided): Look up usernames (and ids, for GitLab) from shortcuts in `.claude/repo-config.json`
-4. **Check current branch**: `git branch --show-current`
+4. **Check current branch, and whether it ALREADY has an open MR/PR**: `git branch --show-current`, then `glab mr list --source-branch <branch>` (GitLab) or `gh pr list --head <branch>` (GitHub). **If one is already open, print its URL and STOP** — re-running this command on a branch whose MR/PR exists must never open a second one. Say what would have changed and point at the update path instead (`glab mr update <n>` / `gh pr edit <n>`); adding a reviewer, retargeting, or refreshing the description are all updates, not new MRs/PRs.
 5. **Detect fork workflow**: Check git remotes (`origin` = fork, `upstream` = upstream target)
 6. **Resolve target**: On GitLab, the source/target project IDs (fork → upstream) via `glab`; on GitHub, `gh pr create` resolves remotes/base/head itself
 7. **Get target branch**: Use argument or default to `dev`

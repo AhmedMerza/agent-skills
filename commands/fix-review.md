@@ -74,13 +74,14 @@ Before posting or fixing anything, split the findings into two kinds:
 3. Run relevant tests / linters / static analysis if they exist for the project (e.g. the repo's test runner, formatter, and analyzer — whatever the stack uses).
 4. **Ask the user to confirm** the fixes look correct before proceeding.
 
-### Phase 3: Commit, Push, Reply, Resolve (automatic after user confirms)
-Once the user approves the CRITICAL+IMPORTANT fixes, do ALL of the following in one go — do not stop between steps or ask for additional confirmation:
-1. Stage and commit all fixes with a descriptive message (e.g., `fix: address review findings — <brief summary>`).
-2. Push to the branch.
-3. Reply to each review thread with a brief note about what was fixed (see "Reply to a thread" below).
-4. Resolve all fixed threads (see "Resolve a thread" below).
-5. Show a summary of what was committed, pushed, replied to, and resolved.
+### Phase 3: Commit, Push, Reply, Resolve
+Once the user approves the CRITICAL+IMPORTANT fixes:
+1. Stage the fixes, state what is staged and the commit message you intend (e.g., `fix: address review findings — <brief summary>`), and **ask before committing**. Approving the FIXES is not approving the landing of them — that is a separate decision, and it is the last chance to catch a "fix" that is actually a behavior change.
+2. State what is about to be pushed, and **ask before pushing**.
+3. Once the push is approved, finish the rest without further prompting.
+4. Reply to each review thread with a brief note about what was fixed (see "Reply to a thread" below).
+5. Resolve all fixed threads (see "Resolve a thread" below).
+6. Show a summary of what was committed, pushed, replied to, and resolved.
 
 ### Phase 4: Handle MINORs (auto-fix the safe ones, ask about the rest)
 After Phase 3 completes, triage the MINOR findings by effort / scope:
@@ -90,10 +91,10 @@ After Phase 3 completes, triage the MINOR findings by effort / scope:
 - **Security / out-of-scope** (definitely separate MR/PR) — **do NOT auto-fix; ask**
 - **Intent questions** (per Phase 0) — list these SEPARATELY, phrased as questions, NOT as fixable options. For each, ask "Is X intended?" and present the alternative behavior neutrally. Do NOT pre-write or stage a change for these, and do NOT mark one "(Recommended)". Only fix one if the user confirms the current behavior is actually wrong.
 
-**Auto-fix the quick wins and small refactors** in this same MR/PR — do not ask first:
+**Auto-fix the quick wins and small refactors** in this same MR/PR — making the EDITS needs no permission:
 1. Fix all quick-win and small-refactor MINORs.
-2. Commit as a separate commit (keeps the MINOR fixes separately traceable from the IMPORTANT fixes).
-3. Push.
+2. **Ask before committing**, as a separate commit (keeps the MINOR fixes traceable apart from the IMPORTANT ones).
+3. **Ask before pushing.** Same rule as Phase 3 — the edits are automatic, landing them is not.
 4. If any of the fixed MINORs had been posted as threads, reply and resolve them too.
 5. Show a summary of what was fixed.
 
@@ -173,6 +174,7 @@ Use this when the finding cannot be mapped to a specific diff line, or as a fall
 - **GitHub:** `gh pr view <n> --json headRefOid,baseRefOid` (head sha = `commit_id` for inline comments)
 
 ## Notes
+- **Ask before every `git commit` and every `git push`, without exception.** A user approving a set of fixes has approved the FIXES; it does not extend to landing them, nor to any later commit in the same session. State what is staged / what will be pushed, and wait. This supersedes any "automatic" or "do not ask first" wording elsewhere in this file.
 - Always post notes BEFORE fixing, so the MR/PR has a record of what was found.
 - If a line-specific comment fails (wrong position), fall back to a general comment/thread with file:line in the body.
 - **CRITICAL and IMPORTANT**: always fix in Phase 2, after confirming the plan with the user.
