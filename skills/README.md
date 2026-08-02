@@ -10,13 +10,14 @@ Invoke any skill with `/<name>` or by describing the task so its trigger fires.
 ## Flows — which one do I reach for?
 
 Chains that actually get used, start to finish. `→` is "then". Items in `backticks-with-slash`
-(`/mr-create`) are commands in `~/.claude/commands/`, not skills.
+(`/mr-create`) are commands in `~/.claude/commands/`, not skills. Steps in (parentheses) are
+optional.
 
 **Something's broken**
-`/root-cause` → plan → `/validate-plan` → build → `/qa-sweep` → `/ship-check` → `/mr-create` → `/mr-review` or `/nitpick` → `/fix-review`
+`/root-cause` → plan → `/validate-plan` → build → `/qa-sweep` → `/ship-check` → (`/spinoff`) → `/mr-create` → `/mr-review` or `/nitpick` → `/fix-review`
 
 **New work, and you know the shape of it**
-`/grill-me` → plan → `/validate-plan` → build → `/ship-check` → `/mr-create`
+`/grill-me` → plan → `/validate-plan` → build → `/ship-check` → (`/spinoff`) → `/mr-create`
 UI in the mix: `/design` before building → `/ui-polish` · `/animate` while → `/ui-audit` · `/ux-audit` after.
 
 **New work, and you *don't* know the shape of it**
@@ -35,6 +36,7 @@ UI in the mix: `/design` before building → `/ui-polish` · `/animate` while �
 **Translations** — `/i18n-sync`
 **Unattended page sweep** — `/qa-crawl` + `/loop`
 **Someone published a skill** — `/skill-compare`
+**After a merge — did the skills themselves behave?** — `/skill-audit` (logs; proposes a skill edit only at n≥2)
 
 ### Traps in the chains
 
@@ -43,6 +45,9 @@ UI in the mix: `/design` before building → `/ui-polish` · `/animate` while �
 - **`/mr-review` / `/nitpick` are line-level; `/ship-check` is holistic.** Clean, well-tested code that fixes the *wrong problem* passes review and fails ship-check. Run both before a risky merge.
 - **`/scout` produces decisions, not code.** If it starts building, it overran — hand off to plan mode.
 - **`/ponytail` is not a step.** It applies by default to any write/refactor/fix; you don't invoke it.
+- **`/skill-audit` stage 1 never edits a skill, and n=1 is never enough.** It logs observable evidence and stops. One bad run is an anecdote; a bad prompt edit fails no test and degrades every future run silently.
+- **`/spinoff` never touches the branch.** It lists follow-ups; it does not implement them. The instant it commits, it's scope creep and `ponytail` wins the argument. Its normal output is *nothing*.
+- **`/ship-check` findings are not `/spinoff` findings.** Missing = blocks the merge, fix it in the branch. Cheap = blocks nothing, file it for later. If a "spinoff" would break production by not being done, it was a ship-check leak.
 
 ## Planning & Judgment
 
@@ -53,6 +58,7 @@ UI in the mix: `/design` before building → `/ui-polish` · `/animate` while �
 | `scout` | For when you don't know how to handle it *yet* — names what "done" looks like, fans out **breadth-first** over every open question, sorts them sharp / foggy / out-of-scope, then settles them one at a time until the route is clear. Produces decisions, not code; hands off to plan mode. One session by default, `/handover-save` only if it outgrows one. *(destination-first, the fan-out, the fog test and the scope split grafted from Matt Pocock's `wayfinder`; its tracker map and one-ticket-per-session rule dropped)* |
 | `grill-me` | Interviews you relentlessly about a plan until shared understanding. **Manual only** — never auto-triggers. *(adapted from Matt Pocock)* |
 | `ship-check` | The final gate before merging — checks a finished diff against the problem it claims to solve. Verdict: merge / fix-first / reconsider. Bookend to `validate-plan`. |
+| `spinoff` | Harvests what the finished branch made **cheap** — the helper other sites now hand-roll, the deferred thing that just got small, the convention that forked. Gated on a real *before → now* cost delta: anything equally valid on `master` yesterday is discarded. Caps at 3, feeds `/issue`, and **never commits on the branch**. Restraint-gated — "nothing spun off" is the normal answer. |
 
 ## Investigation
 
@@ -95,6 +101,7 @@ UI in the mix: `/design` before building → `/ui-polish` · `/animate` while �
 
 | Skill | What it does |
 |-------|--------------|
+| `skill-audit` | Maintenance loop for the skills you already own — `skill-compare`'s sibling (that one guards intake, this one guards incumbents). **Stage 1** (after a merge, cheap) logs only *observable* evidence — an override, a correction, a misfire, rejected padding, a blocked instruction — to `~/.claude/skill-audit/log.jsonl`, and never edits a skill. **Stage 2** (rare) fires at n≥2 across *different* sessions — or 1 log entry + a matching `type: feedback` memory — and proposes a minimal diff for approval. Introspection ("I could've applied it better") is banned as evidence; logging nothing is the normal outcome. |
 | `skill-compare` | Judges an external skill or skills repo against this collection — measures real content vs. framework boilerplate, prices the infrastructure it assumes, diffs it against the incumbent by procedure step, and tests the runnable core on a real repo fixture. Verdict: adopt / graft these mechanisms / skip. Restraint-gated — "skip, yours is leaner" is the common answer. |
 
 ---

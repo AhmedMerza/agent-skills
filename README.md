@@ -21,9 +21,11 @@ My personal collection of [Claude Code](https://docs.claude.com/en/docs/claude-c
 | `ux-audit` | Judges whether a page/flow actually works for the human using it — cognitive load, friction, clarity — tied to the page's one real goal. Advisory, ethics-gated (flags dark patterns). |
 | `validate-plan` | Adversarially stress-tests an existing plan before executing — verifies assumptions against the real codebase, surfaces alternatives, red-teams failure modes, returns a proceed/reconsider verdict. |
 | `ship-check` | The final gate before merging — audits a finished diff against the problem it claims to solve: what's missing (unpatched sibling caller, unhandled branch, no backfill), where it breaks on edge cases, whether the approach is right. `validate-plan`'s bookend. Returns a merge/fix-first/reconsider verdict. |
+| `spinoff` | Harvests what a finished branch made **cheap** — the helper other sites now hand-roll, the thing deferred *on cost* that just got small, the convention that forked in two. Gated on a real *before → now* cost delta: any suggestion that would have been equally valid before the branch is discarded, which is most of them. Caps at 3, feeds `/issue`, and **never commits on the branch** — the output is a backlog, not a bigger diff. `ship-check`'s optional twin: that finds what's *missing* and blocks the merge, this finds what's *cheap* and blocks nothing. |
 | `changelog-generate` | Generates changelogs & release notes from commits/PRs/MRs. Auto-detects the forge (GitHub `#` vs GitLab `!`, including self-hosted) and whether the repo uses tags — skipping all tag/version/semver noise for tag-less repos. Adapted from [patricio0312rev/skills](https://github.com/patricio0312rev/skills) changelog-writer, then customized. |
 | `i18n-sync` | Keeps a project's translations in locale parity. Bundled scanner deep-diffs nested keys to find strings present in one locale but missing/empty in another (a silent fallback that ships the wrong language); mirrors new keys to every locale. |
 | `skill-compare` | Judges an external skill or skills repo against this collection — measures real content vs. framework boilerplate, prices the infrastructure it assumes (runtime deps, state dirs, `settings.json` mutation), diffs it against the incumbent by procedure step rather than description, and tests the runnable core on a real repo fixture. Verdict: adopt / graft these mechanisms / skip. |
+| `skill-audit` | The maintenance loop for the skills already installed — `skill-compare` guards the front door, this one watches the incumbents. **Stage 1** (after a merge, cheap) records only *externally observable* evidence that a skill misbehaved — an instruction the user overrode, a correction, a misfire, findings rejected as padding, a step the environment made impossible — to a local `~/.claude/skill-audit/log.jsonl`, and never edits a skill. **Stage 2** (rare, opt-in) fires only when the same complaint about the same skill recurs across **different sessions**, then proposes a minimal diff to that `SKILL.md` for approval. Self-assessment is banned as evidence — every entry must quote the offending instruction or the user's actual words — and logging nothing is the normal outcome. |
 
 ## When to reach for which
 
@@ -31,8 +33,9 @@ Most of these skills guard a different stage of *"am I doing the right thing?"* 
 
 ```
 something's broken:
-  root-cause → validate-plan → ponytail → qa-sweep → ship-check → mr-review
-  (diagnose)   (vet the plan)   (build)   (run it)   (vet the diff) (review code)
+  root-cause → validate-plan → ponytail → qa-sweep → ship-check → (spinoff) → mr-review
+  (diagnose)   (vet the plan)   (build)   (run it)   (vet the diff)  (bank the  (review code)
+                                                                     leftovers)
 
 a new idea:
   scout → grill-me → validate-plan → …same tail…
@@ -40,13 +43,15 @@ a new idea:
    destination) the plan)
 ```
 
-How far up front you start depends on how much fog there is. `scout` is the furthest upstream — reach for it when you can't yet say what *done* looks like, so there's no plan to sharpen; it ends by naming that destination. `grill-me` picks up from a plan you can already state and stress-tests it into shared understanding. `second-opinion` spot-checks any single decision along the way. `skill-compare` sits outside the chain entirely — it judges the *toolkit* rather than the work, for when someone hands you a link to their skills and asks whether any of it is worth adding.
+How far up front you start depends on how much fog there is. `scout` is the furthest upstream — reach for it when you can't yet say what *done* looks like, so there's no plan to sharpen; it ends by naming that destination. `grill-me` picks up from a plan you can already state and stress-tests it into shared understanding. `second-opinion` spot-checks any single decision along the way. `skill-compare` and `skill-audit` sit outside the chain entirely — they judge the *toolkit* rather than the work: one prices a stranger's skill before you adopt it, the other watches the ones you already run and, after the same complaint turns up twice, proposes a fix to the skill itself.
 
 **Commonly confused — same spirit, different moment:**
 
 - `validate-plan` vs `ship-check` vs `mr-review` — adversarial review at three points: the **plan** (pre-code) → the **finished diff** (pre-merge) → the **code lines** (review).
 - `scout` vs `grill-me` — **no destination yet** (fan out breadth-first to find it) vs **a plan you can already state** (walk its decision tree depth-first). Running `grill-me` on fog interrogates the first branch you happened to notice; running `scout` on a clear plan is pure ceremony.
 - `second-opinion` vs `validate-plan` — one **decision** judged head-to-head vs a whole **plan** stress-tested.
+- `ship-check` vs `spinoff` — both read the finished diff, opposite questions: what's **missing** (required, blocks the merge, fix it in this branch) vs what's now **cheap** (optional, blocks nothing, file it for later). Anything that would break production by not being done is a ship-check finding, never a spinoff.
+- `skill-compare` vs `skill-audit` — **intake** vs **maintenance**: pricing someone else's skill before adopting it vs watching your own for drift once they're running.
 - `qa-sweep` vs `ui-audit` vs `ux-audit` — three questions about the same screen: does it **work at all** (drive it in a browser, find what's broken) vs is it **built correctly** (a11y/perf/theming, read statically) vs does it **work for the human** (friction/cognitive load).
 - `design` / `animate` / `ui-polish` — *before* building (colors/type/layout) vs *while* building (motion, interaction details).
 
