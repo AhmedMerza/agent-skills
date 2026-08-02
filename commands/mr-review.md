@@ -31,7 +31,7 @@ This command works on **either GitHub or GitLab** (self-hosted or SaaS). Resolve
 | View diff | `glab mr diff <id>` (or `glab api projects/<id>/merge_requests/<n>/changes`) | `gh pr diff <n>` |
 | MR/PR metadata | `glab api projects/<id>/merge_requests/<n>` | `gh pr view <n> --json …` |
 | Comment (general) | `glab mr note <n> -m "…"` | `gh pr comment <n> --body "…"` |
-| Inline/threaded review comment | `glab api --method POST projects/<id>/merge_requests/<n>/discussions -F body=… -F position[...]=…` | `gh api --method POST repos/{owner}/{repo}/pulls/<n>/comments -f body=… -f commit_id=… -f path=… -F line=…` |
+| Inline/threaded review comment | `glab api --method POST projects/<id>/merge_requests/<n>/discussions --header "Content-Type: application/json" --input <file.json>` — **JSON body, not `-f`; see Step 7b** | `gh api --method POST repos/{owner}/{repo}/pulls/<n>/comments -f body=… -f commit_id=… -f path=… -F line=…` |
 | Resolve a thread | `glab api --method PUT …/discussions/<discussion_id> -F resolved=true` | `gh api graphql` `resolveReviewThread` (or resolve in UI) |
 | Approve | `glab mr approve <n>` | `gh pr review <n> --approve` |
 
@@ -330,22 +330,51 @@ If the `--comment` flag was provided, ask the user for permission first, then po
 
 #### Step 7b: Post each finding as an inline comment
 
-**GitLab** — create a resolvable discussion on the specific diff line:
+**GitLab** — create a resolvable discussion on the specific diff line. **Send a raw JSON body via `--input`, NOT `-f` form fields** (see the warning below):
+
+```bash
+# Write the payload to the scratch dir, one file per finding.
+cat > .claude/tmp/mr-review/<N>/note-<i>.json <<'JSON'
+{
+  "body": "### <SEVERITY_EMOJI> <severity>: <title>\n\n<description>\n\n---\n_Category: <category> | Review by Claude Code `/mr-review`_",
+  "position": {
+    "position_type": "text",
+    "base_sha": "<base_sha>",
+    "head_sha": "<head_sha>",
+    "start_sha": "<start_sha>",
+    "new_path": "<file>",
+    "old_path": "<old_path_from_diffs>",
+    "new_line": <line>
+  }
+}
+JSON
+
+glab api --method POST "projects/<id>/merge_requests/<N>/discussions" \
+  --header "Content-Type: application/json" \
+  --input .claude/tmp/mr-review/<N>/note-<i>.json
+```
+
+Build the JSON with a real serializer (a small Python heredoc calling `json.dump`), never by string-concatenating the body — findings contain newlines, backticks, quotes and emoji, and hand-built JSON breaks on them.
+
+> ⚠️ **`-f "position[...]=..."` silently produces an UNANCHORED comment.**
+> `glab api -f` sends form fields, and the nested `position[...]` keys are dropped on the way through. The request returns **HTTP 201 with a normal-looking discussion**, so it reads as success — but the note lands on the Overview tab instead of on the code, and every finding ends up detached from its line. Observed on self-hosted GitLab 2026-08; `--input` with a JSON body works on the same instance.
+
+**Verify each post rather than trusting the exit code.** An anchored note comes back as `"type": "DiffNote"` with a non-null `position`; an unanchored one as `"type": "DiscussionNote"` with `position: null`:
+
 ```bash
 glab api --method POST "projects/<id>/merge_requests/<N>/discussions" \
-  -f "body=### <SEVERITY_EMOJI> <severity>: <title>
+  --header "Content-Type: application/json" --input <payload> \
+  | python3 -c 'import json,sys; n=json.JSONDecoder(strict=False).decode(sys.stdin.read())["notes"][0]; print("anchored" if n.get("position") else "NOT ANCHORED")'
+```
 
-<description>
+`JSONDecoder(strict=False)`, not `json.load` — GitLab echoes the note body back with raw control characters in it, and the strict parser raises `Invalid control character` on any multi-line note. That failure looks identical to a failed POST while the note was in fact created, so the retry duplicates it.
 
----
-_Category: <category> | Review by Claude Code \`/mr-review\`_" \
-  -f "position[position_type]=text" \
-  -f "position[base_sha]=<base_sha>" \
-  -f "position[head_sha]=<head_sha>" \
-  -f "position[start_sha]=<start_sha>" \
-  -f "position[new_path]=<file>" \
-  -f "position[old_path]=<old_path_from_diffs>" \
-  -f "position[new_line]=<line>"
+When writing a shell loop over the findings, check the parsed response — not `$?`. A wrapper that inspects the exit status of the pipeline will report failure on success (and vice versa), and retrying on a false failure leaves duplicate threads.
+
+If a note does come back unanchored, delete it before retrying, or the retry duplicates it:
+
+```bash
+glab api --method DELETE "projects/<id>/merge_requests/<N>/discussions/<discussion_id>/notes/<note_id>"
 ```
 
 **GitHub** — create a review comment on the specific line (`{owner}/{repo}` is auto-resolved by `gh` from remotes):
@@ -456,16 +485,21 @@ glab api projects/<id>/merge_requests/<N>/diffs
 # Raw file content from a branch
 glab api "projects/<PROJECT_ID>/repository/files/<URL_ENCODED_PATH>/raw?ref=<BRANCH>"
 
-# Post resolvable discussion on a specific diff line
+# Post resolvable discussion on a specific diff line.
+# JSON body via --input; `-f "position[...]"` returns 201 but drops the position.
 glab api --method POST "projects/<id>/merge_requests/<N>/discussions" \
-  -f "body=..." \
-  -f "position[position_type]=text" \
-  -f "position[base_sha]=<base_sha>" \
-  -f "position[head_sha]=<head_sha>" \
-  -f "position[start_sha]=<start_sha>" \
-  -f "position[new_path]=<file>" \
-  -f "position[old_path]=<old_path>" \
-  -f "position[new_line]=<line>"
+  --header "Content-Type: application/json" \
+  --input note.json
+# note.json: {"body":"...","position":{"position_type":"text","base_sha":"...",
+#   "head_sha":"...","start_sha":"...","new_path":"...","old_path":"...","new_line":42}}
+
+# Confirm it anchored (DiffNote + non-null position) rather than trusting exit code.
+# strict=False: GitLab echoes note bodies with raw control characters, which json.load rejects.
+glab api "projects/<id>/merge_requests/<N>/discussions?per_page=100" \
+  | python3 -c 'import json,sys; d=json.JSONDecoder(strict=False).decode(sys.stdin.read()); print(sum(1 for x in d if x["notes"][0].get("type")=="DiffNote"), "anchored")'
+
+# Delete a note (to undo an unanchored post before retrying)
+glab api --method DELETE "projects/<id>/merge_requests/<N>/discussions/<discussion_id>/notes/<note_id>"
 
 # Post general note (for summary or fallback)
 glab mr note <N> -m "..."

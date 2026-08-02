@@ -31,7 +31,7 @@ This command works on **either GitHub or GitLab** (self-hosted or SaaS). Resolve
 | View diff | `glab mr diff <id>` (or `glab api projects/<id>/merge_requests/<n>/changes`) | `gh pr diff <n>` |
 | MR/PR metadata | `glab api projects/<id>/merge_requests/<n>` | `gh pr view <n> --json …` |
 | Comment (general) | `glab mr note <n> -m "…"` | `gh pr comment <n> --body "…"` |
-| Inline/threaded review comment | `glab api --method POST projects/<id>/merge_requests/<n>/discussions -F body=… -F position[...]=…` | `gh api --method POST repos/{owner}/{repo}/pulls/<n>/comments -f body=… -f commit_id=… -f path=… -F line=…` |
+| Inline/threaded review comment | `glab api --method POST projects/<id>/merge_requests/<n>/discussions --header "Content-Type: application/json" --input <file.json>` — **JSON body, not `-F`; see "Post an inline comment"** | `gh api --method POST repos/{owner}/{repo}/pulls/<n>/comments -f body=… -f commit_id=… -f path=… -F line=…` |
 | Resolve a thread | `glab api --method PUT …/discussions/<discussion_id> -F resolved=true` | `gh api graphql` `resolveReviewThread` (or resolve in UI) |
 | Approve | `glab mr approve <n>` | `gh pr review <n> --approve` |
 
@@ -121,17 +121,32 @@ Keep BOTH paths below. Pick the one matching the provider resolved at the top. `
 
 If you cannot determine the exact diff line, fall back to a **general comment/thread** with file:line in the body.
 
-**GitLab** — for lines being **removed** (old code), use `position[old_line]`/`position[old_path]` instead of the `new_*` variants:
+**GitLab** — send a raw JSON body via `--input`. For lines being **removed** (old code), use `old_line`/`old_path` in the position object instead of the `new_*` keys:
+
 ```bash
+# Build with a real serializer (python json.dump) — note bodies contain
+# newlines, backticks, quotes and emoji that break hand-built JSON.
 glab api --method POST "projects/<id>/merge_requests/<n>/discussions" \
-  -F "body={note_body}" \
-  -F "position[base_sha]={base_sha}" \
-  -F "position[head_sha]={head_sha}" \
-  -F "position[start_sha]={start_sha}" \
-  -F "position[position_type]=text" \
-  -F "position[new_path]={file_path}" \
-  -F "position[new_line]={line_number_from_diff}"
+  --header "Content-Type: application/json" \
+  --input note.json
+# note.json:
+# {"body":"{note_body}","position":{"position_type":"text",
+#  "base_sha":"{base_sha}","head_sha":"{head_sha}","start_sha":"{start_sha}",
+#  "new_path":"{file_path}","old_path":"{file_path}","new_line":{line_number_from_diff}}}
 ```
+
+> ⚠️ **Do NOT use `-F "position[...]=..."`.** The nested form keys are dropped in transit: the request returns **HTTP 201 with a normal-looking discussion**, so it looks like it worked, but the note is UNANCHORED and lands on the Overview tab instead of on the code. Observed on self-hosted GitLab 2026-08.
+
+**Verify each post** instead of trusting the exit code — an anchored note is `"type": "DiffNote"` with a non-null `position`, an unanchored one is `"type": "DiscussionNote"` with `position: null`:
+
+```bash
+... --input note.json | python3 -c 'import json,sys; n=json.JSONDecoder(strict=False).decode(sys.stdin.read())["notes"][0]; print("anchored" if n.get("position") else "NOT ANCHORED")'
+```
+
+`JSONDecoder(strict=False)`, not `json.load` — GitLab echoes the note body back containing raw control characters, and the strict parser raises `Invalid control character` on any multi-line note. That reads exactly like a failed POST even though the note was created, so retrying duplicates it.
+
+If it comes back unanchored, delete it before retrying or you leave a duplicate:
+`glab api --method DELETE "projects/<id>/merge_requests/<n>/discussions/{discussion_id}/notes/{note_id}"`
 
 **GitHub** — anchor to the head commit sha; use `line` (and `side=LEFT` for a removed/old line):
 ```bash
