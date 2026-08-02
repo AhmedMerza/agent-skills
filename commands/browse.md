@@ -25,7 +25,8 @@ credentials are **never** stored — they come from `PW_EMAIL` / `PW_PASS` env a
 ## Arguments
 
 `$ARGUMENTS` - the URL path to browse, with optional flags:
-`--mobile` (iPhone 14 viewport), `--login` (force re-login), `--user <email>` (override login email).
+`--mobile` (iPhone 14 viewport), `--login` (force re-login), `--user <email>` (override login email),
+`--wait <ms>` (raise the settle cap, default 15000 — see Notes).
 Examples: `/admin/welcome`, `--mobile /admin/welcome`, `--login --user ops@example.com /admin/orders`.
 
 ## Instructions
@@ -62,5 +63,13 @@ Examples: `/admin/welcome`, `--mobile /admin/welcome`, `--login --user ops@examp
 - Base URL, login behavior, and the default user are per-project (`.claude/browse-config.json`).
 - The helper reuses `auth-state.json` in `outDir`; `--login` forces a fresh login.
 - Screenshots are 1920×1080 (desktop) or iPhone 14 size (`--mobile`).
+- **It waits for the page to actually render, not for a fixed delay.** Local dev is slow twice
+  over: a dev server compiles modules on demand so first paint lags domcontentloaded, and SPA
+  pages then fetch their data *after* hydrating, which no page-load event covers. The helper
+  waits until document/script/XHR traffic goes quiet (capped at 15s, raise with `--wait <ms>`
+  or `BROWSE_WAIT_MS`). Deliberately NOT `networkidle` — HMR channels and browser-log shippers
+  keep the network permanently busy, so it would just burn its timeout.
+- If a shot still shows a skeleton or spinner, the page is slower than the cap: re-run with
+  `--wait 30000` rather than assuming the page is broken.
 - Set `outDir` to an absolute path or a project-relative one — the helper resolves it absolutely
   to avoid nested-output bugs when run from inside the Playwright dir.

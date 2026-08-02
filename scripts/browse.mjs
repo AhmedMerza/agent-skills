@@ -26,13 +26,14 @@ const auth = cfg.auth || {}
 
 // ---- parse args ------------------------------------------------------------
 const argv = process.argv.slice(2)
-let mobile = false, forceLogin = false, userArg = null
+let mobile = false, forceLogin = false, userArg = null, waitArg = null
 const rest = []
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i]
   if (a === '--mobile') mobile = true
   else if (a === '--login') forceLogin = true
   else if (a === '--user') userArg = argv[++i]
+  else if (a === '--wait') waitArg = Number(argv[++i])
   else rest.push(a)
 }
 const path = rest[0] || '/'
@@ -89,6 +90,28 @@ if (!forceLogin && existsSync(statePath)) ctxOpts.storageState = statePath
 const context = await browser.newContext(ctxOpts)
 const page = await context.newPage()
 
+// ---- request tracking, for the settle wait below ---------------------------
+// Attached BEFORE any navigation: `request` fires once, so a listener added
+// after goto() would miss everything the page load started.
+//
+// Ignores the two things that never stop talking on a local dev server — a
+// framework's HMR channel, and browser-log shippers that POST continuously.
+// Those are exactly why `networkidle` is unusable here: it waits for silence
+// that never comes and burns its whole timeout.
+const IGNORED_TRAFFIC = /\/@vite\/|\/@hmr|__vite|hot-update|\/_boost\/|\/__clockwork|\/_debugbar/
+const TRACKED_TYPES = new Set(['document', 'script', 'xhr', 'fetch'])
+let inflight = 0
+let lastChange = Date.now()
+
+const mark = delta => req => {
+  if (IGNORED_TRAFFIC.test(req.url()) || !TRACKED_TYPES.has(req.resourceType())) return
+  inflight = Math.max(0, inflight + delta)
+  lastChange = Date.now()
+}
+page.on('request', mark(1))
+page.on('requestfinished', mark(-1))
+page.on('requestfailed', mark(-1))
+
 if (forceLogin || !existsSync(statePath)) {
   await login(page)
   await context.storageState({ path: statePath })
@@ -102,7 +125,25 @@ if (page.url().includes(loginPath) && !forceLogin) {
   await context.storageState({ path: statePath })
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 25000 })
 }
-await page.waitForTimeout(1200)
+// ---- settle ---------------------------------------------------------------
+// A flat wait screenshots the skeleton. Local dev is slow in two compounding
+// ways: a dev server (Vite et al) serves unbundled modules and compiles them on
+// demand, so first paint lags well behind domcontentloaded; and SPA pages then
+// fetch their own data AFTER hydrating, which a page-load wait cannot see at
+// all. Neither is bounded by anything the old 1200ms related to.
+//
+// So: wait for the requests that matter to go quiet, capped, then take the
+// shot. `--wait <ms>` raises the cap for a genuinely slow page.
+const settleCap = Number.isFinite(waitArg) ? waitArg : Number(process.env.BROWSE_WAIT_MS || 15000)
+const QUIET_MS = 700
+const deadline = Date.now() + settleCap
+
+while (Date.now() < deadline) {
+  if (inflight === 0 && Date.now() - lastChange >= QUIET_MS) break
+  await page.waitForTimeout(100)
+}
+// Let the frame that consumed the last response actually paint.
+await page.waitForTimeout(400)
 
 // ---- scrolling screenshots -------------------------------------------------
 const vh = page.viewportSize()?.height || 1080
