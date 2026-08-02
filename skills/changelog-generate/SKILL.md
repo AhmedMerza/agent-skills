@@ -76,7 +76,7 @@ Detect the forge once, then use the matching column everywhere:
 | Commit           | `/commit/<sha>`                | `/-/commit/<sha>`                        |
 | Compare / range  | `/compare/a...b`               | `/-/compare/a...b`                       |
 
-- **GitLab uses `!NN` for merge requests and `#NN` for issues** — don't collapse both into `#`. the reference app-style commits reference MRs as `!3025`, `!3026`.
+- **GitLab uses `!NN` for merge requests and `#NN` for issues** — don't collapse both into `#`. GitLab-convention commits reference MRs as `!3025`, `!3026`.
 - **Self-hosted GitLab often has no "gitlab" in the hostname** (e.g. `forge.example.com:9991`). Trust the `!NN` MR-ref signal from history over the hostname. Derive the base URL from the **canonical/upstream** remote — MRs live on the shared repo, not a personal fork.
 - Build full links only when a remote exists. Strip any `.git` suffix and normalize `git@host:group/repo` SSH remotes to `https://host/group/repo` (keep the `:port` for self-hosted `http://host:port/...`).
 - **Forge-agnostic (no remote / unknown host):** keep the raw IDs as plain text (`!3025`, `#123`) and emit no hyperlinks.

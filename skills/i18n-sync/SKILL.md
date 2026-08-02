@@ -3,8 +3,8 @@ name: i18n-sync
 description: Keeps this project's en/ar translations in sync. Adds a translation key and mirrors it to the other locale, and scans for keys that exist in en but are missing or empty in ar (a silent English fallback) — and orphan ar-only keys. Use when adding translation strings, wiring t()/trans() calls, or when asked to check Arabic translation coverage, find missing translations, or verify locale parity. Web (Vue 3 vue-i18n JSON) and Laravel (PHP lang) both covered.
 ---
 
-<!-- Own skill (local, not tracked by `npx skills`). Built for the app repo's exact
-     i18n layout. Encodes real conventions verified against the codebase. -->
+<!-- Own skill (local, not tracked by `npx skills`). Built against one project's exact
+     i18n layout. Encodes real conventions verified against that codebase. -->
 
 # i18n en/ar Sync
 

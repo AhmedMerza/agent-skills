@@ -91,7 +91,7 @@ Decision-level detail so the executor knows what to build and, crucially, **when
 A splash is **not** a UI state transition — it's a brand+loading beat, so it plays by its own rules. The first decision is **intent**, and the executor must actually read it (ask if unclear), because it flips everything:
 
 - **Show-off mode** (brand flex): a logo reveal you *want* people to watch — the Moonly seed→division→letter cascade lives here. Justified **only when rare**: first launch, post-update, a marketing/onboarding beat. Expressive budget (up to ~1.8s) is on the table *because the user sees it seldom*.
-- **Functional mode** (cover a wait): the splash exists to bridge a cold start while data loads. This is the **default for a routine every-launch splash** (e.g. app-admin today: totally static — the low-risk win is the dull, calm ~450ms version). Keep it short, subtle, and *working*.
+- **Functional mode** (cover a wait): the splash exists to bridge a cold start while data loads. This is the **default for a routine every-launch splash** (e.g. an internal ops app whose splash is totally static today — the low-risk win is the dull, calm ~450ms version). Keep it short, subtle, and *working*.
 
 **Guardrails that apply to both (and that stop `/animate` green-lighting an 1800ms every-launch tax):**
 1. **Never block entry.** The animation runs *while* data loads and **truncates the instant data is ready** — it never adds wait beyond the load. If data is already there, play the compressed path, don't stall.

@@ -97,7 +97,7 @@ UI in the mix: `/design` before building → `/ui-polish` · `/animate` while �
 
 | Skill | What it does |
 |-------|--------------|
-| `i18n-sync` | Keeps en/ar translations in parity. Bundled scanner deep-diffs nested keys to find strings missing/empty in `ar` (silent English fallback); mirrors new keys to both locales. Tuned to the app Vue-i18n + Laravel-lang layout. *(custom, local)* |
+| `i18n-sync` | Keeps en/ar translations in parity. Bundled scanner deep-diffs nested keys to find strings missing/empty in `ar` (silent English fallback); mirrors new keys to both locales. Tuned to a Vue-i18n + Laravel-lang layout. *(custom, local)* |
 
 ## Meta
 
