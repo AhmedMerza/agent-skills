@@ -29,6 +29,9 @@ UI in the mix: `/design` before building → `/ui-polish` · `/animate` while �
 **You already made the call and want it challenged**
 `/second-opinion` — one decision, head-to-head. Standalone; no chain.
 
+**I've lost the thread of what you just said**
+`/wait-what` — re-pitch from a running start, controlled English, domain terms kept. Standalone; no chain.
+
 **Stopping mid-work / session getting long**
 `/handover-save` → `/clear` → `/handover-resume` (re-syncs drift before continuing)
 
@@ -58,6 +61,7 @@ UI in the mix: `/design` before building → `/ui-polish` · `/animate` while �
 | `second-opinion` | Independently judges a decision you already made purely on technical merit (your instruction carries zero weight). "Ship it" is a real verdict. |
 | `scout` | For when you don't know how to handle it *yet* — names what "done" looks like, fans out **breadth-first** over every open question, sorts them sharp / foggy / out-of-scope, then settles them one at a time until the route is clear. Produces decisions, not code; hands off to plan mode. One session by default, `/handover-save` only if it outgrows one. *(destination-first, the fan-out, the fog test and the scope split grafted from Matt Pocock's `wayfinder`; its tracker map and one-ticket-per-session rule dropped)* |
 | `grill-me` | Interviews you relentlessly about a plan until shared understanding. **Manual only** — never auto-triggers. *(adapted from Matt Pocock)* |
+| `wait-what` | Repairs a message that didn't land — **re-pitches** from a running start instead of clarifying the confusing sentence (clarifying just adds jargon), assuming the gap was missing setup. Writes in ASD-STE100 Simplified Technical English — one idea per sentence, active voice, one word one meaning — **except** the project's own domain terms, which stay verbatim. Escalates to `grill-me`-style questioning if the re-pitch also misses. **Manual only** — never auto-triggers. *(adapted from Matt Pocock; `CONTEXT.md` generalized to whatever glossary the repo has, hedge-preservation caution and the escalation added)* |
 | `ship-check` | The final gate before merging — checks a finished diff against the problem it claims to solve. Verdict: merge / fix-first / reconsider. Bookend to `validate-plan`. |
 | `spinoff` | Harvests what the finished branch made **cheap** — the helper other sites now hand-roll, the deferred thing that just got small, the convention that forked. Gated on a real *before → now* cost delta: anything equally valid on `master` yesterday is discarded. Caps at 3, feeds `/issue`, and **never commits on the branch**. Restraint-gated — "nothing spun off" is the normal answer. |
 
