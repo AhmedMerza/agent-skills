@@ -1,7 +1,6 @@
 ---
 name: wait-what
-description: Stop — that last message did not land. Re-pitch it from a running start, in plain controlled English, keeping the project's domain terms intact. Use ONLY when the user explicitly invokes /wait-what or says "wait, what?" — never auto-trigger. Adapted from Matt Pocock's wait-what skill (github.com/mattpocock/skills).
-disable-model-invocation: true
+description: Stop — that last message did not land. Re-pitch it from a running start, in plain controlled English, keeping the project's domain terms intact. Trigger ONLY on an explicit signal that the user did not follow the previous explanation - /wait-what, "wait, what?", "I don't follow", "you lost me", "say that again". Do NOT fire when "wait, what" signals alarm at an action rather than confusion at an explanation ("wait what, you deleted it?") - answer for the action instead. Adapted from Matt Pocock's wait-what skill (github.com/mattpocock/skills).
 ---
 
 Wait — I don't understand where you've got to here.
