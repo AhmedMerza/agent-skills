@@ -35,15 +35,25 @@ Most of these skills guard a different stage of *"am I doing the right thing?"* 
 
 ```
 something's broken:
-  root-cause → validate-plan → ponytail → qa-sweep → ship-check → (spinoff) → mr-review
-  (diagnose)   (vet the plan)   (build)   (run it)   (vet the diff)  (bank the  (review code)
-                                                                     leftovers)
+  root-cause → validate-plan → ponytail → qa-sweep → mr-create → ship-check → mr-review → fix-review → (spinoff)
+  (diagnose)   (vet the plan)  (build)    (run it)   (commit,     (vet the     (review     (fix the      (bank the
+                                                      push, open)  diff)        code)       findings)     leftovers)
 
 a new idea:
   scout → grill-me → validate-plan → …same tail…
   (find the   (sharpen
    destination) the plan)
 ```
+
+**This map is the single source of truth for the chain.** Skills that need to place work on it
+(`where-were-we`) point here rather than restating it — two copies drift, and drifted copies put
+work at the wrong step.
+
+Note the order around the MR: **the MR is opened first, then the gates run against it.**
+`ship-check` vets the diff on an open MR, `mr-review` reviews it, `fix-review` fixes and resolves
+what review found, and `spinoff` banks whatever the branch made cheap — as follow-up issues, or
+folded into the same MR if they're small. Opening the MR early is deliberate: it gives the gates
+a stable target with real diff refs to anchor comments against.
 
 How far up front you start depends on how much fog there is. `scout` is the furthest upstream — reach for it when you can't yet say what *done* looks like, so there's no plan to sharpen; it ends by naming that destination. `grill-me` picks up from a plan you can already state and stress-tests it into shared understanding. `second-opinion` spot-checks any single decision along the way. `skill-compare` and `skill-audit` sit outside the chain entirely — they judge the *toolkit* rather than the work: one prices a stranger's skill before you adopt it, the other watches the ones you already run and, after the same complaint turns up twice, proposes a fix to the skill itself.
 
