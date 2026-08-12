@@ -113,35 +113,43 @@ Display:
    ...
 ```
 
-### Step 3: Fetch full file content from the API
+### Step 3: Fetch the MR/PR head into a local ref — do NOT pull content into this context
 
-For each changed file (that is not deleted), fetch the full file content from the MR/PR's source branch so agents review the file in context, not just the hunk.
-
-**URL-encode the file path** where the API needs it: replace `/` with `%2F` in the path.
+Agents read the code themselves, from a git ref. Nothing is checked out, no branch is switched, and the working tree is never touched — the ref just lands in `.git`.
 
 **GitLab:**
 ```bash
-# Raw file content from the source branch.
-# The ref is source_branch from the MR metadata.
-glab api "projects/<source_project_id>/repository/files/<url_encoded_path>/raw?ref=<source_branch>"
+git fetch <remote> "refs/merge-requests/<N>/head:refs/mr/<N>"
 ```
-**Source project ID**: check if the MR is from a fork — use `source_project_id` from the MR metadata (the fork's id if forked, else the upstream project id).
-
 **GitHub:**
 ```bash
-# Raw file content from the head branch (works for same-repo and fork PRs).
-gh api "repos/{owner}/{repo}/contents/<path>?ref=<headRefName>" -q '.content' | base64 -d
-# For a fork PR, {owner}/{repo} is the PR's head repo — read it from:
-#   gh pr view <N> --json headRepositoryOwner,headRepository
+git fetch <remote> "refs/pull/<N>/head:refs/pr/<N>"
 ```
 
-If fetching the raw file fails on either provider, fall back to reviewing only the diff content.
+`<remote>` is the remote pointing at the **target** project — `upstream` in a fork setup, otherwise `origin`. Both providers expose the MR/PR head on the target project, so this covers fork MRs without adding the fork as a remote.
+
+Then compute the base commit once. These two short strings are all this context needs to keep:
+
+```bash
+BASE=$(git merge-base refs/mr/<N> <remote>/<target_branch>)
+```
+
+Agents receive `refs/mr/<N>`, `BASE`, and the changed-file list — **never file content**. They read what they need with `git show refs/mr/<N>:<path>` and `git diff $BASE..refs/mr/<N> -- <path>`.
+
+**Why:** on an 8-file MR, full content plus diff is ~48k tokens — which under the old flow landed in this context *and* got copied into all five agent prompts. Reading on demand costs each agent about the same as being handed the payload (measured on MR !3192: 55.7k on demand vs ~47.6k handed in) while this context holds a file list instead of the files. The cost moves into subagent context that is discarded, out of main context that is not.
+
+**Fallback** — if the ref fetch fails (some self-hosted GitLab instances disable `merge-requests/*` refs; the checkout may also lack the right remote), fall back to fetching raw content from the API and passing it inline as before:
+  - **GitLab:** `glab api "projects/<source_project_id>/repository/files/<url_encoded_path>/raw?ref=<source_branch>"` — URL-encode `/` as `%2F`; `source_project_id` is the fork's id for fork MRs, else the upstream id.
+  - **GitHub:** `gh api "repos/{owner}/{repo}/contents/<path>?ref=<headRefName>" -q '.content' | base64 -d` — for fork PRs read the head repo from `gh pr view <N> --json headRepositoryOwner,headRepository`.
+  - If raw content also fails, review the diff content only.
+
+  State which path you took, so the user knows whether agents read the tree or were handed a payload.
 
 ### Step 4: Spawn Parallel Review Agents
 
-Spawn 5 review agents in a SINGLE message so they run in parallel. Each agent receives the **diff content and full file content** (NOT local file paths).
+Spawn 5 review agents in a SINGLE message so they run in parallel. Each agent receives the **git ref, the base sha, and the changed-file list** — not file content.
 
-**IMPORTANT**: Pass the actual file content and diffs inline in the prompt. Do NOT tell agents to read local files.
+**IMPORTANT**: Do NOT paste file content or diffs into these prompts. Hand agents the ref and let them read what they need. If Step 3 fell back to the API path, paste content inline as the old flow did — that fallback is the only case where inline content is correct.
 
 **All five agents are pinned to sonnet — keep the `model=` argument on every call.** Pinning matters independently of the value: without it, editing an agent's frontmatter silently retunes `/mr-review`, because these agents are shared with `/review` and `/nitpick`.
 
@@ -158,6 +166,22 @@ Same verdict, 1.9× the tokens, 4.2× the time. The wall clock is the decisive p
 
 > Caveat on the A/B above: both agents were told to return only a JSON array. Sonnet complied; opus narrated first. That makes opus's checking *visible* and sonnet's invisible — it does not establish that sonnet checked less. The result supports the cost claim, not a claim about relative depth.
 
+**The read block** — substitute this verbatim wherever a prompt below says `<READ BLOCK>`, filling in `<N>`, `<BASE>`, and the file list from Step 3. The checkout warning is not optional: all five agents share your working tree, and one `git checkout` would yank it out from under the other four and the user.
+
+```
+The MR/PR head is available as the local git ref `refs/mr/<N>`. It is NOT checked out.
+Do NOT run `git checkout`, do NOT switch branches, do NOT stash, do NOT modify the
+working tree in any way — four other agents and the user are sharing it right now.
+
+Read full file content:   git show refs/mr/<N>:<path>
+See what this MR changed: git diff <BASE>..refs/mr/<N> -- <path>
+
+Read every changed file you need in full — do not review from the diff alone.
+
+Changed files:
+<one path per line>
+```
+
 **IMPORTANT (every agent)**: Append this line to each agent prompt below — *"Report only objective defects (crashes, security holes, logic errors, broken/contradictory behavior, real data bugs). Do NOT report subjective preferences, aesthetic opinions, or behavior that is plausibly intentional as findings. If you think a behavior might be a bug but it could just as easily be a deliberate design choice, do not assert it — leave it out (the synthesizer handles intent questions). Never invent a 'fix' for an intended behavior."*
 
 **Agent 1** — General Review:
@@ -168,13 +192,7 @@ Review this MR/PR for cross-cutting concerns, logic errors, code quality, and te
 MR/PR: <N> - <title>
 Description: <description>
 
-Changed files and their FULL content:
-<for each file>
-=== FILE: <path> ===
-<full file content>
-=== DIFF: <path> ===
-<diff content>
-</for each file>
+<READ BLOCK>
 
 Focus on: logic errors, missing edge cases, error handling, code clarity, test coverage gaps.
 Return findings as a JSON array. Each finding MUST have:
@@ -194,8 +212,7 @@ Deep security review of this MR/PR.
 
 MR/PR: <N> - <title>
 
-Changed files and their FULL content:
-<files and diffs>
+<READ BLOCK>
 
 Check for: injection (SQL/command/template), XSS, CSRF, missing authorization/permission checks, hardcoded secrets, mass assignment / over-posting, tenant or ownership scoping in multi-tenant systems, unvalidated user input, unsafe deserialization.
 Return findings as a JSON array. Each finding MUST have:
@@ -215,8 +232,7 @@ Performance review of this MR/PR.
 
 MR/PR: <N> - <title>
 
-Changed files and their FULL content:
-<files and diffs>
+<READ BLOCK>
 
 Check for: N+1 / repeated queries (missing eager loading/batching), fetching more columns/rows than needed, missing pagination, missing caching, expensive work inside loops, missing indexes for new query patterns, unnecessary data loading.
 Return findings as a JSON array. Each finding MUST have:
@@ -236,8 +252,7 @@ Architecture review of this MR/PR.
 
 MR/PR: <N> - <title>
 
-Changed files and their FULL content:
-<files and diffs>
+<READ BLOCK>
 
 Check for: business logic leaking into controllers/handlers (should live in a service/domain layer), missing input-validation layer, missing DTOs/value objects for complex data, correct transaction boundaries for multi-entity writes, dependency injection vs hardcoded construction, proper separation of concerns.
 Return findings as a JSON array. Each finding MUST have:
@@ -258,8 +273,7 @@ Testing review of this MR/PR.
 MR/PR: <N> - <title>
 Description: <description>
 
-Changed files and their FULL content:
-<files and diffs>
+<READ BLOCK>
 
 Check for: missing test coverage for new/changed public methods, weak assertions (status-only without checking the response body/state), missing edge-case tests, isolation between test cases, correct fixtures/factories, and (in multi-tenant systems) tenant/ownership scoping in tests.
 Return findings as a JSON array. Each finding MUST have:
@@ -481,11 +495,15 @@ _Category: <category> | Review by Claude Code \`/mr-review\`_"
 
 ## Large MRs/PRs (20+ files)
 
+With Step 3's ref, this context never holds file content — so there is nothing to pre-fetch and no top-N cap to enforce. What still needs managing is each *agent's* own budget on a very large change.
+
 If the MR/PR has 20+ changed files:
-1. Tell the user: "This MR/PR has X files. I'll prioritize the highest-risk ones (entry points, business logic, data models)."
-2. Fetch full content for the top ~15 most critical files (request handlers / controllers, services, models/schemas, and validation/input layers first)
-3. For remaining files, review only the diff content
-4. Note in the report which files got full vs diff-only review
+1. Tell the user: "This MR/PR has X files. Agents will read the highest-risk ones in full (entry points, business logic, data models) and take the rest as needed."
+2. Order the paths in the read block's file list by risk — request handlers / controllers, services, models/schemas, and validation/input layers first; tests, fixtures, and generated files last.
+3. Add to each agent prompt: *"Read the highest-risk files in full first. If you are running low on context, review the remainder from the diff alone and say so explicitly in your response."*
+4. Note in the report if any agent said it fell back to diff-only, and for which files.
+
+This is a soft budget, not the old hard cap: an agent that needs file #40 can still read it. Nothing is withheld from agents — they simply choose what to spend context on.
 
 ## API Reference
 
