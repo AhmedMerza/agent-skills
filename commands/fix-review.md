@@ -1,6 +1,6 @@
 ---
 name: fix-review
-version: 1.0.0
+version: 1.1.0
 description: Post review notes on a GitHub PR or GitLab MR, fix the issues in code, reply to the threads, and resolve them.
 ---
 
@@ -60,10 +60,14 @@ Before posting or fixing anything, split the findings into two kinds:
 
 ### Phase 1: Post Resolvable Review Threads
 1. List all unresolved findings from the most recent `/mr-review` output in this conversation.
-2. Fetch the MR/PR diffs and parse the diff hunks to build a map of valid new-line numbers per file (only `+` lines and unchanged context lines within hunks are valid):
-   - **GitLab:** `glab api projects/<id>/merge_requests/<n>/diffs`
-   - **GitHub:** `gh pr diff <n>` (or `gh api repos/{owner}/{repo}/pulls/<n>/files`)
-3. For each finding, check if its file:line maps to an actual diff line. If yes, post as a **line-specific review comment** using the diff position (correct `new_line` / `line`). If not, post as a **general comment/thread** with `file:line` referenced in the body.
+2. **Delegate the diff parse — never fetch the diff into this context.** Spawn ONE subagent (`general-purpose`, `model: "sonnet"`) whose entire job is read-only: fetch the diff, parse the hunks, and hand back an anchor map. Give it the findings list (`file:line` each), the MR/PR number, the resolved provider, and the **"Post a line-specific review comment"** section below as its parsing spec (it carries the `old_line` vs `new_line` rule it must follow).
+
+   Require exactly this back, and nothing else:
+   - one line per finding — `<n>: <path> new_line <N>` (or `old_line <N>` for a removed line), or `<n>: unanchorable`
+   - the diff refs once — `base_sha`, `head_sha`, `start_sha`
+
+   **Ask for the map only.** Never the diff, never file contents, never hunk excerpts. A 30-file diff parsed inline sits in context for the rest of the session and is used once to produce a dozen integers; the map is those integers. If the agent returns diff text anyway, discard it — do not quote it back into this context.
+3. Post each finding using the map: `new_line`/`old_line` → **line-specific review comment** with those refs; `unanchorable` → **general comment/thread** with `file:line` referenced in the body. Verify each post is actually anchored (see the verification snippet below) — that check stays here, it is one line of output per note.
 4. Each note should include: severity tag, description, and suggested fix.
 5. Format: `**{SEVERITY}: {title}**\n\n{description}\n\n**Fix**: {suggestion}`
 
@@ -113,6 +117,8 @@ Keep BOTH paths below. Pick the one matching the provider resolved at the top. `
 ### Post a line-specific review comment
 
 **CRITICAL**: the target line MUST be an actual line from the diff (a `+` line or in-hunk context line), NOT an arbitrary file line number. Providers only anchor comments to lines that appear in the diff. To find the correct line number:
+
+> Steps 1–4 are the **Phase 1 subagent's** job, not this context's — hand it this section as its spec and take back only the anchor map. Steps 1–4 are also what makes it a subagent: they are the part that would otherwise drag the whole diff in here.
 
 1. Fetch the diff (GitLab: `glab api projects/<id>/merge_requests/<n>/diffs`; GitHub: `gh api repos/{owner}/{repo}/pulls/<n>/files`).
 2. Parse each diff hunk header (e.g., `@@ -564,9 +567,11 @@`) — the `+567,11` means new lines start at 567.
@@ -185,6 +191,7 @@ Use this when the finding cannot be mapped to a specific diff line, or as a fall
   If the node id isn't readily available, tell the user to resolve those threads in the PR web UI.
 
 ### Get diff refs (for line-specific comments)
+The Phase 1 subagent already returns these alongside the anchor map — use those and skip the extra call. Fetch directly only if you skipped Phase 1 (e.g. re-posting a single note later):
 - **GitLab:** `glab api "projects/<id>/merge_requests/<n>" | jq '.diff_refs'` (base/head/start shas)
 - **GitHub:** `gh pr view <n> --json headRefOid,baseRefOid` (head sha = `commit_id` for inline comments)
 
