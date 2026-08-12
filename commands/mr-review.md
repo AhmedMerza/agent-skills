@@ -143,11 +143,26 @@ Spawn 5 review agents in a SINGLE message so they run in parallel. Each agent re
 
 **IMPORTANT**: Pass the actual file content and diffs inline in the prompt. Do NOT tell agents to read local files.
 
+**All five agents are pinned to sonnet — keep the `model=` argument on every call.** Pinning matters independently of the value: without it, editing an agent's frontmatter silently retunes `/mr-review`, because these agents are shared with `/review` and `/nitpick`.
+
+Why sonnet across the board, measured rather than assumed — an A/B on MR !3192 (a controller dedupe touching a policy path and a form-request `authorize()`) ran the security reviewer on both tiers with identical input:
+
+| | tool calls | tokens | wall clock | verdict |
+| --- | --- | --- | --- | --- |
+| sonnet | 21 | 55.7k | 2m 08s | `[]` |
+| opus | 46 | 106.1k | 9m 03s | `[]` |
+
+Same verdict, 1.9× the tokens, 4.2× the time. The wall clock is the decisive part: these five run in parallel, so **the slowest agent gates the entire review**. One opus agent turns every review into a nine-minute wait — paid on all reviews, including the clean majority.
+
+**Escalation for security-sensitive MRs:** run `/nitpick` instead. It spawns the same reviewers without pinning models, so it inherits opus for security and architecture from their frontmatter. Reach for it when the MR touches authorization, policies, gates, middleware, or tenant scoping — rather than paying that tier on every routine review.
+
+> Caveat on the A/B above: both agents were told to return only a JSON array. Sonnet complied; opus narrated first. That makes opus's checking *visible* and sonnet's invisible — it does not establish that sonnet checked less. The result supports the cost claim, not a claim about relative depth.
+
 **IMPORTANT (every agent)**: Append this line to each agent prompt below — *"Report only objective defects (crashes, security holes, logic errors, broken/contradictory behavior, real data bugs). Do NOT report subjective preferences, aesthetic opinions, or behavior that is plausibly intentional as findings. If you think a behavior might be a bug but it could just as easily be a deliberate design choice, do not assert it — leave it out (the synthesizer handles intent questions). Never invent a 'fix' for an intended behavior."*
 
 **Agent 1** — General Review:
 ```
-Agent(subagent_type="general-reviewer", description="General MR/PR review", prompt="
+Agent(subagent_type="general-reviewer", model="sonnet", description="General MR/PR review", prompt="
 Review this MR/PR for cross-cutting concerns, logic errors, code quality, and test coverage.
 
 MR/PR: <N> - <title>
@@ -174,7 +189,7 @@ Example: [{\"severity\":\"IMPORTANT\",\"file\":\"src/controllers/foo.ext\",\"lin
 
 **Agent 2** — Security Review:
 ```
-Agent(subagent_type="security-reviewer", description="Security MR/PR review", prompt="
+Agent(subagent_type="security-reviewer", model="sonnet", description="Security MR/PR review", prompt="
 Deep security review of this MR/PR.
 
 MR/PR: <N> - <title>
@@ -195,7 +210,7 @@ Example: [{\"severity\":\"CRITICAL\",\"file\":\"src/controllers/foo.ext\",\"line
 
 **Agent 3** — Performance Review:
 ```
-Agent(subagent_type="performance-reviewer", description="Performance MR/PR review", prompt="
+Agent(subagent_type="performance-reviewer", model="sonnet", description="Performance MR/PR review", prompt="
 Performance review of this MR/PR.
 
 MR/PR: <N> - <title>
@@ -216,7 +231,7 @@ Example: [{\"severity\":\"IMPORTANT\",\"file\":\"src/models/order.ext\",\"line\"
 
 **Agent 4** — Architecture Review:
 ```
-Agent(subagent_type="architecture-reviewer", description="Architecture MR/PR review", prompt="
+Agent(subagent_type="architecture-reviewer", model="sonnet", description="Architecture MR/PR review", prompt="
 Architecture review of this MR/PR.
 
 MR/PR: <N> - <title>
@@ -237,7 +252,7 @@ Example: [{\"severity\":\"IMPORTANT\",\"file\":\"src/controllers/foo.ext\",\"lin
 
 **Agent 5** — Testing Review:
 ```
-Agent(subagent_type="testing-reviewer", description="Testing MR/PR review", prompt="
+Agent(subagent_type="testing-reviewer", model="sonnet", description="Testing MR/PR review", prompt="
 Testing review of this MR/PR.
 
 MR/PR: <N> - <title>
