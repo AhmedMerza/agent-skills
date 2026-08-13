@@ -1,7 +1,7 @@
 ---
 name: checkpoint
 version: 0.1.0
-description: Triage a long session — split what is DONE (droppable) from what is LIVE (needed to continue), then recommend keep going / compact / handover+clear. Invoke when the statusline context reading turns yellow (>=50%) or red (>=80%), or any time you want to know whether this session is still worth carrying. Reports and recommends ONLY — never clears, never compacts, never writes. Restraint-gated: "keep going, nothing is droppable yet" is a first-class verdict.
+description: Triage a long session — split what is DONE (droppable) from what is LIVE (needed to continue), then recommend keep going / compact / clear / handover+clear — handover only when work continues past the clear. Invoke when the statusline context reading turns yellow (>=50%) or red (>=80%), or any time you want to know whether this session is still worth carrying. Reports and recommends ONLY — never clears, never compacts, never writes. Restraint-gated: "keep going, nothing is droppable yet" is a first-class verdict.
 allowed-tools: Bash(git status:*), Bash(git log:*), Bash(git diff:*), Bash(git branch:*), Read, Glob, Grep
 ---
 
