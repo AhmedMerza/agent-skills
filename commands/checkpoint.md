@@ -70,8 +70,12 @@ If two verdicts seem close, pick the less destructive one and say it was close.
 
 Short. This is a nudge, not a report. No preamble, no restating the rules.
 
+**Do not open with a context percentage.** You cannot read your own context usage, and a guessed
+number is worse than no number — the statusline already shows the real one, and it is what made the
+user invoke this. Open with what the session is *for*. If the user quotes a figure, use theirs.
+
 ```
-ctx <NN>% · <what this session is actually for>
+<what this session is actually for, one line>
 
 DONE (droppable)
   • <thing> — recoverable from <git / file / codebase>
@@ -87,7 +91,7 @@ LIVE (must survive)
 If nothing is meaningfully droppable, say so in two lines and stop:
 
 ```
-ctx 58% · mid-refactor on the bidding sweeper
+mid-refactor on the bidding sweeper
 → KEEP GOING: nothing here is recoverable elsewhere yet — the whole session is LIVE.
 ```
 
