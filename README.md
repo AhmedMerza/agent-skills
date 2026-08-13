@@ -20,7 +20,7 @@ My personal collection of [Claude Code](https://docs.claude.com/en/docs/claude-c
 | `ui-polish` | UI polish, animation decisions, and the invisible details that make interfaces feel right. Adapted from Emil Kowalski's design engineering philosophy. |
 | `ux-audit` | Judges whether a page/flow actually works for the human using it — cognitive load, friction, clarity — tied to the page's one real goal. Advisory, ethics-gated (flags dark patterns). |
 | `validate-plan` | Adversarially stress-tests an existing plan before executing — verifies assumptions against the real codebase, surfaces alternatives, red-teams failure modes, returns a proceed/reconsider verdict. |
-| `ship-check` | The final gate before merging — audits a finished diff against the problem it claims to solve: what's missing (unpatched sibling caller, unhandled branch, no backfill), where it breaks on edge cases, whether the approach is right. `validate-plan`'s bookend. Returns a merge/fix-first/reconsider verdict. |
+| `ship-check` | The final gate before merging — audits a finished diff against the problem it claims to solve: what's missing (unpatched sibling caller, unhandled branch, no backfill), where it breaks on edge cases, whether the approach is right. Spawns **one independent reviewer on the diff**, because the context that wrote a fix re-derives the reasoning that produced the bug and finds it sound — a blind spot no checklist line closes. Also splits review-driven fixes into *structural* (re-run `mr-review` before merge) vs *additive* (merge on the tests). `validate-plan`'s bookend. Returns a merge/fix-first/reconsider verdict. |
 | `prove-the-test` | Breaks the thing a new test guards and confirms the test actually fails, then restores it. A regression test first runs against *already-correct* code, so you never see red unless you make it — and green looks identical whether the assertion works or is pointed at nothing. Catches assertion-API misuse (a helper reading your failure message as an expected value), boundary tests decided by an unfrozen clock rather than by the code, and fallback branches the test never reaches. One targeted revert per test — not mutation testing, not a suite audit. |
 | `spinoff` | Harvests what a finished branch made **cheap** — the helper other sites now hand-roll, the thing deferred *on cost* that just got small, the convention that forked in two. Gated on a real *before → now* cost delta: any suggestion that would have been equally valid before the branch is discarded, which is most of them. Caps at 3, feeds `/issue`, and **never commits on the branch** — the output is a backlog, not a bigger diff. `ship-check`'s optional twin: that finds what's *missing* and blocks the merge, this finds what's *cheap* and blocks nothing. |
 | `api-docs-complete` | Finishes an API docblock that already has its happy path. Hunts the statuses that are **real but invisible in the handler** — `401` from auth middleware, `429` from a throttle inherited by a middleware *group*, `403` from a policy or guard object, `422` from validation, `500` from the catch-all, plus anything a same-class helper returns. Bodies must be **captured from a real run**, never invented (envelopes lie: a `429` using a different success key than the rest of the API is not findable by reading code), and the **generated output is verified per endpoint** afterwards, because a malformed annotation block usually produces wrong docs rather than an error. Restraint-gated: an endpoint that can only 200-or-401 is done at two responses. |
@@ -55,6 +55,13 @@ what review found, and `spinoff` banks whatever the branch made cheap — as fol
 folded into the same MR if they're small. Opening the MR early is deliberate: it gives the gates
 a stable target with real diff refs to anchor comments against.
 
+**The tail of the chain can loop, and sometimes must.** When `fix-review`'s fixes are *structural* —
+a deleted branch, a decision moved across a lock, a change to who owns one — go back to `mr-review`
+before merging. Fixes written against a reviewer's framing land in code the tests were written
+against, and they are where self-introduced defects come from. Additive fixes (a test, a validation,
+a null guard) merge on the tests. If a third round still finds something, the MR is too large to
+converge and splitting beats iterating.
+
 How far up front you start depends on how much fog there is. `scout` is the furthest upstream — reach for it when you can't yet say what *done* looks like, so there's no plan to sharpen; it ends by naming that destination. `grill-me` picks up from a plan you can already state and stress-tests it into shared understanding. `second-opinion` spot-checks any single decision along the way. `skill-compare` and `skill-audit` sit outside the chain entirely — they judge the *toolkit* rather than the work: one prices a stranger's skill before you adopt it, the other watches the ones you already run and, after the same complaint turns up twice, proposes a fix to the skill itself.
 
 **Commonly confused — same spirit, different moment:**
@@ -83,6 +90,7 @@ The MR/PR commands work on **either GitHub or GitLab** (self-hosted or SaaS). Th
 | `handover-save` | Materialize the current conversation's plan into a durable, gitignored doc under the project's `.claude/handover/` — status, decisions, checkboxed steps, `file:line` anchors, gotchas — so it survives `/clear` and session handoffs. |
 | `handover-resume` | Reload a saved handover plan and re-anchor the session — re-verifies its `file:line` anchors against current code, reconciles checkbox state, then continues from the first unblocked step. |
 | `handover-list` | List the saved handover plans in the current project (slug / title / status, newest first) so you can pick one to resume. |
+| `checkpoint` | Triage a long session — splits what is **DONE** (droppable, recoverable from git/files) from what is **LIVE** (would be lost with the context), then recommends keep going / compact / handover+clear. Reports only: it never clears or compacts, because clearing throws away a warm prompt cache and only pays at a genuine task boundary — a judgment the percentage alone can't make. Reach for it when the statusline turns yellow (≥50%) or red (≥80%). |
 
 The `handover-*` trio is a self-contained local workflow (no GitHub/GitLab involved): `save` writes a plan, `list` finds them, `resume` reloads and continues one. The docs live in each project's gitignored `.claude/handover/`, so they're personal scratch — never committed.
 
@@ -97,7 +105,7 @@ git clone https://github.com/AhmedMerza/claude-skills.git ~/claude-skills
 ln -s ~/claude-skills/skills ~/.claude/skills
 
 # commands: link the individual files (your ~/.claude/commands may hold other, local-only commands)
-for f in mr-create mr-review fix-review commit issue browse handover-save handover-resume handover-list; do ln -sf ~/claude-skills/commands/$f.md ~/.claude/commands/$f.md; done
+for f in mr-create mr-review fix-review commit issue browse handover-save handover-resume handover-list checkpoint; do ln -sf ~/claude-skills/commands/$f.md ~/.claude/commands/$f.md; done
 
 # the /browse command needs its helper script on the standard path:
 mkdir -p ~/.claude/scripts && ln -sf ~/claude-skills/scripts/browse.mjs ~/.claude/scripts/browse.mjs
