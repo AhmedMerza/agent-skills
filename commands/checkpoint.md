@@ -60,11 +60,21 @@ list of what `/handover-save` would need to capture if the user does clear.
   The correct answer most of the time, including at surprisingly high readings.
 - **COMPACT** — a lot is DONE, but the user is mid-task and still needs the thread. Compaction
   keeps the reasoning and drops the bulk. This is the usual answer for a big-but-unfinished session.
-- **HANDOVER + CLEAR** — the session is at a task boundary **and** the next stretch needs little
-  of what is here. Only this case wins the cache tradeoff. Say what should go in the handover
-  (the LIVE list), then let the user run `/handover-save` and `/clear` themselves.
+- **HANDOVER + CLEAR** — the session is at a task boundary, **work continues past it**, and the
+  next stretch needs little of what is here. Only this case wins the cache tradeoff. Say what
+  should go in the handover (the LIVE list), then let the user run `/handover-save` and `/clear`
+  themselves.
+- **CLEAR** — the task is *finished*: merged, filed, shipped, nothing in flight. LIVE is empty,
+  not merely small. Recommend `/clear` **alone — no handover.** A handover doc carries unfinished
+  work across a clear; when there is none it costs tokens to write and buys nothing. Instead name
+  where the loose ends already live (an issue, a memory, a merged commit) — that is *why* no
+  handover is needed, and it is worth one line so the user can check you're right.
 
 If two verdicts seem close, pick the less destructive one and say it was close.
+
+**Don't pair handover with clear by reflex.** The two travel together often enough to fuse in the
+telling, but the handover is for work that continues. Recommending one at the end of finished work
+is a real cost with no return, and it reads as not having noticed the work is done.
 
 ## Step 4 — Output
 
