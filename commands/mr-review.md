@@ -162,7 +162,9 @@ Why sonnet across the board, measured rather than assumed — an A/B on MR !3192
 
 Same verdict, 1.9× the tokens, 4.2× the time. The wall clock is the decisive part: these five run in parallel, so **the slowest agent gates the entire review**. One opus agent turns every review into a nine-minute wait — paid on all reviews, including the clean majority.
 
-**Escalation for security-sensitive MRs:** run `/nitpick` instead. It spawns the same reviewers without pinning models, so it inherits opus for security and architecture from their frontmatter. Reach for it when the MR touches authorization, policies, gates, middleware, or tenant scoping — rather than paying that tier on every routine review.
+**Escalation for security-sensitive MRs:** run `/nitpick` instead. It pins no models, so it inherits opus for security and architecture from their frontmatter. Reach for it when the MR touches authorization, policies, gates, middleware, or tenant scoping — rather than paying that tier on every routine review.
+
+⚠️ **It is not the same reviewer set.** `/nitpick` spawns **four** — general, security, performance, architecture. It has **no testing-reviewer**. So escalating trades the testing pass away for opus on two agents, and the testing pass is not filler: on MR !3215 (2026-08-13) it was the one that mutated the code and found two checks nothing constrained — deleting the under-lock re-check left all 35 tests green. If the MR is security-sensitive *and* touches tests or invariants, run `/mr-review` and escalate only the finding you doubt.
 
 > Caveat on the A/B above: both agents were told to return only a JSON array. Sonnet complied; opus narrated first. That makes opus's checking *visible* and sonnet's invisible — it does not establish that sonnet checked less. The result supports the cost claim, not a claim about relative depth.
 
