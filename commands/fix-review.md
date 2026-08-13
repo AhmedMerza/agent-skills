@@ -67,6 +67,23 @@ Before posting or fixing anything, split the findings into two kinds:
    - the diff refs once — `base_sha`, `head_sha`, `start_sha`
 
    **Ask for the map only.** Never the diff, never file contents, never hunk excerpts. A 30-file diff parsed inline sits in context for the rest of the session and is used once to produce a dozen integers; the map is those integers. If the agent returns diff text anyway, discard it — do not quote it back into this context.
+
+   **The diff is usually already on disk — don't re-download it.** `/mr-review` runs immediately before this in the chain and fetches the head into `refs/mr/<N>` (GitLab) / `refs/pr/<N>` (GitHub). Give the subagent this sequence:
+
+   ```bash
+   # a. diff refs from the API — tiny JSON, and GitLab validates comment positions against it
+   glab api projects/<id>/merge_requests/<n> --jq '.diff_refs'   # base_sha, head_sha, start_sha
+   # b. is the local ref current?
+   git rev-parse refs/mr/<N> 2>/dev/null
+   # c. missing or != head_sha → refresh (incremental, usually a no-op)
+   git fetch <remote> "+refs/merge-requests/<N>/head:refs/mr/<N>"   # GitHub: refs/pull/<N>/head:refs/pr/<N>
+   # d. read the diff from git rather than downloading it
+   git diff <base_sha>..refs/mr/<N>
+   ```
+
+   **Step (b) is not optional.** A ref left from an earlier `/mr-review` points at the head *as of that run*. If anything was pushed since — and on this chain something usually was, because Phase 3 pushes fixes — every anchor computed from it is off, and the notes land on wrong lines with no error. Take the SHAs from the API, the content from git.
+
+   If the fetch fails (some self-hosted GitLab instances disable `merge-requests/*` refs, or the checkout lacks the target remote), fall back to the API diff — same parsing spec, just a more expensive read.
 3. Post each finding using the map: `new_line`/`old_line` → **line-specific review comment** with those refs; `unanchorable` → **general comment/thread** with `file:line` referenced in the body. Verify each post is actually anchored (see the verification snippet below) — that check stays here, it is one line of output per note.
 4. Each note should include: severity tag, description, and suggested fix.
 5. Format: `**{SEVERITY}: {title}**\n\n{description}\n\n**Fix**: {suggestion}`
@@ -120,7 +137,7 @@ Keep BOTH paths below. Pick the one matching the provider resolved at the top. `
 
 > Steps 1–4 are the **Phase 1 subagent's** job, not this context's — hand it this section as its spec and take back only the anchor map. Steps 1–4 are also what makes it a subagent: they are the part that would otherwise drag the whole diff in here.
 
-1. Fetch the diff (GitLab: `glab api projects/<id>/merge_requests/<n>/diffs`; GitHub: `gh api repos/{owner}/{repo}/pulls/<n>/files`).
+1. Read the diff. **Prefer the local ref** — `git diff <base_sha>..refs/mr/<N>`, after the freshness check in Phase 1 step 2. Fall back to the API only if that fails (GitLab: `glab api projects/<id>/merge_requests/<n>/diffs`; GitHub: `gh api repos/{owner}/{repo}/pulls/<n>/files`).
 2. Parse each diff hunk header (e.g., `@@ -564,9 +567,11 @@`) — the `+567,11` means new lines start at 567.
 3. Count the `+` and unchanged lines in the hunk to find exact new line numbers.
 4. Use ONLY these line numbers.
