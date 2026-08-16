@@ -334,9 +334,360 @@ function toggle() { liked.value = !liked.value; if (liked.value) burst.value++ }
 
 ---
 
+## Continuous drivers — the damped follower  *(build this FIRST)*
+
+Everything scroll-, pointer- or drag-driven shares **one** primitive (decision-map law 9): never bind a continuous input straight to a rendered value — route it through a follower that chases it. Build this once; `scrollScrub`, `pointerParallax` and `dragInertia` are all just different things written into `target`.
+
+```ts
+// composables/useDampedValue.ts
+import { ref, onScopeDispose } from 'vue'
+import { useMediaQuery } from '@vueuse/core'
+
+/**
+ * catchUp: fraction of the remaining distance closed per 60fps frame. 0.08–0.15 is the working range.
+ * epsilon: how close counts as arrived, IN THE CALLER'S UNITS. 0.01 is sub-pixel for px values;
+ *          pass something smaller (1e-4) for a normalized 0..1 driver like scroll progress.
+ */
+export function useDampedValue(initial = 0, catchUp = 0.1, epsilon = 0.01) {
+  const target   = ref(initial)  // the raw driver writes here
+  const current  = ref(initial)  // read THIS in your template / style bindings
+  const velocity = ref(0)        // free by-product — feeds velocity-derived distortion
+  const reduce   = useMediaQuery('(prefers-reduced-motion: reduce)')
+
+  let raf = 0, last = performance.now()
+  const tick = (now: number) => {
+    const dt = Math.min(now - last, 64); last = now   // clamp: a backgrounded tab must not teleport
+    if (reduce.value) {
+      current.value = target.value; velocity.value = 0   // law 12: UNBIND, don't shorten
+    } else {
+      const delta = target.value - current.value
+      if (Math.abs(delta) < epsilon) {
+        current.value = target.value; velocity.value = 0   // land exactly; stop producing velocity
+      } else {
+        // frame-rate independent: the naive `delta * catchUp` is ~2x faster on a 120Hz screen
+        const step = delta * (1 - Math.pow(1 - catchUp, dt / 16.67))
+        current.value += step
+        // velocity is the DISPLACEMENT THIS FRAME (normalized to 60fps) — NOT the remaining
+        // distance. See the note below; getting this wrong breaks every downstream consumer.
+        velocity.value = step * (16.67 / dt)
+      }
+    }
+    raf = requestAnimationFrame(tick)
+  }
+  raf = requestAnimationFrame(tick)
+  onScopeDispose(() => cancelAnimationFrame(raf))
+
+  return { target, current, velocity }
+}
+```
+
+> **Four things this gets right that a naive lerp doesn't** — all four are bugs you can measure, and the last two were caught only by instrumenting the real thing:
+> 1. **`dt` correction** — without it the feel changes with refresh rate; you tune on a 60Hz monitor and ship something twitchy to a 120Hz laptop.
+> 2. **`dt` clamp** — a backgrounded tab accumulates a huge delta and the element teleports on return.
+> 3. **`velocity` is the per-frame step, not the remaining distance.** These differ by a factor of ~`1/catchUp` (measured: on a 0→500 move, remaining-distance peaks at 450 while the actual step peaks at 50). Feed the remaining distance into the blur formula below and it sits pinned at the 12px clamp for most of the travel, then falls off a cliff — "blur on, blur off" instead of a velocity curve. With the step, the same formula measured `12.0 → 3.6 → 0.26px` across 45 frames, which is the curve you actually want.
+> 4. **The epsilon is in the caller's units and must be passed accordingly.** An absolute `1e-4` looks harmless but takes **132 frames (2.2s)** to trip on a 100px move — the rAF loop keeps spinning and `velocity` stays non-zero long after the motion is visually finished. At `0.01` the same move lands exactly and stops at frame 88.
+
+### `scrollScrub` — scroll drives a reveal
+
+```ts
+// progress of an element through its own scroll runway, 0..1
+function scrollProgress(el: HTMLElement) {
+  const r = el.getBoundingClientRect()
+  const runway = r.height - window.innerHeight
+  return runway <= 0 ? 0 : Math.min(1, Math.max(0, -r.top / runway))
+}
+```
+```vue
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useDampedValue } from '@/composables/useDampedValue'
+
+const section = ref<HTMLElement>()
+const { target, current } = useDampedValue(0, 0.1, 1e-4)    // 0.1 = the feel knob; 1e-4 eps for a 0..1 driver
+
+// passive listener + rAF-coalesced write; never do layout work in the handler itself
+let queued = false
+const onScroll = () => {
+  if (queued) return
+  queued = true
+  requestAnimationFrame(() => { if (section.value) target.value = scrollProgress(section.value); queued = false })
+}
+onMounted(() => { onScroll(); addEventListener('scroll', onScroll, { passive: true }) })
+onUnmounted(() => removeEventListener('scroll', onScroll))
+
+// law 10: pure function of current position — scrubs backwards correctly, no one-shot state
+const style = computed(() => ({
+  transform: `translateY(${(1 - current.value) * 40}px) scale(${0.96 + current.value * 0.04})`,
+  opacity: String(0.4 + current.value * 0.6),
+  clipPath: `inset(${(1 - current.value) * 30}% 0 0 0 round 12px)`,
+}))
+</script>
+
+<template>
+  <section ref="section" class="scrub-runway"><div class="scrub-target" :style="style"><slot /></div></section>
+</template>
+
+<style scoped>
+.scrub-runway { min-height: 200vh; }          /* the runway IS the duration */
+.scrub-target { position: sticky; top: 20vh; will-change: transform, opacity; }
+@media (prefers-reduced-motion: reduce) {
+  .scrub-runway { min-height: auto; }
+  .scrub-target { position: static; transform: none !important; opacity: 1 !important; clip-path: none !important; }
+}
+</style>
+```
+
+> **No `transition` and no `cubic-bezier` anywhere on a scrubbed property** (law 11). A transition on top of a per-frame write fights it and produces mush. The shaping lives entirely in `catchUp`.
+> **The reduced-motion block must also collapse the runway** — leaving a `200vh` spacer behind means the settled version has a screen and a half of blank scroll under it.
+
+> **Reactive binding vs. direct DOM write — know when to drop out of Vue.** The `computed()` + `:style` binding above triggers Vue's reactivity and a component re-render **every frame**. For one element that is fine and keeps the code idiomatic. It stops being fine when you are driving **many** elements, or the component subtree is deep, or you're inside a drag handler at 120Hz — then the per-frame reactivity dominates the actual work. In that case skip reactivity entirely and write the style straight from the rAF loop:
+>
+> ```ts
+> const el = ref<HTMLElement>()
+> // inside the follower's tick, instead of a computed():
+> if (el.value) el.value.style.transform = `translateY(${y}px)`
+> ```
+>
+> Same for `pointerParallax` with more than a handful of layers. Rule of thumb: **reactive for one or two elements, direct writes past that** — and always direct inside an active drag.
+
+### `pointerParallax` — pointer offset fakes depth
+
+```vue
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useDampedValue } from '@/composables/useDampedValue'
+
+const props = defineProps<{ depth?: number; maxTravel?: number }>()  // depth: 0 = pinned, 1 = foreground
+const depth = props.depth ?? 1, MAX = props.maxTravel ?? 12          // MAX px — the clamp is NOT optional
+
+const x = useDampedValue(0, 0.08), y = useDampedValue(0, 0.08)       // looser spring: this is a FOLLOW regime
+
+let queued = false
+const onMove = (e: PointerEvent) => {
+  if (queued) return
+  queued = true
+  requestAnimationFrame(() => {
+    const nx = (e.clientX / innerWidth  - 0.5) * 2                   // -1..1
+    const ny = (e.clientY / innerHeight - 0.5) * 2
+    x.target.value = Math.max(-MAX, Math.min(MAX, nx * MAX * depth))
+    y.target.value = Math.max(-MAX, Math.min(MAX, ny * MAX * depth))
+    queued = false
+  })
+}
+// pointer-driven only where a pointer exists; touch gets the settled state, not a broken effect
+const hasPointer = matchMedia('(hover: hover) and (pointer: fine)').matches
+onMounted(() => { if (hasPointer) addEventListener('pointermove', onMove, { passive: true }) })
+onUnmounted(() => removeEventListener('pointermove', onMove))
+
+const style = computed(() => ({ transform: `translate3d(${x.current.value}px, ${y.current.value}px, 0)` }))
+</script>
+
+<template><div :style="style" class="parallax-layer"><slot /></div></template>
+```
+
+> **RTL:** this travel is computed from **real pointer coordinates**, so it is already correct under RTL — do **not** apply the `sx` sign flip (same rule as `fly-to-target`).
+> **Two-config springs** (see `techniques.md` §3): the `0.08` above is the *follow* regime. If the layer also animates into place on mount, give that entrance its own stiffer config — one setting cannot serve both.
+> Background layers take a **smaller** `depth` than foreground ones. That relationship is the whole illusion; equal depths just slide the scene.
+
+### Velocity-derived blur, free from the follower
+
+```ts
+// techniques.md §2 — blur reads as SPEED, so it must be 0 at rest and clamped at the top.
+// `velocity` here is the PER-FRAME displacement (see note 3 above) — feeding it the remaining
+// distance instead makes this pin at the clamp and stop reading as speed at all.
+const blur = computed(() => {
+  const v = Math.abs(velocity.value)
+  return `blur(${Math.min(v * 0.6, 12).toFixed(2)}px)`   // clamp ~12px; past that it stops reading as motion
+})
+```
+> `filter` is not a compositor-only property — this breaks SKILL principle 9 deliberately, so spend it on **one** element in a view, never a list. Verify with DevTools' paint-flashing before shipping it on anything that repeats.
+
+---
+
+## Text segmentation + stagger order  *(techniques.md §1)*
+
+```ts
+// composables/useSegments.ts
+export type Order = 'forward' | 'reverse' | 'centre-out' | 'random'
+
+/** Split for animation. NOTE: 'char' is LTR-only — see the RTL warning below. */
+export function segment(text: string, by: 'line' | 'word' | 'char') {
+  if (by === 'line') return text.split('\n')
+  if (by === 'word') return text.split(/(\s+)/).filter(s => s.trim().length)
+  return [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(text)].map(s => s.segment)
+}
+
+/** Stagger index → delay rank. Order encodes WHERE the change came from (law 1). */
+export function rank(i: number, n: number, order: Order): number {
+  switch (order) {
+    case 'reverse':    return n - 1 - i
+    case 'centre-out': return Math.abs(i - (n - 1) / 2)
+    case 'random':     return ((i * 2654435761) % n)       // deterministic shuffle — stable across re-renders
+    default:           return i
+  }
+}
+```
+```vue
+<script setup lang="ts">
+const props = withDefaults(defineProps<{ text: string; by?: 'line'|'word'|'char'; order?: Order; step?: number }>(),
+  { by: 'word', order: 'forward', step: 45 })
+const parts = computed(() => segment(props.text, props.by))
+</script>
+
+<template>
+  <!-- techniques.md §1: the split string is unreadable to assistive tech — expose the intact one. -->
+  <span :aria-label="text">
+    <span v-for="(p, i) in parts" :key="i" aria-hidden="true" class="seg"
+          :style="{ '--d': `${rank(i, parts.length, order) * step}ms` }">{{ p }}<template v-if="by === 'word'">&#32;</template></span>
+  </span>
+</template>
+
+<style scoped>
+.seg { display: inline-block; opacity: 0; transform: translateY(8px);
+       animation: seg-in 380ms var(--ease-out) var(--d) forwards; }
+@keyframes seg-in { to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .seg { animation: none; opacity: 1; transform: none; } }
+</style>
+```
+
+> **`by: 'char'` is LTR-only — gate it on locale. This is measured, not theoretical.** Arabic is cursive and contextually shaped, and per-character `inline-block` spans break it twice over: each letter falls back to its **isolated form** (joins vanish) and each span becomes its own **bidi run** (right-to-left order scrambles). Measured in Chrome against this app: `مرحبا بكم في أوريم` is **321.5px** intact vs **392.7px** split per character — +22%, visibly disconnected and mis-ordered. Split **per word** it measured 321.5px, a 0.0px delta. So `'word'`/`'line'` are safe in `ar`; `'char'` is a rendering bug there, not a style regression. `Intl.Segmenter` with `granularity: 'grapheme'` at least keeps combining marks and emoji intact — plain `[...str]` or `.split('')` does not.
+> **Budget the total span, not the per-piece step.** 40 segments × 45ms is an 1800ms animation; the frequency budget (law 2) applies to the *last* piece landing, not the first.
+
+---
+
+## `dragInertia` — gesture mechanics *(the four things that make drag feel real)*
+
+The decision map sketches this pattern; these are the mechanics. All four matter, and the first is the one people miss.
+
+**1. Dismiss on velocity, not distance.** A fast short flick should dismiss; a slow long drag should not. Judge the throw, not the displacement:
+
+```ts
+let startY = 0, startT = 0
+function onDown(e: PointerEvent) { startY = e.clientY; startT = performance.now() }
+function onUp(e: PointerEvent) {
+  const dist = e.clientY - startY
+  const velocity = Math.abs(dist) / (performance.now() - startT)   // px per ms
+  // >0.11 px/ms dismisses regardless of how far it actually travelled
+  if (velocity > 0.11 || Math.abs(dist) > threshold) dismiss()
+  else springBack()
+}
+```
+
+**2. `setPointerCapture` on drag start** — otherwise the drag dies the moment the pointer leaves the element, which is exactly what happens on a fast throw:
+
+```ts
+function onDown(e: PointerEvent) { (e.target as HTMLElement).setPointerCapture(e.pointerId) }
+```
+
+**3. Guard against extra touches.** A second finger landing mid-drag otherwise jumps the element:
+
+```ts
+let activeId: number | null = null
+function onDown(e: PointerEvent) { if (activeId !== null) return; activeId = e.pointerId /* … */ }
+function onUp(e: PointerEvent)   { if (e.pointerId !== activeId) return; activeId = null /* … */ }
+```
+
+**4. Friction at the bounds, never a hard stop.** Past the edge, scale the displacement down instead of clamping it — a hard clamp reads as broken, resistance reads as a boundary:
+
+```ts
+const past = raw - limit
+const resisted = past > 0 ? limit + past * 0.35 : raw      // rubber-band
+```
+
+> Keep a **non-drag path** for every drag affordance (a button, a keyboard handler). Drag-only is an accessibility dead end. And per the note above, write transforms directly inside an active drag rather than through reactive bindings.
+
+---
+
+## One-shot scroll reveal *(distinct from `scrollScrub`)*
+
+`scrollScrub` ties a value to scroll position continuously and reverses. This is the *other* thing — a reveal that fires **once** when the element enters view and then stays put. Different mechanism, different laws: this one is a discrete change (law 10 does not apply), so it can use normal easing.
+
+```ts
+import { useIntersectionObserver } from '@vueuse/core'
+const el = ref<HTMLElement>(), shown = ref(false)
+const { stop } = useIntersectionObserver(el, ([e]) => {
+  if (e.isIntersecting) { shown.value = true; stop() }      // once — then stop observing
+}, { threshold: 0.25 })
+```
+```css
+.reveal { clip-path: inset(0 0 100% 0); opacity: 0;
+          transition: clip-path 700ms var(--ease-out), opacity 400ms var(--ease-out); }
+.reveal.shown { clip-path: inset(0 0 0 0); opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .reveal { clip-path: none; opacity: 1; transition: none; } }
+```
+
+> Pick deliberately: if scrolling back up should *un-reveal* it, you want `scrollScrub`. If it should stay revealed, you want this — and you must `stop()` the observer, or it re-fires on every re-entry.
+
+---
+
+## hold-to-confirm *(destructive actions, without a modal)*
+
+A press-and-hold that fills to confirm. Replaces a confirm dialog for destructive-but-recoverable actions, and the physics do the persuading: **filling is slow and linear** (you're deciding), **release snaps back fast** (you changed your mind, and the UI should agree instantly).
+
+```vue
+<script setup lang="ts">
+const held = ref(false)
+let timer: number | undefined
+const start = () => { held.value = true; timer = window.setTimeout(doDelete, 2000) }
+const cancel = () => { held.value = false; clearTimeout(timer) }
+</script>
+
+<template>
+  <button class="hold" :class="{ held }" @pointerdown="start" @pointerup="cancel" @pointerleave="cancel">
+    <span class="fill" />Hold to delete
+  </button>
+</template>
+
+<style scoped>
+.fill { position: absolute; inset: 0; background: rgb(var(--v-theme-error));
+        clip-path: inset(0 100% 0 0);                     /* empty */
+        transition: clip-path 200ms var(--ease-out); }    /* the SNAP-BACK */
+.hold.held .fill { clip-path: inset(0 0 0 0);
+                   transition: clip-path 2000ms linear; } /* the FILL — linear, deliberate */
+@media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
+</style>
+```
+
+> **Linear is correct here** — the one place the skill's no-linear rule doesn't apply. This is a progress readout, not a UI transition; easing it would misrepresent how much time is left. Tone is destructive, so per the tone rule there is no overshoot anywhere in this combo.
+> Under reduced motion keep the mechanism (the hold still works, the fill just jumps) — never fall back to deleting on a single click.
+
+---
+
+## Vuetify specifics worth knowing
+
+**Menus and dialogs should grow from their activator, not the viewport centre.** Vuetify supports this directly — set `origin` and use a scale transition, and the overlay reads as *coming from the thing you clicked* (law 1, causality) instead of appearing from nowhere:
+
+```vue
+<v-menu origin="top left" transition="scale-transition">…</v-menu>
+<v-dialog origin="center center" transition="scale-transition">…</v-dialog>
+```
+
+**Tooltips: zero the delay once one is already open.** The first tooltip should wait; moving along a row of icons should not re-pay that wait each time. Share a flag across the group and drop `open-delay` to `0` while any of them is open:
+
+```vue
+<v-tooltip :open-delay="anyTooltipOpen ? 0 : 600" @update:model-value="v => anyTooltipOpen = v">
+```
+This is the single biggest perceived-speed win on an icon toolbar, and it costs one shared boolean.
+
+---
+
 ## Verifying web motion
 
-Use the `browse` or `run` skill, or headless Chrome/Playwright, to capture mid-motion. The two levers that turn "screenshot a blur" into a real check:
+**Run the bundled harness first** — it mechanically checks everything on the skill's checklist that doesn't require human judgement:
+
+```bash
+node ~/.claude/skills/animate/scripts/verify-motion.mjs \
+  --url http://localhost:8080/your-page \
+  --selector ".the-animated-element" \
+  --trigger ".the-button-that-starts-it" \
+  --pw <dir containing a playwright install>     # e.g. this project: storage/playwright
+```
+
+It asserts: the combo fires at all · starts within ~100ms (law 5) · animates only compositor properties (principle 9 — it will name any layout-triggering property you animated) · settles rather than spinning forever · survives a mid-flight retrigger without restarting from zero (principle 6) · and under `prefers-reduced-motion`, that positional travel is **dropped** while a colour/opacity **cue survives** (principle 7). Checks that don't apply are reported as SKIP rather than a hollow pass.
+
+> Two gotchas it already handles, both of which cost real time to rediscover: `waitUntil: 'networkidle'` **never fires against a Vite dev server** (the HMR websocket holds the connection open — use `domcontentloaded`), and `waitForSelector` defaults to `state: 'visible'`, so a zero-size marker element times out (use `state: 'attached'`).
+
+For anything the harness can't express, capture frames by hand. The two levers that turn "screenshot a blur" into a real check:
 
 ```ts
 // 1. Freeze mid-state — slow EVERYTHING ~10–25× so a still frame lands inside the motion.

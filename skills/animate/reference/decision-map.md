@@ -14,19 +14,19 @@ Infer what you can from the code; **ask the user only what you genuinely can't t
 
 | # | Fact | Options | Why it changes the motion |
 |---|---|---|---|
-| 1 | **Change class** | page/route · overlay/layer · in-place element · list/collection · feedback message · value/number | Picks the row in the map below. |
+| 1 | **Change class** | page/route · overlay/layer · in-place element · list/collection · feedback message · value/number · **continuous/scrubbed** | Picks the row in the map below. **Continuous is the odd one out** — there is no A and no B, just a value being tracked, so most of Step B doesn't bind. It has its own laws (Step B2) and its own restraint gate. |
 | 2 | **Relationship** | replace (siblings, same level) · drill-in (parent→child) · overlay (layer *above*, base persists) · dismiss/remove · reveal-beneath (a cover is removed) | The single most decisive fact. Determines direction and whether anything travels. |
 | 3 | **Origin** | has an on-screen anchor (a tapped card/button) · no anchor (comes from an edge) | An anchored change should **emanate from the anchor** (keeps the eye locked). No anchor → enter from the nearest logical edge. |
 | 4 | **Tone** | neutral · success/positive · error/critical · destructive | **Gates overshoot.** Bounce reads as *light/positive/transient*; errors must feel *firm*. See the tone rule. |
 | 5 | **Frequency** | once-per-launch · occasional · high-repeat (many×/session) | Sets the **duration & expressiveness budget**. The most-violated law. |
-| 6 | **Initiator** | user-action (expected, eye already there) · system-interrupt (must earn attention) | User action → fast & direct. System interrupt → enter from periphery + a settle that draws the eye. |
+| 6 | **Initiator** | user-action (expected, eye already there) · system-interrupt (must earn attention) · **continuous driver** (scroll / pointer / drag — no discrete trigger at all) | User action → fast & direct. System interrupt → enter from periphery + a settle that draws the eye. Continuous driver → the user *is* the clock; see Step B2. |
 | 7 | **Constraints** | reduced-motion (always) · is the user *reading / mid-task* here? · RTL? | Hard gates. Reading surface → don't move what they're reading. Reduced-motion → keep the cue, drop the transform (see SKILL). |
 
 ---
 
-## Step B — The 8 governing laws
+## Step B — The governing laws
 
-Four of these the SKILL already enforces at execution time (marked ⚙️). The other four are the **judgment** laws — they decide *what to even propose*, and are the reason this file exists.
+Laws 1–8 govern **discrete** state changes (*"X went from A to B"*) — that's every change class except `continuous/scrubbed`, which has its own four in **Step B2**. Four of these the SKILL already enforces at execution time (marked ⚙️). The other four are the **judgment** laws — they decide *what to even propose*, and are the reason this file exists.
 
 1. **Motion is causality.** Everything must answer *"what caused this and where did it come from."* Origin-less fade-ins (things appearing from nowhere) read as cheap. Default to a spatial origin (fact 3).
 2. **Frequency ∝ 1/expressiveness.** The governor. Enforce a hard duration budget by frequency:
@@ -40,6 +40,13 @@ Four of these the SKILL already enforces at execution time (marked ⚙️). The 
 3. **Enter slow, exit fast.** Exit ≈ **0.75×** the entrance duration. Nobody needs to track what's leaving.
 4. **Overshoot encodes tone** (the tone rule, below).
 5. ⚙️ **Doherty / responsiveness.** The animation must *start* within ~100ms of the trigger, regardless of total length. Delay content *inside* the motion, never the start.
+
+   **Perceived latency is a separate lever from the start time, and usually a bigger one.** Below ~80ms a response reads as instantaneous; past that the user is waiting, and the fix is rarely "make the animation shorter":
+   - **Optimistic UI** — render the success state immediately and reconcile on failure. Removes the wait rather than decorating it.
+   - **Start the skeleton before the request.** Fire it on the *intent* (the click), not on the response, so the loading state doesn't itself arrive late.
+   - **Progressive / early completion** — show a progress indicator finishing slightly ahead of the real work, and reveal content as it streams rather than all at once at the end.
+
+   A 400ms operation that *feels* instant beats a 200ms one that feels laggy. Reach for these before you start shaving durations.
 6. **Opacity leads position.** Fade should be ~70% complete *before* travel stops — otherwise the thing "arrives blurry-late" and feels laggy. Never end opacity and transform on the same frame.
 7. ⚙️ **Interruptible where retargetable** (SKILL principle 6): value-tied motion uses springs/WAAPI that retarget from current position; one-shot bursts may use remounted keyframes.
 8. ⚙️ **Reduced-motion always keeps the cue** and ⚙️ **RTL flips horizontal travel only** (SKILL principles 7–8).
@@ -47,6 +54,28 @@ Four of these the SKILL already enforces at execution time (marked ⚙️). The 
 ### The tone rule (law 4, expanded)
 
 > **Overshoot / bounce is allowed only when tone ∈ {neutral, success}.** For **error / destructive**, use critical damping — a plain strong ease-out (`--ease-out`), never a back-bezier. A bouncy error toast reads as "I'm not serious." If an error needs *more* emphasis, add a small horizontal **shake** (±2–3px, 2 cycles), not a bounce. Match the physics to the emotional register.
+
+---
+
+## Step B2 — The scrubbed-motion laws (laws 9–12)
+
+**These apply only when the driver is continuous** — scroll position, pointer coordinates, a drag delta. Continuous motion is not a state change with a beginning and an end; it's a value being *tracked*. Most of Step B assumes a discrete A→B and simply doesn't bind here (there is no "exit", no "tone", no duration to budget). These four replace it.
+
+9. **Never bind a continuous input 1:1.** Route scroll/pointer/drag through a **damped follower** — each frame, move the rendered value a fraction of the way toward the raw input, or drive it with a spring. Raw binding reads as mechanical and faithfully reproduces every jitter in the input device. A catch-up factor of ~0.08–0.15 per frame is the usual starting point. *This is the single most-repeated idea in the reference material and the one that most separates "scroll effect" from "physical".*
+10. **Scrubbed motion is reversible and stateless.** The rendered value must be a pure function of the driver's *current* position, so scrolling back up retraces exactly. Never fire a one-shot keyframe off a scroll threshold that can't un-fire — that is precisely why most scroll effects break when the user scrolls backwards.
+11. **Easing curves don't mean what they mean elsewhere.** A `cubic-bezier` maps **time** → progress. When position is the driver, *the user controls time*, so a bezier on the scrub itself is meaningless. All the shaping you want lives in the **damping** (how fast the follower catches up), not in an easing function. Ease the follower; never ease the scrub.
+12. ⚙️ **Reduced-motion means UNBIND the driver, not shorten it.** Law 8's "keep the cue, drop the transform" has no meaning here — there's no state change to communicate, so there's no cue to preserve. Snap the property to its resting/settled value and **stop tracking entirely**. A faster parallax is still parallax.
+
+### The continuous restraint gate (run this *before* Step C)
+
+The restraint gate in SKILL step 3 is written for discrete motion and under-filters here, because scrubbed effects don't announce themselves as "an animation" — they read as "the page". Scroll- and pointer-driven motion is overwhelmingly **hero/marketing vocabulary**, and this skill is subtle-by-default. Recommend **none** unless *all* of these hold:
+
+- **The surface is presentational, not operational.** A landing page, a report cover, an onboarding beat. Never a data table, a form, a dashboard the user works in daily, or anything they *read while it moves*.
+- **The motion carries meaning, not just texture.** A stack that shows depth-order, a mask that reveals what you scrolled to. "It looks nice" is not a reason — it's the definition of the noise this skill exists to avoid.
+- **It survives being scrubbed backwards and at speed.** If it only looks right at one scroll velocity in one direction, it isn't finished.
+- **It costs nothing on the hot path.** Pointer-tracking on a page a power user lives in is a permanent compositor tax for a permanent distraction.
+
+For a B2B/ops surface the honest answer is almost always "no" — say so in one line and move on. That is a *result*, not a failure to deliver.
 
 ---
 
@@ -68,6 +97,11 @@ Find your **change class** (fact 1) + **relationship** (fact 2). The pattern is 
 | **Feedback** | transient msg, **no** origin | `toast-snackbar` (SKILL) — same-edge spring in/out | spatial consistency: leaves the way it came | tone-gated overshoot |
 | **Value / number** | count / total changes | `count-up + badge-pop` (SKILL) | the number rolls; the badge punches to mark the change | `--ease-out` roll, overshoot pop |
 | **Brand / loading moment** | splash / launch screen | `brandReveal` → new — **mode depends on intent** (show-off vs. cover-a-wait); see Step D | it's not a state transition, it's a brand+loading beat — different rules | non-blocking; time-boxed to data-load |
+| **Continuous / scrubbed** | scroll drives a reveal, stack, or mask | `scrollScrub` → new — damped scroll progress drives clip/transform/blur | position is the clock, and the user scrubs it *both* ways | damping 0.08–0.15; **no bezier on the scrub** (law 11) |
+| **Continuous / scrubbed** | pointer drives depth / tilt | `pointerParallax` → new — pointer offset from centre × a per-layer depth multiplier, **clamped** | fakes depth-of-field from one signal; the clamp is what stops it breaking at screen edges | spring follow + hard `maxTravel` cap |
+| **Continuous / scrubbed** | drag drives position | `dragInertia` → new — pointer delta drives position; velocity decays after release; resistance near bounds | matches the physical expectation of *throwing* something | decay ~0.92/frame; nonlinear damping at bounds |
+
+> All three are gated by **Step B2's continuous restraint gate** first. On an operational surface the correct output is "none" — don't route into these rows just because the target happens to scroll.
 
 **If two rows both fit, `Frequency` breaks the tie** — the higher-frequency reading picks the cheaper pattern (drop overshoot, drop stagger, shorten). When in doubt, propose the expressive one *and* the calm one and let the user feel both.
 
@@ -116,6 +150,27 @@ Compose the actual sequence from the frequency + brand personality; don't reprod
 - `containerTransform` — drill-in: the destination grows from the tapped element's rect (FLIP from `getBoundingClientRect()`; RTL-safe, don't flip real-coordinate travel).
 - `fadeThrough` — unrelated in-place swap: `out-in` cross-fade with a tiny `scale(0.99)`/blur bridge (see `skeleton-to-content` in `web.md` for the mechanics), no positional travel.
 
+### The three continuous patterns
+
+All three share **one primitive** — a damped follower (law 9). Build that once (`useDampedValue` in `web.md`) and these are three different things plugged into it, not three separate implementations.
+
+#### `scrollScrub` — scroll position drives a reveal
+- **When:** a presentational surface where the *act of scrolling* is what reveals or reorders something — a stacking deck of cards, a masked hero, a pinned section. Passed the Step B2 gate.
+- **Choreography:** map the element's scroll range to `0→1`, push that through the damped follower, then drive the visual off the *damped* value — clip/mask geometry, `translateY`, `scale`, and (for depth-ordered stacks) `blur` + dim proportional to how many layers cover it. Covered items keep a few px of `peek` so the stack reads as a stack.
+- **Craft rule:** the damping is the entire feel. `0` (exact tracking) is the mechanical default everyone ships; `0.1` is where it starts feeling physical. Offer this as *the* knob.
+- **When NOT:** any surface the user reads or works in; anything where the content must be reachable without scrolling; when `prefers-reduced-motion` is set — then bind nothing and render the settled state (law 12).
+
+#### `pointerParallax` — pointer position fakes depth
+- **When:** a small group of deliberately-floating elements (badges, layered cards, a mockup) on a presentational surface, where a sense of depth is the point.
+- **Choreography:** normalize pointer offset from the element's centre to `-1..1`, multiply by a **per-element depth multiplier** (background layers move *less*), **clamp to a hard `maxTravel`**, and spring toward it. Optionally add a capped `rotateX/Y` on the same signal for tilt.
+- **Two craft rules:** (1) the clamp is not optional — unclamped, the effect inverts and detaches at screen edges; (2) use **two separately-tuned spring configs** — one stiff one for the element's initial settle-into-place, a looser one for the ongoing follow. One config for both always makes one of the two feel wrong.
+- **When NOT:** touch-primary surfaces (there is no pointer — either drop it or substitute a slow time-based drift); anything with more than ~8 tracked elements (a compositor layer each); any surface the user operates rather than looks at.
+
+#### `dragInertia` — drag with momentum and edges
+- **When:** a pannable/spinnable surface the user is meant to *throw* — a gallery, a canvas, a circular carousel.
+- **Choreography:** accumulate pointer delta into position while dragging; on release, carry the last velocity and decay it (~0.92/frame) until it falls below a threshold; near bounds apply **nonlinear** resistance (displacement past the edge scales down sharply) and spring back on release.
+- **When NOT:** anything with a small fixed item count where plain buttons are clearer and reachable; **always** keep a non-drag path (buttons/keyboard) — drag-only is an accessibility dead end.
+
 ---
 
 ## Step E — Worked examples (the reasoning, end to end)
@@ -128,13 +183,17 @@ Facts: change=page · relationship=**reveal-beneath** · origin=none (full-scree
 Facts: change=feedback · relationship=transient-with-origin (the cart button) · origin=**yes** · tone=**success** · frequency=occasional · initiator=user.
 → Map gives **`originExpand`**, and tone=success **unlocks** the overshoot settle. Budget (occasional) caps it ≤350ms. Rationale: *"Morph from the cart button so the eye stays on where you tapped; slight jelly settle because it's a positive event. Width stays monotonic to avoid text jitter."* **Counter-example to show the judgment:** if this were an **error** toast, same choreography but the settle switches to critical-damped + a 2px shake — *never* the bounce. That swap is the whole point of the map.
 
+**3. "Add that scroll-stacking card effect to the orders dashboard."** *(the continuous class, correctly refused)*
+Facts: change=**continuous/scrubbed** · initiator=continuous driver (scroll) · frequency=**high-repeat** (an ops user lives here) · reading=**yes** (it's a data surface).
+→ Step B2's continuous gate fails on two counts before Step C is ever consulted: the surface is **operational, not presentational**, and the user **reads while it moves**. Answer: *"No — `scrollScrub` is landing-page vocabulary, and on a board someone works in eight hours a day the stacking would fight every scan for a row. The one thing I'd consider instead is a plain `list-stagger` on first load, which costs nothing after the first paint."* **This refusal is the point of the class existing** — adding a continuous axis to this skill without its gate would turn `/animate` into a hero-effect dispenser. Contrast: the same request on a *marketing* page or a report cover passes the gate and routes to `scrollScrub` with damping as the offered knob.
+
 ---
 
 ## How the executor uses this (wire into the workflow)
 
 Between SKILL **step 3 (restraint gate)** and **step 4 (propose 2–4)**:
 
-1. **Name the state change** in one sentence.
+1. **Name the state change** in one sentence. If you can't — because nothing goes from A to B, there's just a value being tracked — the class is **continuous/scrubbed**; go straight to Step B2's gate before anything else.
 2. **Collect the 7 facts** — infer from code, ask only the unknowns (usually just tone + frequency).
-3. **Look up the ranked pattern(s)** in Step C; apply the duration budget and tone rule.
+3. **Look up the ranked pattern(s)** in Step C; apply the duration budget and tone rule (or, for continuous, laws 9–12).
 4. **Propose with rationale.** Every proposed idea must cite the facts that drove it — *"because this is high-frequency I'm keeping it ≤200ms and dropping the overshoot"* — so the user is choosing between *reasoned* options, not vibes. Still present 2–4 (an expressive one and a calm one) and let them feel both.

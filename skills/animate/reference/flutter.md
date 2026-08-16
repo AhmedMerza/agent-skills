@@ -220,5 +220,170 @@ GestureDetector(
 
 ---
 
+## Continuous drivers — the damped follower  *(build this FIRST)*
+
+Same primitive as web (decision-map law 9): scroll/drag/pointer never binds 1:1 to a rendered value. Build once, reuse for every continuous driver.
+
+```dart
+import 'dart:math' as math;
+import 'package:flutter/scheduler.dart';
+
+/// catchUp: fraction of remaining distance closed per 60fps frame. 0.08–0.15 is the working range.
+/// epsilon: how close counts as arrived, IN THE CALLER'S UNITS. 0.01 is sub-pixel for logical
+///          pixels; pass 1e-4 for a normalized 0..1 driver like scroll progress.
+class DampedValue {
+  DampedValue(TickerProvider vsync, {double initial = 0, this.catchUp = 0.1, this.epsilon = 0.01})
+      : value = ValueNotifier(initial), _target = initial, _current = initial {
+    _ticker = vsync.createTicker(_tick)..start();
+  }
+
+  final double catchUp;
+  final double epsilon;
+  final ValueNotifier<double> value;   // watch this with ValueListenableBuilder
+  double velocity = 0;                 // free by-product — feeds velocity-derived blur
+  bool reduce = false;                 // set from MediaQuery.of(context).disableAnimations
+
+  double _target, _current;
+  late final Ticker _ticker;
+  Duration _last = Duration.zero;
+
+  set target(double v) => _target = v;
+
+  void _tick(Duration now) {
+    final dt = ((now - _last).inMicroseconds / 1000.0).clamp(0.0, 64.0); // clamp: backgrounded app must not teleport
+    _last = now;
+    if (reduce) {                                    // law 12: UNBIND, don't shorten
+      _current = _target; velocity = 0;
+    } else {
+      final delta = _target - _current;
+      if (delta.abs() < epsilon) {
+        _current = _target; velocity = 0;                                // land exactly, stop burning frames
+      } else {
+        final step = delta * (1 - math.pow(1 - catchUp, dt / 16.67));    // frame-rate independent (120Hz devices)
+        _current += step;
+        // velocity is the DISPLACEMENT THIS FRAME, normalized to 60fps — NOT the remaining
+        // distance, which is ~1/catchUp larger and pins any velocity-derived effect at its clamp.
+        velocity = step * (16.67 / dt);
+      }
+    }
+    value.value = _current;
+  }
+
+  void dispose() { _ticker.dispose(); value.dispose(); }
+}
+```
+
+### `scrollScrub` — scroll drives a reveal
+
+```dart
+// in a State with SingleTickerProviderStateMixin
+late final _damped = DampedValue(this, catchUp: 0.1, epsilon: 1e-4);  // 0..1 driver → tighter epsilon
+final _scroll = ScrollController();
+
+@override void initState() {
+  super.initState();
+  _scroll.addListener(() {
+    final max = _scroll.position.maxScrollExtent;
+    _damped.target = max <= 0 ? 0 : (_scroll.offset / max).clamp(0.0, 1.0);
+  });
+}
+@override void didChangeDependencies() {
+  super.didChangeDependencies();
+  _damped.reduce = MediaQuery.of(context).disableAnimations;   // law 12
+}
+@override void dispose() { _damped.dispose(); _scroll.dispose(); super.dispose(); }
+
+// law 10: a pure function of current position — scrubs backwards correctly, no one-shot state
+ValueListenableBuilder<double>(
+  valueListenable: _damped.value,
+  builder: (_, t, child) => Opacity(
+    opacity: 0.4 + t * 0.6,
+    child: Transform.translate(offset: Offset(0, (1 - t) * 40), 
+      child: Transform.scale(scale: 0.96 + t * 0.04, child: child)),
+  ),
+  child: const HeavySubtree(),   // passed as `child` so it is NOT rebuilt every frame
+)
+```
+
+> **Pass the subtree as `child:`, not inside the builder.** The builder runs every frame; anything constructed in there is rebuilt 60–120×/sec. This is the single most common way a Flutter scrub effect becomes a jank source.
+> **No `Curve` anywhere on a scrubbed value** (law 11) — a curve maps *time*→progress and the user owns time here. The shaping is `catchUp`.
+
+### `pointerParallax` — desktop/web only, and that's a design decision
+
+```dart
+// There is no pointer on touch. Do NOT ship a degraded version — render the settled state.
+final hasPointer = {TargetPlatform.macOS, TargetPlatform.windows, TargetPlatform.linux}
+    .contains(Theme.of(context).platform) || kIsWeb;
+
+MouseRegion(
+  onHover: (e) {
+    final size = MediaQuery.of(context).size;
+    const maxTravel = 12.0;                       // the clamp is NOT optional
+    final nx = (e.position.dx / size.width  - 0.5) * 2;
+    _dx.target = (nx * maxTravel * depth).clamp(-maxTravel, maxTravel);   // depth: 0 = pinned, 1 = foreground
+  },
+  child: ValueListenableBuilder<double>(
+    valueListenable: _dx.value,
+    builder: (_, x, child) => Transform.translate(offset: Offset(x, 0), child: child),
+    child: layer,
+  ),
+)
+```
+
+> **RTL:** derived from **real pointer coordinates**, so it's already correct — do not apply the `sx` flip (same rule as `fly-to-target`/`Hero`).
+> **Two-config springs** (`techniques.md` §3): the `catchUp` above is the *follow* regime. An entrance settle wants its own, stiffer config — typically a `SpringSimulation` with higher stiffness. One config cannot serve both.
+> On touch-primary builds this whole widget should not exist. Gate it, don't tune it down.
+
+### Velocity-derived blur, free from the follower
+
+```dart
+import 'dart:ui' as ui;
+// techniques.md §2 — blur reads as SPEED: 0 at rest, clamped at the top.
+final sigma = math.min(_damped.velocity.abs() * 0.6, 12.0);
+ImageFiltered(
+  imageFilter: ui.ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
+  child: child,
+)
+```
+> Blur is a real render-pass cost on mobile GPUs — spend it on **one** widget, never inside a `ListView`. When `sigma` reaches 0, drop the `ImageFiltered` wrapper entirely rather than leaving a zero-blur filter in the tree.
+
+---
+
+## Text segmentation + stagger order  *(techniques.md §1)*
+
+```dart
+enum Order { forward, reverse, centreOut, random }
+
+/// Stagger index → delay rank. Order encodes WHERE the change came from (law 1).
+int rank(int i, int n, Order order) => switch (order) {
+  Order.reverse   => n - 1 - i,
+  Order.centreOut => (i - (n - 1) / 2).abs().round(),
+  Order.random    => (i * 2654435761) % n,        // deterministic — stable across rebuilds
+  Order.forward   => i,
+};
+```
+```dart
+// Split by WORD (see the RTL warning below before reaching for characters).
+final words = text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+
+Semantics(                     // the split text is unreadable to TalkBack/VoiceOver — expose the intact string
+  label: text,
+  child: ExcludeSemantics(
+    child: Wrap(children: [
+      for (final (i, w) in words.indexed)
+        Text('$w ').animate()
+          .fadeIn(delay: (rank(i, words.length, order) * 45).ms, duration: 380.ms)
+          .slideY(begin: 0.25, end: 0, curve: easeOut),
+    ]),
+  ),
+)
+```
+
+> **Never split Arabic by character.** `text.characters` gives correct grapheme clusters (always prefer it over `split('')`, which mangles emoji and combining marks) — but putting each glyph in its own `Text` widget **breaks cursive shaping**, because each widget is shaped in isolation with no joining context, and each becomes its own bidi run so the right-to-left order scrambles too. Measured on the web side of this same bilingual app: `مرحبا بكم في أوريم` rendered +22% wider split per character (321.5px → 392.7px) with visibly disconnected, mis-ordered glyphs; split per word the delta was 0.0px. Flutter shapes text per-widget the same way, so the failure carries over. Per-character is a rendering bug in `ar`, not a style choice — split by word or line.
+> Gate on `MediaQuery.of(context).disableAnimations` — render the whole string at once, no stagger.
+> Budget the **total** span: 40 words × 45ms is 1800ms before the last one lands. Law 2 applies to the last piece, not the first.
+
+---
+
 ## Verifying Flutter motion
 Hot-reload and screenshot, drive via `flutter test` golden frames, or describe the curve/duration choices and confirm against the tokens above. Prefer implicit widgets (`AnimatedScale/Opacity/Switcher`) and `Transform`/`Opacity` over rebuilding layout; gate big travel behind `disableAnimations`.
