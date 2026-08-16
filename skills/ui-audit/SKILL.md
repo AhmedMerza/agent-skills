@@ -36,7 +36,13 @@ Vuetify handles baseline a11y (ARIA roles on components, keyboard nav on `v-tabs
 
 ### 2. Animation & Motion
 
-Consult [motion-design reference](../ui-polish/reference/motion-design.md) for principles.
+Consult the **`animate`** skill for principles — its [decision map](../animate/reference/decision-map.md) holds the laws (frequency budget, tone rule, enter-slow-exit-fast, reduced-motion) and its [web recipes](../animate/reference/web.md) hold the fixes. `ui-polish` no longer carries motion guidance.
+
+To check the items below **mechanically** rather than by reading code, run the animate skill's harness against the page — it reports layout-triggering properties, missing reduced-motion cues, and non-interruptible motion directly:
+
+```bash
+node ~/.claude/skills/animate/scripts/verify-motion.mjs --url <page> --selector <css> --trigger <css> --pw <playwright dir>
+```
 
 **Check for:**
 - **`transition: all`**: Must specify exact properties (`transition: transform 200ms ease-out`)
