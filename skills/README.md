@@ -20,6 +20,9 @@ optional.
 `/grill-me` → plan → `/validate-plan` → build → `/ship-check` → (`/spinoff`) → `/mr-create`
 UI in the mix: `/design` before building → `/ui-polish` · `/animate` while → `/ui-audit` · `/ux-audit` after.
 
+**The design system itself has rotted**
+`/design-drift` — whole-repo, Flutter or Vue: is the system adopted, or decorative? Measures token adoption as ratios, finds scales that were never built and kits that exist twice, then scaffolds the missing layer and guards it. Standalone; feeds `/issue` or a branch.
+
 **New work, and you *don't* know the shape of it**
 `/scout` → destination named, route clear → rejoins the flow above (at `/grill-me`, or straight at plan if scout already settled it)
 
@@ -55,6 +58,8 @@ UI in the mix: `/design` before building → `/ui-polish` · `/animate` while �
 - **`/skill-audit` stage 1 never edits a skill, and n=1 is never enough.** It logs observable evidence and stops. One bad run is an anecdote; a bad prompt edit fails no test and degrades every future run silently.
 - **`/spinoff` never touches the branch.** It lists follow-ups; it does not implement them. The instant it commits, it's scope creep and `ponytail` wins the argument. Its normal output is *nothing*.
 - **`/ship-check` findings are not `/spinoff` findings.** Missing = blocks the merge, fix it in the branch. Cheap = blocks nothing, file it for later. If a "spinoff" would break production by not being done, it was a ship-check leak.
+- **`/design` picks a system; `/design-drift` checks it held.** Same subject, opposite direction — one is greenfield and web-only, the other reads an existing repo and is stack-agnostic. Don't reach for `/design` on a codebase that already has tokens.
+- **`/ui-audit` is per-page; `/design-drift` is per-repo.** A page audit can never see that you own two button kits or that no type scale exists — it only inspects what's on the page. Duplication and *absence* need the whole tree.
 
 ## Planning & Judgment
 
@@ -93,6 +98,7 @@ UI in the mix: `/design` before building → `/ui-polish` · `/animate` while �
 | `ui-polish` | UI polish, animation decisions, interaction patterns, and the invisible details that make interfaces feel great. *(adapted from Emil Kowalski)* |
 | `ui-audit` | Technical UI quality checks — a11y, performance, theming, responsive, interaction states, anti-patterns. Scored report with severities. Vue 3 + Vuetify + Inertia. |
 | `ux-audit` | Judges whether a page/flow actually works for its user via behavioral psychology tied to the page's one real goal. Advisory; ethics- and restraint-gated. |
+| `design-drift` | Whole-repo design-system health — token adoption as ratios, scales never built, duplicate component kits, icon sprawl, RTL safety. Then scaffolds the missing layer and guards it. Flutter + Vue/Vuetify. |
 
 ## Docs & Release
 
