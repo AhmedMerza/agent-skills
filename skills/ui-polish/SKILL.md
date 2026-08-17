@@ -1,15 +1,15 @@
 ---
 name: ui-polish
-description: Visual and interaction craft for Vue 3 / Vuetify UI — typography, color and contrast, spacing and hierarchy, interaction states, responsive behaviour, UX copy, and the invisible details that make interfaces feel considered. Use when reviewing or building UI that looks generic, unbalanced, or unfinished, or when choosing type scales, palettes, spacing systems, focus/hover/disabled states, or button and error copy. NOT for motion — all animation, transitions, springs, gestures, and scroll/pointer-driven effects belong to the `animate` skill. Adapted from Emil Kowalski's design engineering philosophy.
+description: Visual and interaction craft for Vue 3 / Vuetify and Flutter UI — typography, color and contrast, spacing and hierarchy, interaction states, responsive behaviour, UX copy, and the invisible details that make interfaces feel considered. Use when reviewing or building UI that looks generic, unbalanced, or unfinished, or when choosing type scales, palettes, spacing systems, focus/hover/disabled states, or button and error copy. NOT for motion — all animation, transitions, springs, gestures, and scroll/pointer-driven effects belong to the `animate` skill. Adapted from Emil Kowalski's design engineering philosophy.
 ---
 
-# Design Engineering (Vue 3 Edition)
+# Design Engineering
 
 ## Initial Response
 
 When this skill is first invoked without a specific question, respond only with:
 
-> I'm ready to help you polish your Vue interfaces — type, color, spacing, interaction states, and the invisible details that make software feel right. This knowledge is adapted from Emil Kowalski's design engineering philosophy. For deeper learning, check out [animations.dev](https://animations.dev/).
+> I'm ready to help you polish your interfaces — type, color, spacing, interaction states, and the invisible details that make software feel right. Works on Vue 3 / Vuetify and Flutter. This knowledge is adapted from Emil Kowalski's design engineering philosophy. For deeper learning, check out [animations.dev](https://animations.dev/).
 
 Do not provide any other information until the user asks a question.
 
@@ -25,7 +25,8 @@ The boundary is simple: **if it changes over time, it's `animate`. If it's true 
 
 ## Reference Documents
 
-Consult these for deep guidance on specific topics:
+Consult these for deep guidance on specific topics. The principles are stack-agnostic; the code
+examples show Vue 3 / Vuetify and Flutter side by side, so read the pair that matches the target.
 - [Typography](reference/typography.md) — scales, pairing, loading, OpenType features
 - [Color & Contrast](reference/color-and-contrast.md) — OKLCH, palettes, WCAG, dark mode
 - [Spatial Design](reference/spatial-design.md) — spacing systems, grids, hierarchy, depth
@@ -68,14 +69,31 @@ When reviewing UI code, you MUST use a markdown table with Before/After columns:
 | `:hover` styling with no `:focus-visible` | Add `:focus-visible` with a visible ring | Keyboard users get no affordance at all otherwise |
 | Button labelled "Submit" | "Create order" | Label the outcome, not the mechanism |
 
+Write the Before/After in the **target platform's own syntax** — a CSS diff shown to someone
+working in Dart is noise. The Flutter equivalents of the rows above:
+
+| Before | After | Why |
+| --- | --- | --- |
+| `TextStyle(fontSize: 13, height: 1.2)` | `height: 1.5` | `height` is a *multiplier* in Flutter, not px — 1.2 is as tight as web's 1.2 |
+| `EdgeInsets.symmetric(horizontal: 11, vertical: 13)` | `EdgeInsets.all(Tokens.space3)` | Arbitrary values; snap to the scale or it reads as unsystematic |
+| `IconButton` at 28×28 | `minimumSize: Size(48, 48)` (visual size can stay) | Material guidance is 48dp; below that fails touch-target regardless of looks |
+| `InkWell` with no focus affordance | add `focusColor` / a `Focus` ring | Flutter draws **no** focus ring by default on custom widgets — keyboard users get nothing |
+| `EdgeInsets.only(left: 16)` | `EdgeInsetsDirectional.only(start: 16)` | Plain `EdgeInsets` does not flip under RTL |
+| `onPressed: () {}` on a busy button | `onPressed: null` while busy | The null callback *is* the disabled state; an empty closure looks enabled and does nothing |
+
 Pick the rows that fit what you actually found — don't pad the table to look thorough. If the UI is genuinely fine, say so.
 
 ## Checklist before you call it done
 
-- [ ] Text meets contrast minimums (4.5:1 body, 3:1 large/UI) in **both** light and dark themes.
-- [ ] Every interactive element has hover, `:focus-visible`, active, and disabled states — not just hover.
-- [ ] Touch targets are ≥44px, even where the visual affordance is smaller.
+- [ ] Text meets contrast minimums (4.5:1 body, 3:1 large/UI) in **every** theme the app ships, not just the default one.
+- [ ] Every interactive element has hover, focus, active, and disabled states — not just hover.
+      Web: `:focus-visible`. Flutter: `WidgetStateProperty` / an explicit `Focus` ring, since
+      nothing is drawn for you. On touch targets hover never fires — don't hide meaning in it.
+- [ ] Touch targets are ≥44px (web/iOS) or ≥48dp (Material), even where the visual affordance is smaller.
 - [ ] Spacing and type sizes come from the scale, not from eyeballed one-off values.
 - [ ] Empty, loading, and error states exist and say something useful.
 - [ ] Copy names outcomes, not mechanisms; errors say what to do next.
+- [ ] Layout survives OS text scaling — on mobile this is far more aggressive than browser zoom,
+      and hardcoded heights are where it breaks.
+- [ ] Directional padding is direction-safe if the app ships an RTL locale.
 - [ ] Nothing here is a motion decision — if it moves, it went to `animate`.

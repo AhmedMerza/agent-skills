@@ -58,6 +58,26 @@ Empty states are onboarding moments:
 </v-card>
 ```
 
+### Flutter Empty States
+
+Same three parts — icon, what's missing, the way out. Flutter ships no empty-state widget, so
+the `itemCount == 0` branch is yours to write and easy to forget entirely.
+
+```dart
+if (orders.isEmpty)
+  Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+    Icon(AppIcons.inbox, size: 48, color: colors.fgMuted),
+    SizedBox(height: Tokens.space4),
+    Text('No orders yet', style: type.cardTitle),
+    SizedBox(height: Tokens.space2),
+    Text('Orders will appear here once customers place them.',
+        style: type.body.copyWith(color: colors.fgMuted),
+        textAlign: TextAlign.center),
+    SizedBox(height: Tokens.space4),
+    AppButton(label: 'Create order', onPressed: _create),
+  ])
+```
+
 ## Voice vs Tone
 
 **Voice** is your brand's personality—consistent everywhere. **Tone** adapts to the moment:

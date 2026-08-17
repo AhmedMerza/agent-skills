@@ -17,6 +17,8 @@ Every interactive element needs these states designed:
 
 **The common miss**: Designing hover without focus, or vice versa. Keyboard users never see hover states.
 
+**Flutter has no CSS state pseudo-classes.** States come from `WidgetStateProperty`/`WidgetState.hovered|focused|pressed|disabled|selected` (renamed from `MaterialStateProperty`), or explicit widgets: `InkWell`/`GestureDetector` for press, `MouseRegion` for hover, `Focus`/`FocusNode` for focus. Hover only fires on desktop/web — touch never sees it. Disabled has no separate flag: `onPressed: null` *is* the disabled state.
+
 ## Focus Rings: Do Them Right
 
 **Never `outline: none` without replacement.**
@@ -30,6 +32,17 @@ button:focus-visible {
 }
 ```
 
+**Flutter**
+
+```dart
+Focus(
+  onFocusChange: (has) => setState(() => _focused = has),
+  child: InkWell(focusColor: theme.accentColor, onTap: () {}, child: label),
+)
+```
+
+Flutter draws no focus ring by default on most custom widgets — you opt in explicitly via `focusColor`/`Focus`, unlike the browser's built-in outline.
+
 **Focus ring design**: High contrast (3:1 minimum), 2-3px thick, offset from element, consistent everywhere.
 
 ## Form Design
@@ -42,6 +55,13 @@ button:focus-visible {
 - Use `v-form` with `ref` for programmatic validation
 - Error messages appear below fields automatically
 - Use `persistent-hint` for format guidance that doesn't disappear
+
+### Flutter Form Patterns
+
+- `TextFormField` + `InputDecoration(labelText:, errorText:)` for built-in label/error display
+- Wrap fields in a `Form` with a `GlobalKey<FormState>` for programmatic validation (`formKey.currentState!.validate()`)
+- Set `autovalidateMode: AutovalidateMode.onUserInteraction` to validate after first interaction, not every keystroke
+- `FormField<T>` for custom fields that need the same validation/error plumbing
 
 ## Loading States
 
@@ -57,6 +77,16 @@ button:focus-visible {
 </template>
 ```
 
+### Flutter Loading Patterns
+
+```dart
+loading
+    ? const _SkeletonCard()   // custom shimmer widget
+    : ContentCard(data: content)
+```
+
+Flutter has no built-in skeleton widget — build one with a pulsing `AnimatedOpacity`/gradient shimmer, or swap subtrees like above.
+
 ## Overlay Positioning
 
 Dropdowns inside `overflow: hidden` containers will be clipped. Solutions:
@@ -64,6 +94,10 @@ Dropdowns inside `overflow: hidden` containers will be clipped. Solutions:
 ### Vuetify's Built-in Handling
 
 Vuetify's `v-menu`, `v-select`, `v-autocomplete` use `<Teleport to="body">` internally—they escape overflow containers automatically. This is one of Vuetify's strongest features.
+
+### Flutter's Built-in Handling
+
+Flutter has no DOM to clip against — `showModalBottomSheet`, `showDialog`, and `Navigator` push into the app's overlay stack above everything, so there's no overflow-clipping problem to solve. Focus trapping inside these is handled for you, unlike on the web.
 
 ### Custom Overlays
 
@@ -110,10 +144,12 @@ For component groups (tabs, menu items, radio groups), one item is tabbable; arr
 
 Vuetify's `v-tabs`, `v-btn-toggle`, and `v-radio-group` handle roving tabindex automatically.
 
+**Flutter**: arrow-key/D-pad traversal within a group uses `FocusTraversalGroup`; widgets like `TabBar` handle it internally, same idea as Vuetify above.
+
 ## Gesture Discoverability
 
 Swipe-to-delete and similar gestures are invisible. Always provide a visible fallback (menu with "Delete"). Don't rely on gestures as the only way to perform actions.
 
 ---
 
-**Avoid**: Removing focus indicators without alternatives. Using placeholder text as labels. Touch targets <44x44px. Generic error messages. Custom controls without ARIA/keyboard support.
+**Avoid**: Removing focus indicators without alternatives. Using placeholder text as labels. Touch targets <44×44px (web/iOS) / <48×48dp (Flutter Material — `MaterialTapTargetSize`, button `minimumSize`). Generic error messages. Custom controls without ARIA/keyboard support.

@@ -91,14 +91,22 @@ UI in the mix: `/design` before building → `/ui-polish` · `/animate` while �
 
 ## UI / UX
 
-| Skill | What it does |
-|-------|--------------|
-| `design` | Industry-specific UI/UX recommendations BEFORE building — color palettes (hex), font pairings, layout patterns, anti-pattern warnings. |
-| `animate` | Adds physical, subtle motion to a UI target on web (Vue 3 / Vuetify) or Flutter. Proposes ideas, implements the chosen one as a choreographed combo. |
-| `ui-polish` | UI polish, animation decisions, interaction patterns, and the invisible details that make interfaces feel great. *(adapted from Emil Kowalski)* |
-| `ui-audit` | Technical UI quality checks — a11y, performance, theming, responsive, interaction states, anti-patterns. Scored report with severities. Vue 3 + Vuetify + Inertia. |
-| `ux-audit` | Judges whether a page/flow actually works for its user via behavioral psychology tied to the page's one real goal. Advisory; ethics- and restraint-gated. |
-| `design-drift` | Whole-repo design-system health — token adoption as ratios, scales never built, duplicate component kits, icon sprawl, RTL safety. Then scaffolds the missing layer and guards it. Flutter + Vue/Vuetify. |
+Which one you want depends on what "improve the design" means — they answer four different
+questions. Vue and Flutter are both covered everywhere except `design`, which is web-only by
+construction (its data is CSS and landing-page patterns).
+
+| Skill | What it does | Vue | Flutter |
+|-------|--------------|:---:|:---:|
+| `design` | Industry-specific UI/UX recommendations BEFORE building — color palettes (hex), font pairings, layout patterns, anti-pattern warnings. Greenfield direction-setting, not for a repo that already has tokens. | ✅ | — |
+| `animate` | Adds physical, subtle motion to a UI target. Proposes ideas, implements the chosen one as a choreographed combo. Owns *all* motion — the others hand it over. | ✅ | ✅ |
+| `ui-polish` | Craft on one screen — type, colour, spacing, hierarchy, interaction states, UX copy, the invisible details. "It looks generic/unfinished." *(adapted from Emil Kowalski)* | ✅ | ✅ |
+| `ui-audit` | Technical quality checks on one target — a11y, performance, theming, responsive, interaction states, anti-patterns. Scored 0–4 per dimension with severities. | ✅ | ✅ |
+| `ux-audit` | Judges whether a page/flow actually works for its user via behavioral psychology tied to the page's one real goal. Advisory; ethics- and restraint-gated. | ✅ | ✅ |
+| `design-drift` | Whole-repo design-system health — token adoption as ratios, scales never built, duplicate component kits, icon sprawl, RTL safety. Then scaffolds the missing layer and guards it. | ✅ | ✅ |
+
+Rough order on an existing screen: `/ui-audit` (what's measurably broken) → `/ui-polish` (craft)
+→ `/ux-audit` (does the flow work at all) → `/animate` (last). `/design-drift` is orthogonal —
+it asks about the system, not the screen.
 
 ## Docs & Release
 

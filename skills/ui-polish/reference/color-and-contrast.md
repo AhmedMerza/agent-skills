@@ -11,6 +11,14 @@
 --color-primary-dark: oklch(35% 0.12 250);  /* Same hue, darker */
 ```
 
+**Flutter** has no OKLCH primitive. Compute the palette in OKLCH at design time, then bake the resulting hex into tokens — alpha comes first, not last:
+
+```dart
+static const primary = Color(0xFF3D5AFE); // 0xAARRGGBB
+```
+
+For runtime derivation (e.g. a lighter variant from a picked color), `HSLColor.fromColor()` is the closest built-in — but it's HSL, so equal lightness steps won't look equal the way OKLCH guarantees.
+
 **Key insight**: As you move toward white or black, reduce chroma. High chroma at extreme lightness looks garish.
 
 ## Building Functional Palettes
@@ -86,6 +94,16 @@ Pure gray and pure black don't exist in nature. Even a chroma of 0.005-0.01 is e
 - [WebAIM Contrast Checker](https://webaim.org/resources/contrastchecker/)
 - Browser DevTools → Rendering → Emulate vision deficiencies
 
+**Flutter**: no devtools contrast checker — the WCAG ratios apply identically, only the tooling changes. `Color.computeLuminance()` gives relative luminance directly:
+
+```dart
+double contrastRatio(Color a, Color b) {
+  final l1 = a.computeLuminance(), l2 = b.computeLuminance();
+  final lighter = math.max(l1, l2), darker = math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+```
+
 ## Theming: Light & Dark Mode
 
 ### Dark Mode Is Not Inverted Light Mode
@@ -106,9 +124,20 @@ Pure gray and pure black don't exist in nature. Even a chroma of 0.005-0.01 is e
 }
 ```
 
+**Flutter**: no single light/dark pair — apps typically ship several named `ThemeExtension` sets (light, dark, black, brand variants) switched via `ThemeMode` plus a manual theme picker:
+
+```dart
+final darkTokens = AppColors(
+  surface1: const Color(0xFF262626), // "higher" surfaces = lighter
+  surface2: const Color(0xFF333333),
+);
+```
+
 ### Token Hierarchy
 
 Use two layers: primitive tokens (`--blue-500`) and semantic tokens (`--color-primary: var(--blue-500)`). For dark mode, only redefine the semantic layer.
+
+**Flutter** maps this directly: a `Tokens` class of raw primitives (the `--blue-500` layer) feeds a `ThemeExtension<T>` of semantic roles (the `--color-primary` layer), resolved via `Theme.of(context).extension<T>()!`. Swap the `ThemeExtension` instance per theme; leave `Tokens` alone.
 
 ## Vuetify Theme Notes
 
@@ -119,9 +148,17 @@ Vuetify's theme system maps to these principles:
 - **VTooltip needs `bg-surface text-on-surface`** for proper dark mode contrast
 - Avoid hard-coding hex values in templates — use theme variables or Vuetify color classes
 
+## Flutter Theme Notes
+
+- Theming is `ThemeExtension<T>` resolved via `Theme.of(context).extension<T>()!`, plus a `Tokens` class of raw primitives — deliberately not `Theme.of(context).colorScheme`, Material's built-in scheme
+- Register every `ThemeExtension` variant (light, dark, black, brand) on `ThemeData.extensions`, switched by `ThemeMode`
+- Avoid hard-coding hex values in widgets — pull from the resolved `ThemeExtension`, same discipline as avoiding raw hex in Vuetify templates
+
 ## Alpha Is A Design Smell
 
 Heavy use of transparency usually means an incomplete palette. Alpha creates unpredictable contrast and performance overhead. Define explicit overlay colors for each context instead. Exception: focus rings and interactive states where see-through is needed.
+
+**Flutter**: use `.withValues(alpha: 0.5)` — `.withOpacity()` is deprecated. Same rule applies: reach for it for focus/interactive states, not as a substitute for a real overlay color.
 
 ---
 

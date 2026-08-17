@@ -1,6 +1,6 @@
 ---
 name: ui-audit
-description: Run technical UI quality checks across accessibility, performance, theming, responsive design, interaction states, and anti-patterns. Generates a scored report with severity ratings and actionable fixes. Tailored for Vue 3 + Vuetify + Inertia.js.
+description: Run technical UI quality checks across accessibility, performance, theming, responsive design, interaction states, and anti-patterns. Generates a scored report with severity ratings and actionable fixes. Covers Vue 3 + Vuetify + Inertia.js and Flutter.
 ---
 
 # UI Audit
@@ -14,6 +14,18 @@ This is a code-level audit, not a design critique. Check what's measurable and v
 Invoke with an optional target: `/ui-audit [page, component, or feature]`
 
 Without a target, audit the most recently changed frontend files.
+
+**Detect the stack first.** Each dimension below lists checks for Vue 3 / Vuetify and for
+Flutter. Run only the set that matches — reporting a missing `:focus-visible` on a Dart file
+wastes the reader's attention and discredits the findings next to it. The *dimensions* and
+scoring are identical either way; only the mechanics differ.
+
+## Scope — one page, not the repo
+
+This audits a **target**: a page, component, or feature. If the question is whether the design
+*system* is adopted across the whole codebase — token ratios, a type scale that was never
+built, two competing button kits — that's `design-drift`, which reads the whole tree. A
+per-page audit is structurally blind to duplication and absence.
 
 ## Diagnostic Scan
 
@@ -31,6 +43,22 @@ Vuetify handles baseline a11y (ARIA roles on components, keyboard nav on `v-tabs
 - **Color-only indicators**: Status shown only by color (needs icon or text too)
 - **Focus management**: After route change or dialog close, is focus returned properly? Custom interactive elements without `:focus-visible` styles?
 - **Touch targets**: Custom clickable elements < 44x44px (Vuetify buttons handle this; check custom elements)
+
+**Flutter — check for:**
+- **Missing `Semantics`**: Custom tappable widgets (`GestureDetector`, bare `InkWell`) with no
+  `Semantics(label:, button: true)`. Unlike HTML there is no implicit role — a tappable
+  `Container` is invisible to TalkBack/VoiceOver unless you say otherwise.
+- **Icon-only buttons without `tooltip:`** — on `IconButton` the tooltip doubles as the
+  semantic label, so omitting it costs both affordance and accessibility.
+- **Decorative widgets not excluded**: images/icons that repeat adjacent text should be wrapped
+  in `ExcludeSemantics`, and compound rows merged with `MergeSemantics` so they read as one node.
+- **Contrast on custom surfaces** — same WCAG thresholds, no devtools; compute from the token
+  values rather than eyeballing a screenshot.
+- **Text scaling ignored**: hardcoded `height`/`width` on text containers that clip under
+  `MediaQuery.textScalerOf(context)`. OS font scaling on mobile is far more aggressive than
+  browser zoom, and this is the most common real a11y break in a Flutter app.
+- **Colour-only status** — same rule; a coloured dot needs an icon, label, or shape too.
+- **Touch targets** < 48dp: check `minimumSize` / `MaterialTapTargetSize` on custom buttons.
 
 **Score**: 0=Inaccessible (fails WCAG A), 1=Major gaps, 2=Partial (some effort, significant gaps), 3=Good (WCAG AA mostly met), 4=Excellent (WCAG AA fully met)
 
@@ -55,6 +83,19 @@ node ~/.claude/skills/animate/scripts/verify-motion.mjs --url <page> --selector 
 - **Keyframes on rapidly-triggered elements**: Should use CSS transitions for interruptibility
 - **Vuetify default transitions left unmodified** where polish matters
 
+**Flutter — check for:** (recipes live in the animate skill's [flutter reference](../animate/reference/flutter.md).
+The `verify-motion.mjs` harness above is Playwright-based and does **not** apply here — check by reading.)
+- **`AnimationController` not disposed** in `dispose()` — a leak, and the most common Flutter motion bug.
+- **`Curves.easeIn` on entering elements** — should be `easeOut`/`easeOutCubic`; same law as web.
+- **Reduced motion ignored**: no check of `MediaQuery.disableAnimationsOf(context)`.
+- **Implicit where explicit is needed** (or the reverse): `AnimatedContainer` for a one-shot
+  entrance is fine; for interruptible, gesture-driven motion you need a controller.
+- **Animating layout**: rebuilding a subtree every frame instead of using `AnimatedBuilder`'s
+  `child` parameter to hoist the static part out of the animation.
+- **Durations > 300ms** on UI feedback — identical budget.
+- **`Opacity` in an animation** — prefer `FadeTransition`/`AnimatedOpacity`; the plain widget
+  forces a `saveLayer` every frame.
+
 **Score**: 0=Broken/janky animations, 1=Major issues (layout property animations, no reduced motion), 2=Partial, 3=Good (mostly correct, minor issues), 4=Excellent (polished, accessible, performant)
 
 ### 3. Theming & Design Tokens
@@ -66,6 +107,20 @@ node ~/.claude/skills/animate/scripts/verify-motion.mjs --url <page> --selector 
 - **Dark mode issues**: Elements that don't update on theme switch, poor contrast in dark mode
 - **VTooltip contrast**: Missing `bg-surface text-on-surface` classes
 - **Typography bypass**: Raw CSS font sizes instead of Vuetify's `text-h6`, `text-body-1`, etc.
+
+**Flutter — check for:**
+- **Hard-coded colours**: `Color(0xFF…)` / `Colors.blue` instead of the app's `ThemeExtension`
+  or `Tokens` class. Discount `Colors.white`/`black`/`transparent` on overlays — those are
+  usually legitimate, and flagging them buries the real findings.
+- **Static const colour constants** that bypass the runtime theme entirely. Worse than a stray
+  literal: they hardcode *one mode*, so the screen silently ignores light/dark and accent
+  switching. Always state that consequence, not just the count.
+- **Hard-coded spacing**: bare numbers in `EdgeInsets`/`SizedBox` instead of the spacing scale.
+- **Typography bypass**: `TextStyle(fontSize: N)` instead of the app's type scale. If no scale
+  exists at all, that's a `design-drift` finding, not a per-page one — say so and move on.
+- **Ad-hoc `BoxShadow`** instead of token shadows; inconsistent light direction across cards.
+- **Theme switch**: does every surface on this page actually change? Screens built on static
+  constants look correct in the default mode and wrong in the other one.
 
 **Score**: 0=No theming (hard-coded everything), 1=Minimal tokens, 2=Partial (tokens exist but inconsistent), 3=Good (tokens used, minor hard-coded values), 4=Excellent (full token system, dark mode works)
 
@@ -82,6 +137,20 @@ Consult [responsive-design reference](../ui-polish/reference/responsive-design.m
 - **Tables**: `v-data-table` without mobile consideration
 - **Hover-dependent functionality**: Features that only work with hover (breaks on touch)
 
+**Flutter — check for:**
+- **Keyboard overflow**: the classic `RenderFlex overflowed` when the soft keyboard opens.
+  Look for a form column with no `SingleChildScrollView` / `resizeToAvoidBottomInset` handling.
+  This is the single most common responsive defect in a Flutter form.
+- **Missing `SafeArea`**: content under the notch, status bar, or home indicator.
+- **Text scaling**: fixed-height containers around text that clip at large `textScaler` values.
+- **Fixed pixel widths** that assume a phone; no `LayoutBuilder` / `MediaQuery.sizeOf` switch
+  for tablet, when the app ships tablet layouts.
+- **`MediaQuery.of(context).size`** where `MediaQuery.sizeOf(context)` would do — the former
+  rebuilds on every metric change, including keyboard open.
+- **Orientation**: no `OrientationBuilder` on screens that clearly need one.
+- **Hover-only affordances** — on a touch build hover never fires, so anything hidden behind
+  it is unreachable.
+
 **Score**: 0=Desktop-only, 1=Major breakage on mobile, 2=Partial (mostly works, gaps), 3=Good (responsive, minor issues), 4=Excellent (mobile-first, adapts to input method)
 
 ### 5. Interaction States
@@ -97,6 +166,18 @@ Consult [interaction-design reference](../ui-polish/reference/interaction-design
 - **Confirmation dialogs where undo would work better**
 - **Missing hover/active feedback** on custom clickable elements
 
+**Flutter — check for:**
+- **Disabled faked with an empty closure**: `onPressed: () {}` looks enabled and does nothing.
+  `onPressed: null` *is* the disabled state and styles itself correctly.
+- **`FutureBuilder`/`StreamBuilder` with no `hasError` branch** — the snapshot's error case
+  silently renders an empty or stuck-loading UI.
+- **Missing empty states** on `ListView.builder` when `itemCount` is 0.
+- **`GestureDetector` with no visual feedback** — use `InkWell` for ripple, or supply your own
+  pressed state; a tap that looks identical to no-tap reads as broken.
+- **Splash/highlight suppressed** (`splashColor: Colors.transparent`) with nothing replacing it.
+- **No focus affordance** on custom widgets — Flutter draws none by default, so keyboard and
+  D-pad users get nothing unless you build it.
+
 **Score**: 0=No state handling, 1=Major gaps (no loading or error states), 2=Partial, 3=Good (most states covered), 4=Excellent (all 8 states designed for all interactive elements)
 
 ### 6. Performance
@@ -109,6 +190,24 @@ Consult [interaction-design reference](../ui-polish/reference/interaction-design
 - **Expensive computed in templates**: Complex calculations inline instead of cached `computed`
 - **Missing `will-change` on animating elements** (or worse, `will-change` on everything)
 - **Layout thrashing**: Reading + writing layout properties in loops
+
+**Flutter — check for:**
+- **Missing `const` constructors** on static subtrees. This is the highest-leverage perf lever
+  in Flutter — a `const` widget is skipped entirely on rebuild. Look for `const`-able widgets
+  that aren't marked.
+- **`setState` at the wrong altitude**: calling it on a screen-level `State` to update one
+  chip rebuilds the whole tree. Push state down to the leaf, or use a scoped listenable.
+- **Work inside `build()`**: sorting, filtering, date formatting, or `RegExp` construction that
+  runs on every frame. `build()` can be called many times per second.
+- **`ListView(children: [...])` for long lists** — builds every child eagerly;
+  `ListView.builder` is lazy. Same for `Column` inside `SingleChildScrollView` on long content.
+- **Controllers/listeners not disposed** (`TextEditingController`, `ScrollController`,
+  `AnimationController`, stream subscriptions) — leaks that compound across navigation.
+- **Images without `cacheWidth`/`cacheHeight`** — decoding a 4000px asset into a 100px avatar
+  costs memory proportional to the source, not the display size.
+- **`MediaQuery.of(context)` for one property** — rebuilds on every metric change; the scoped
+  `sizeOf`/`paddingOf`/`textScalerOf` accessors don't.
+- **`Opacity`/`ClipRRect` in hot paths** — both can force a `saveLayer`.
 
 **Score**: 0=Severe issues, 1=Major problems, 2=Partial, 3=Good, 4=Excellent
 
@@ -133,7 +232,7 @@ Output a summary table, then detail each finding:
 ### Findings
 
 #### [P0] Critical — [Category]
-**File**: `path/to/file.vue:42`
+**File**: `path/to/file.vue:42` (or `.dart:42`)
 **Issue**: [Description]
 **Fix**: [Actionable fix]
 
@@ -147,7 +246,7 @@ Output a summary table, then detail each finding:
 |-------|---------|---------|
 | **P0** | Broken/inaccessible | No keyboard nav, broken on mobile, fails WCAG A |
 | **P1** | Major UX problem | No loading state, layout property animations, no error handling |
-| **P2** | Quality gap | Hard-coded colors, default Vuetify transitions, missing hover states |
+| **P2** | Quality gap | Hard-coded colors, untouched framework defaults, missing hover/press states |
 | **P3** | Polish opportunity | Could add stagger animation, tooltip delay grouping, reduced motion |
 
 ### 7. AI Slop & Design Quality
@@ -166,6 +265,17 @@ Does this look like generic AI-generated UI? Check for the telltale signs:
 - **Component cliches**: Pill badges everywhere, accordion FAQ, modals for everything, footer link farm with 4 columns
 - **Flat surfaces**: No texture, no depth, generic `box-shadow` with pure black, inconsistent light direction
 
+**Flutter tells specifically:**
+- **Untouched Material defaults**: stock `ThemeData()` indigo/purple, a default `AppBar` with
+  default elevation, `Card` with default radius and shadow — the "I ran `flutter create` and
+  kept going" look.
+- **`Card` wrapping everything**, including things that only needed spacing.
+- **Default `FloatingActionButton`** placed because the template had one, not because the
+  screen has a primary action.
+- **Material 3 defaults unchanged** — stock `ColorScheme.fromSeed()` output, which has a
+  recognisable pastel cast.
+- **Stock `Icons.`** everywhere when the design language calls for a specific icon set.
+
 **The test**: If someone said "AI made this," would they believe it immediately? If yes, that's a P2.
 
 **Score**: 0=Obvious AI output, 1=Many generic patterns, 2=Some tells remain, 3=Distinctive with minor tells, 4=Indistinguishable from human-designed
@@ -174,7 +284,9 @@ Does this look like generic AI-generated UI? Check for the telltale signs:
 
 - Backend code, API design, database queries
 - Business logic correctness
-- Code style or formatting (that's what Pint/ESLint are for)
+- Code style or formatting (that's what Pint/ESLint/`dart format` and `flutter analyze` are for)
 - Test coverage (that's what `/review` covers)
+- Whole-repo design-system health — token ratios, missing scales, duplicate component kits
+  (that's `/design-drift`)
 
 This audit is purely about the **user-facing quality** of the frontend implementation.
