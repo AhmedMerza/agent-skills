@@ -47,15 +47,15 @@ System python is often too old for a current `yt-dlp`; pip then silently install
 whose downloader gets **403 Forbidden**. Use 3.11+:
 
 ```bash
-python3.11 -m venv ~/.cache/ytx-venv
-~/.cache/ytx-venv/bin/pip install -U yt-dlp youtube-transcript-api imageio-ffmpeg
+python3.11 -m venv ~/.cache/youtube-capture-venv
+~/.cache/youtube-capture-venv/bin/pip install -U yt-dlp youtube-transcript-api imageio-ffmpeg
 ```
 
 - `imageio-ffmpeg` ships a **static ffmpeg** — no root, no system package.
 - `youtube-transcript-api` is separate **on purpose**: yt-dlp's own caption path is PO-token
   gated and returns nothing, while this one works unauthenticated.
 
-Bundled: `scripts/ytx.py` with `list` / `transcript` / `frames`.
+Bundled: `scripts/capture_youtube_walkthroughs.py` with `list` / `transcript` / `frames`.
 
 ## The passes
 
@@ -63,8 +63,8 @@ Bundled: `scripts/ytx.py` with `list` / `transcript` / `frames`.
 
 ```bash
 export YTX_OUT=./teardown
-V=~/.cache/ytx-venv/bin/python
-$V scripts/ytx.py list "https://www.youtube.com/@handle/videos" --limit 100
+V=~/.cache/youtube-capture-venv/bin/python
+$V scripts/capture_youtube_walkthroughs.py list "https://www.youtube.com/@handle/videos" --limit 100
 ```
 
 Read the **titles** before pulling anything. Product channels label walkthroughs plainly
@@ -81,7 +81,7 @@ Then check you can actually get both halves on ONE video before committing:
 ### 2. Transcripts — the narrated flow
 
 ```bash
-$V scripts/ytx.py transcript -- <id> [<id>...]
+$V scripts/capture_youtube_walkthroughs.py transcript -- <id> [<id>...]
 ```
 
 Narration gives you the *sequence* and the *vocabulary* — what they call things, what order the
@@ -90,7 +90,7 @@ steps come in, what happens after payment. It will not give you field names or l
 ### 3. Frames — the actual UI
 
 ```bash
-$V scripts/ytx.py frames --panel right --scene 0.045 --every 4 --min-gap 1.5 -- <id>...
+$V scripts/capture_youtube_walkthroughs.py frames --panel right --scene 0.045 --every 4 --min-gap 1.5 -- <id>...
 ```
 
 **Scene detection on the full frame is useless for app walkthroughs.** A map or video panel
@@ -99,6 +99,14 @@ register at all. `--panel` crops to the form region and detects changes *there*,
 the **full** frame at those timestamps. Use `right` for RTL layouts, `left` for LTR sidebars,
 `full` only for full-screen content. `--every` guarantees coverage of slowly-typed forms that
 never "cut".
+
+**Name the output for what it shows, not for the video id.** `frames/tpbwDljGxEw/` is
+unreadable a week later; `frames/10-carrier-submit-price-offer/` tells you what is in it. Slug
+each video by *what it demonstrates*, numbered in the order a real user moves through the product
+(signup → onboarding → create → transact → track → get paid), and prefix by which side of the
+product it shows. Keep the id↔slug map in the index file so a video is still findable. Do this
+**before** you start reading frames — renaming afterwards means rewriting every citation you have
+already written, in the analysis and in any tickets filed from it.
 
 Then **read frames selectively, not exhaustively.** Use the transcript timestamps to jump
 straight to the moments that matter — the narration says "enter your price and pick a vehicle"
