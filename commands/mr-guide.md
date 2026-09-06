@@ -134,6 +134,21 @@ change with no template change alters no layout. Require at least one `.vue` or 
 When it triggers:
 1. Say so before starting: `Frontend changes detected (4 .vue, 1 .blade.php) — capturing before/after.`
 2. Identify the affected routes from the changed components (imports, router entries, Inertia page names).
+2a. **Check the data exists before shooting.** A new column, chip, badge or action row only renders
+   when there are rows in the state that triggers it. Query for them first — if the count is zero,
+   the "after" shot is visually identical to "before" plus an empty column, which reads as *the
+   feature does nothing*. This is the same misleading-screenshot failure as photographing the wrong
+   branch, and it is not visible in the image.
+   When the data is absent, do **not** silently ship the pair. Pick one:
+   - shoot it anyway and **label it honestly** — "no rows in this state yet, so the new column is
+     empty; this is what every org sees on launch day". This is genuinely informative, and it is
+     often the shot that exposes an unhandled empty state.
+   - say in the guide that the state could not be shown, and why.
+   - seed a fixture row **only with the user's explicit consent** — never unprompted on a shared
+     database. Pick the row by running the page's own query, record its original values, and revert
+     afterwards.
+   Form and drawer changes need no data and should always be shot — prefer them when the
+   data-dependent screens cannot be demonstrated.
 3. Capture **after** on the current branch, then **before** on the target branch, via `/browse`.
 4. Desktop **and** mobile widths — the standing rule for frontend MRs.
 5. **Never write to the user's working tree.** If it has uncommitted changes — which mid-branch
@@ -147,6 +162,13 @@ When it triggers:
    Check the project's memory/docs first — a repo that has done this before usually has the exact
    serving recipe recorded (worker counts, host binding, hot-file handling), and those details are
    where this fails silently rather than loudly.
+   **Isolate the older side's cache.** The two checkouts are different ages but share one cache
+   store, and the newer app will have written entries whose shape the older code cannot rehydrate —
+   a new enum case, a changed DTO, an added property. The old server then dies on `unserialize`,
+   `Undefined constant` or `__PHP_Incomplete_Class` while the new one is fine, which reads as
+   "the target branch is broken". Point the *before* server at a throwaway cache (Laravel:
+   `CACHE_STORE=array`). Never clear the shared cache to fix it — other checkouts and sessions
+   are using it.
    Only decline if a worktree cannot be created, and then say which step failed.
 
 `--no-screens` skips the pass. `--screens` forces it. If the app will not serve or a route
