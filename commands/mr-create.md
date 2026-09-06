@@ -128,6 +128,7 @@ Creates a merge/pull request for the current branch using the resolved provider'
 - `--reviewer <username>` - Request review from user (can use shortcut)
 - `--assignee <username>` - Assign to user (can use shortcut)
 - `--template <type>` - Use a template (feature, bugfix, hotfix, refactor, documentation)
+- `--guide` - Generate a reviewer's guide (see `/mr-guide`) from the branch diff and open the MR with it in the description
 - `--skip-checks` - Skip pre-MR quality checks
 - `--skip-suggestions` - Skip smart reviewer suggestions
 - `--skip-labels` - Skip auto-label detection

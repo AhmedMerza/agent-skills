@@ -78,6 +78,12 @@ Extract the number from the argument. Strip a leading `!` (GitLab) or `#` (GitHu
 
 ### Step 2: Fetch MR/PR metadata + changed files from the API
 
+**If the description contains a `<!-- mr-guide -->` block, read it first.** It is the author's
+reviewer guide (from `/mr-guide`) — what changed, before/after, data model, UI states. Use it as
+context for the review. Do **not** regenerate it, do not review it, and do not repeat it in the
+report; the reviewer already has it above the diff.
+
+
 **GitLab:**
 ```bash
 # MR metadata (title, description, author, labels, state, diff_refs)
