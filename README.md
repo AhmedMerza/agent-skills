@@ -82,6 +82,7 @@ The MR/PR commands work on **either GitHub or GitLab** (self-hosted or SaaS). Th
 | Command | What it does |
 | --- | --- |
 | `mr-create` | Create a PR/MR for the current branch — commit-analysis title/body, stack-agnostic pre-flight checks, reviewer/label suggestions, fork-aware. |
+| `mr-guide` | Write the reviewer's guide for a PR/MR or branch — what changed in product terms, before/after, data model, UI states, blast radius — plus any divergence from the linked issue's acceptance criteria. Auto-screenshots frontend changes from a throwaway worktree. Publishes into the description under a marker, so re-runs replace in place. Not a code review — that's `mr-review`. |
 | `mr-review` | Comprehensive code review of a PR/MR — fetches the diff, posts inline + summary comments. |
 | `fix-review` | Read review threads on a PR/MR, fix the issues in code, reply, and resolve. |
 | `commit` | Smart commit — auto-branches off the detected default branch, stack-aware format/test, conventional message, push. Provider-agnostic. |
@@ -105,7 +106,7 @@ git clone https://github.com/AhmedMerza/claude-skills.git ~/claude-skills
 ln -s ~/claude-skills/skills ~/.claude/skills
 
 # commands: link the individual files (your ~/.claude/commands may hold other, local-only commands)
-for f in mr-create mr-review fix-review commit issue browse handover-save handover-resume handover-list checkpoint; do ln -sf ~/claude-skills/commands/$f.md ~/.claude/commands/$f.md; done
+for f in mr-create mr-guide mr-review fix-review commit issue browse handover-save handover-resume handover-list checkpoint; do ln -sf ~/claude-skills/commands/$f.md ~/.claude/commands/$f.md; done
 
 # the /browse command needs its helper script on the standard path:
 mkdir -p ~/.claude/scripts && ln -sf ~/claude-skills/scripts/browse.mjs ~/.claude/scripts/browse.mjs
