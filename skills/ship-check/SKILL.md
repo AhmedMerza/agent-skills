@@ -42,6 +42,7 @@ The most dangerous bug in a finished fix is the part that isn't there. A missing
 - **The other side.** Fixed the write but not the read? The API but not the consumer? The happy path but not the failure/rollback path? Backend but not the mobile/web client that also calls it?
 - **Other tenants / orgs.** Does the fix assume org 1's shape? Multi-tenant blind spots hide here.
 - **Loose ends from the original ask.** Re-read the problem line. Is *every* part of it addressed, or did one sub-requirement quietly get dropped?
+- **The fix you just wrote.** If a pass produced a fix, that fix is new code that nothing has checked — the passes ran against the diff as it stood, and the verdict is about to be issued on code that didn't exist when they ran. Re-run this pass against the fix itself: **name every layer and path the defect can reach, and confirm the fix covers each one.** A defect that crosses layers (capture → serialization → transport → storage) patched at exactly one of them is the default failure, and it looks complete from inside the layer you patched. Measured 2026-09-16: a malformed-byte bug was correctly found and then fixed at the storage encoder, which left the queue path — where the value is serialized long before storage — still broken; `/mr-review` found it minutes later.
 
 ### 2. Where it breaks — edge cases the happy path ignores
 Attack the finished code as an adversary who wants it to fail in production:
@@ -55,6 +56,15 @@ Name the *specific* input and the *specific* line it breaks at — not "consider
 Step back from "does it work" to "should it be done this way." Would a *materially different* approach be better — a different layer, reusing something already in the codebase, a simpler mechanism that covers the real requirement, a native feature it reinvents? **But it's already built** — so weigh the *rework cost* honestly (like `second-opinion`): "better in theory but not worth redoing" is a valid, useful call. Only raise this if a genuinely different approach exists with a real trade-off; otherwise one line: "approach is right because …" and move on.
 
 ### 4. Verdict — a merge decision, no hedging
+
+**A regression test does not cover a finding until you have watched it fail.** Before any verdict that
+leans on a test written for a finding here, revert the fix (`git stash push -- <file>`), run that test,
+confirm it goes red, restore. If it passes without the fix it is pinning nothing, and the finding is
+still open. Measured 2026-09-16: three tests written in one session passed against deliberately broken
+code — one was satisfied by a *fallback row* the failure path wrote, which met an assertion that named
+only the field under test. When a test surprises you by passing, find out which line it actually pins
+before believing it. See `/prove-the-test`.
+
 - **✅ Ship it** — solves the real problem, complete, edges hold. Name the one thing to keep an eye on post-merge (there's always one).
 - **🔧 Fix these first** — fundamentally right, but these specific gaps must land before merge. List them, most-important first, each with *where*.
 - **🛑 Reconsider** — it fixes the wrong thing, leaves the core problem unsolved, or a materially better approach is worth the rework. State the single most important reason and the next step.
