@@ -72,6 +72,27 @@ Rules:
 
 ## Step-by-Step Implementation
 
+### Step 0: Run the repo's deterministic checks FIRST
+
+If the repo has `.claude/checks/run.py` (or `scripts/checks/`), run it before spawning anything:
+
+```bash
+python3 .claude/checks/run.py <base_sha> <head_sha>
+```
+
+Seconds, no agents, and it **cannot miss its class** — the one thing agents cannot promise.
+Measured on oreem !3379: this layer found a cross-tenant IDOR in 3 seconds that a 303k-token
+security agent took 11 minutes to reach and a sibling agent read the same file and missed
+entirely — plus a second unscoped admin endpoint that **seven agent runs never surfaced at all**.
+
+Triage the output before reporting any of it (checks trade precision for recall, so expect false
+positives), fold the survivors into the final report, and tell the Step 4 agents which classes are
+already covered so they don't spend budget re-deriving them.
+
+No checks directory? Say so once and continue. Afterwards, any confirmed finding whose *class* is
+mechanically detectable should become a new check — that is what makes reviews compound instead of
+re-rolling the dice at ~250k a throw.
+
 ### Step 1: Parse the MR/PR reference
 
 Extract the number from the argument. Strip a leading `!` (GitLab) or `#` (GitHub); if a full URL was passed, take the trailing number. Below, `<N>` is that number.
@@ -190,6 +211,20 @@ Changed files:
 <one path per line>
 ```
 
+**If the named reviewer agents don't exist in this environment** (`security-reviewer`,
+`testing-reviewer`, …), don't fail and don't silently skip a role: run each role's brief on
+`general-purpose` pinned to sonnet, and say in the report which substitution you made. Observed
+2026-09-16 on a host that had none of them.
+
+**IMPORTANT (every agent)**: end each prompt with a required coverage declaration —
+*"After the JSON, add one line — `COVERAGE-GAPS:` what you did NOT examine closely, and why."*
+
+This is not bookkeeping. Silence from a reviewer currently reads as "checked, it's fine" when it
+usually means "never looked", and the gaps are where the next round should start. Measured on
+!3379: round 1's declared gaps became round 2's targets, and round 2 found the worst bug in the MR.
+Read the field for what it is, though — it reports what was not **read**, not what was read and not
+**noticed**, which is where most misses actually live.
+
 **IMPORTANT (every agent)**: Append this line to each agent prompt below — *"Report only objective defects (crashes, security holes, logic errors, broken/contradictory behavior, real data bugs). Do NOT report subjective preferences, aesthetic opinions, or behavior that is plausibly intentional as findings. If you think a behavior might be a bug but it could just as easily be a deliberate design choice, do not assert it — leave it out (the synthesizer handles intent questions). Never invent a 'fix' for an intended behavior."*
 
 **Agent 1** — General Review:
@@ -294,6 +329,25 @@ Example: [{\"severity\":\"IMPORTANT\",\"file\":\"src/services/order_service.ext\
 ")
 ```
 
+### Step 4b: One handoff round (high-stakes MRs)
+
+When the change moves money, touches auth/tenancy, or is otherwise expensive to get wrong, run ONE
+more agent after the parallel set — same generalist brief, but handed:
+
+- **every finding so far, with "do NOT re-report these"**, and
+- **the union of the agents' `COVERAGE-GAPS`, as its starting priorities.**
+
+Ask it for new findings, plus a `CORRECTIONS:` line naming anything already reported that is wrong
+or mis-severitied.
+
+This is the highest-yield agent in the whole command, because it is the only one not re-sampling
+ground already covered. On !3379 it cost ~219k and returned two findings nobody else had — including
+the most severe in the MR (a Cart whose auto-capture fails takes the customer's money and never
+creates an order, with no recovery path). It also re-verified five earlier findings and corrected
+none, which is itself worth knowing.
+
+Skip it on small or low-risk diffs; it is a real cost.
+
 ### Step 5: Collect and Merge Results
 
 1. Wait for all 5 agents to complete
@@ -301,6 +355,15 @@ Example: [{\"severity\":\"IMPORTANT\",\"file\":\"src/services/order_service.ext\
 3. Tag each finding with its source category: `security`, `performance`, `architecture`, `testing`, or `general`
 4. **Critically evaluate each finding** — do NOT blindly accept agent findings. For each finding, ask: "Is this a real problem in the actual usage context, or just a theoretical edge case?" Downgrade or discard findings that are technically correct but practically irrelevant. Review agents tend to flag theoretical issues that may never occur in practice — your job is to filter signal from noise.
 4b. **Separate DEFECTS from DESIGN/INTENT questions.** A finding is only a *defect* (CRITICAL/IMPORTANT/MINOR) when it is objectively wrong: a crash, a security hole, a logic error, a broken/contradictory behavior, a real data bug. If instead the finding is a **subjective preference, an aesthetic opinion, or a behavior that is plausibly intentional** (e.g. "roundness 0 makes corners fully square", "this default could be different", "this copy/UX could be nicer", "consider a different threshold"), it is **NOT a defect** — do not assign it a severity and do not prescribe a "fix". Reclassify it as an **Open Question** with `category: "question"` and phrase it as a question to the author ("Is X intended?"), never as "Fix: change X". When unsure whether something is a defect or an intentional choice, default to treating it as a question. The bar: would a reasonable author unambiguously agree it's broken? If not, it's a question, not a finding.
+4c. **Verify every surviving finding against the code before it reaches the report.** Open the file,
+   confirm the claim, and check the mitigation the agent may not have looked for — a global scope, a
+   middleware, a framework default. Agents are accurate about *what they looked at* and confidently
+   wrong about *what they assumed*. Measured on !3379: 7 of 7 findings were substantively correct,
+   but one claimed a lock was held indefinitely "because no timeout is set" when Laravel's HTTP
+   client defaults to `timeout => 30` — real worst case ~90s, not unbounded. Posting the overstated
+   version would have got it dismissed, and taken the credibility of the other six with it. Cost: a
+   handful of greps.
+
 5. Deduplicate — if 2+ agents found the same issue (same file + same/adjacent line), keep the most detailed one
 6. Cross-reference — if 2+ agents flagged the same thing, note it as corroborated but do NOT automatically upgrade severity. Multiple agents agreeing on a theoretical issue doesn't make it more real.
 7. Sort by severity: CRITICAL > IMPORTANT > MINOR
@@ -340,11 +403,29 @@ Example: [{\"severity\":\"IMPORTANT\",\"file\":\"src/services/order_service.ext\
 ### Open Questions (design / intent — NOT defects)
 <Anything reclassified per Step 5.4b: plausibly-intentional behavior, subjective/aesthetic preferences, or "could be different" choices. Phrase each as a question for the author, with NO prescribed fix and NO severity. If there are none, omit this section. These never count toward the severity breakdown or change the verdict.>
 
+### Coverage
+- **Checks run**: <which deterministic checks ran, and what they covered>
+- **Not examined**: <union of the agents' COVERAGE-GAPS>
+- **Estimated remaining**: <see below>
+
 ### Verdict
 **APPROVED** / **APPROVED WITH SUGGESTIONS** / **CHANGES REQUESTED**
 - Any CRITICAL → CHANGES REQUESTED
 - Only IMPORTANT/MINOR → APPROVED WITH SUGGESTIONS
 - Clean → APPROVED
+
+**Never present a clean review as proof the code is clean.** Say "no findings from the passes that
+ran", and name what was not examined. This is not hedging; it is measured. On !3379, two runs of the
+*same* reviewer role agreed on only 20–33% of findings; one agent read the exact file containing a
+cross-tenant IDOR and reported something else in it; and after seven runs and ~1.6M tokens a fresh
+reviewer still found three issues with **zero** overlap with the previous thirteen. A single pass
+finds roughly a quarter to a half of what is there, and you cannot tell which.
+
+**Estimate what's left** when two or more passes covered the same ground: if pass A found `a`, pass B
+found `b`, and they share `m`, then total ≈ `a × b / m`, so remaining ≈ that minus what you have. It
+is a floor — easy bugs are found by both passes and inflate `m`, which biases the estimate down. If
+`m` is 0, you have no estimate at all and no evidence of saturation; say exactly that and recommend
+another round rather than implying completeness.
 
 ---
 🤖 Generated by Claude Code `/mr-review`
@@ -433,7 +514,18 @@ _Category: <category> | Review by Claude Code \`/mr-review\`_" \
 **Severity emojis**: CRITICAL = `🔴`, IMPORTANT = `🟡`, MINOR = `🔵`
 
 **IMPORTANT notes on positioning**:
-- The target line MUST be a line that appears in the diff (added or unchanged context). If the finding's line is not in the diff, snap to the nearest line that is, or fall back to a general comment (Step 7c handling).
+- **Anchor to an ADDED (`+`) line, never an unchanged context line.** A context line needs BOTH
+  `old_line` and `new_line` to form a valid line code; posting one with `new_line` alone is rejected
+  (`Note {:line_code=>["can't be blank", "must be a valid line code"]}` on GitLab, HTTP 400). When
+  the finding's own line is context, snap to the nearest **added** line rather than the nearest line
+  of any kind. Measured 2026-09-17: 3 of 16 posts failed this way; all three were context-line snaps
+  and all three succeeded once re-anchored to added lines.
+- **Compute the anchor with a script, not an agent.** Parsing hunk headers to turn a code string into
+  a line number is deterministic work. Measured: a subagent spent 58,815 tokens and 85s to produce
+  six integers; a ~60-line script reproduced the same map in 0.19s for ~120 tokens, with no
+  hunk-arithmetic mistakes. Main context already knows which code each finding is about, so it can
+  supply an identifying string for free — the expensive part was only ever reading the diff to count.
+- The target line MUST be a line that appears in the diff. If the finding's line is not in the diff at all, fall back to a general comment (Step 7c handling).
 - GitLab: `old_path` = the `old_path` from the `/diffs` response for that file (for new files, use the same value as `new_path`); comment on `new_line` only (the new version), not `old_line`.
 - GitHub: `line` is the line in the NEW file; keep `side=RIGHT`.
 
