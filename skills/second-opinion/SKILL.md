@@ -1,6 +1,6 @@
 ---
 name: second-opinion
-description: Independently judge whether a specific decision the user directed — where to put code, how to do a migration, which data model, which approach — is actually the best choice, or whether a better one exists. Invoke with /second-opinion when the user says "I told you to do it this way, but check if my way is actually better" or asks you to sanity-check a call they already made (often already implemented). Judges the decision purely on technical merit — the fact that the user instructed it carries ZERO weight. Restraint-gated: "your way is right, ship it" is a real and valued verdict; never manufacture a "better" option to look useful.
+description: "Independently judge whether a specific decision the user directed — where to put code, how to do a migration, which data model, which approach — is actually the best choice, or whether a better one exists. Invoke with /second-opinion when the user says \"I told you to do it this way, but check if my way is actually better\" or asks you to sanity-check a call they already made (often already implemented). Judges the decision purely on technical merit — the fact that the user instructed it carries ZERO weight. Restraint-gated: \"your way is right, ship it\" is a real and valued verdict; never manufacture a \"better\" option to look useful."
 ---
 
 # /second-opinion — Is the chosen way actually the best way?

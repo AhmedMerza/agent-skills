@@ -1,6 +1,6 @@
 ---
 name: qa-sweep
-description: Drive the running app in a real browser and hunt for things that are actually broken — dead buttons, failing forms, console errors, broken states, regressions on adjacent pages — then report each with reproduction steps and screenshot evidence. Invoke with /qa-sweep to check a branch's changes before opening an MR, or to sweep a page or flow on demand. Defaults to diff-aware mode: works out which routes the current branch touched and tests those. Reports findings; does not fix them. Restraint-gated: a short list of real, evidenced bugs beats a long list of nitpicks, and "nothing broken, here's what I covered" is a valid result.
+description: "Drive the running app in a real browser and hunt for things that are actually broken — dead buttons, failing forms, console errors, broken states, regressions on adjacent pages — then report each with reproduction steps and screenshot evidence. Invoke with /qa-sweep to check a branch's changes before opening an MR, or to sweep a page or flow on demand. Defaults to diff-aware mode: works out which routes the current branch touched and tests those. Reports findings; does not fix them. Restraint-gated: a short list of real, evidenced bugs beats a long list of nitpicks, and \"nothing broken, here's what I covered\" is a valid result."
 ---
 
 # /qa-sweep — find what's actually broken, by using the app

@@ -1,6 +1,6 @@
 ---
 name: skill-compare
-description: Evaluate an external skill (a single SKILL.md, a gist, or a whole skills repo) against the collection you already have, and return a verdict — adopt it, graft specific mechanisms from it, or skip it. Invoke with /skill-compare when handed a link to someone's skill or skills repo and the question "should I add any of these?". Measures real content vs. boilerplate, prices the infrastructure it assumes, diffs it against your incumbents by procedure step (not by description), and tests the runnable core on real repo work before recommending anything. Restraint-gated: "skip, you already have this" is the most common correct verdict and never needs padding.
+description: "Evaluate an external skill (a single SKILL.md, a gist, or a whole skills repo) against the collection you already have, and return a verdict — adopt it, graft specific mechanisms from it, or skip it. Invoke with /skill-compare when handed a link to someone's skill or skills repo and the question \"should I add any of these?\". Measures real content vs. boilerplate, prices the infrastructure it assumes, diffs it against your incumbents by procedure step (not by description), and tests the runnable core on real repo work before recommending anything. Restraint-gated: \"skip, you already have this\" is the most common correct verdict and never needs padding."
 ---
 
 # /skill-compare — should I actually add this?

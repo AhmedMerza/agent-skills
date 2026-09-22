@@ -1,6 +1,6 @@
 ---
 name: root-cause
-description: Investigate a bug or unexpected behavior against ground truth BEFORE proposing any fix — reproduce it, quantify how often it actually happens, trace it to the true root cause (not the symptom the report names), and map every affected caller/consumer. Invoke with /root-cause when handed a bug report, a "why is X happening", or a failing behavior. Output is a diagnosis (what / why / blast radius), deliberately NOT a fix — hand off to planning after. Restraint-gated: stop when you've found the cause, don't keep spelunking for its own sake.
+description: "Investigate a bug or unexpected behavior against ground truth BEFORE proposing any fix — reproduce it, quantify how often it actually happens, trace it to the true root cause (not the symptom the report names), and map every affected caller/consumer. Invoke with /root-cause when handed a bug report, a \"why is X happening\", or a failing behavior. Output is a diagnosis (what / why / blast radius), deliberately NOT a fix — hand off to planning after. Restraint-gated: stop when you've found the cause, don't keep spelunking for its own sake."
 ---
 
 # /root-cause — Diagnose before you fix

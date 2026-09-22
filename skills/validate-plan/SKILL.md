@@ -1,6 +1,6 @@
 ---
 name: validate-plan
-description: Adversarially stress-test an existing plan before executing it — verify its load-bearing assumptions against the real codebase, surface genuinely-different alternatives (only when they exist), red-team failure modes, and return a proceed / proceed-with-changes / reconsider verdict. Invoke with /validate-plan after a plan or proposal exists (plan mode, or any approach Claude just laid out). Restraint-gated: a clean "proceed" is a valid, valued result — do not manufacture objections or alternatives to fill a menu.
+description: "Adversarially stress-test an existing plan before executing it — verify its load-bearing assumptions against the real codebase, surface genuinely-different alternatives (only when they exist), red-team failure modes, and return a proceed / proceed-with-changes / reconsider verdict. Invoke with /validate-plan after a plan or proposal exists (plan mode, or any approach Claude just laid out). Restraint-gated: a clean \"proceed\" is a valid, valued result — do not manufacture objections or alternatives to fill a menu."
 ---
 
 # /validate-plan — Adversarial plan review
