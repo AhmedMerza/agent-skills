@@ -383,7 +383,7 @@ git-cliff --tag v2.1.0 --unreleased
 
 ```bash
 #!/bin/bash
-VERSION=$1
+VERSION="v1.2.3"  # pass the version as an argument or edit here
 PREVIOUS_TAG=$(git describe --tags --abbrev=0)
 gh release create "$VERSION" \
   --title "Release $VERSION" \
@@ -394,7 +394,7 @@ gh release create "$VERSION" \
 
 ```bash
 #!/bin/bash
-VERSION=$1
+VERSION="v1.2.3"  # pass the version as an argument or edit here
 PREVIOUS_TAG=$(git describe --tags --abbrev=0)
 glab release create "$VERSION" \
   --name "Release $VERSION" \
