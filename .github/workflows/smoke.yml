@@ -1,0 +1,29 @@
+name: smoke
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  script-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Syntax-check helper scripts
+        run: |
+          set -euo pipefail
+          fail=0
+          while IFS= read -r f; do
+            node --check "$f" || fail=1
+          done < <(find scripts skills kimi-skills -name '*.mjs' -type f -o -name '*.mjs' -type l)
+          while IFS= read -r f; do
+            python3 -m py_compile "$f" || fail=1
+          done < <(find scripts skills kimi-skills -name '*.py' -type f)
+          exit $fail
