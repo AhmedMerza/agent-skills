@@ -1,6 +1,6 @@
 ---
 name: scout
-description: Explore a problem you don't yet know how to handle — name what "done" actually looks like, fan out breadth-first across every open question between here and there, then settle them one at a time until the route is clear. Invoke with /scout when you have an idea or a problem but no plan yet and can't tell where to start. Output is a named destination plus the decisions that get you there — NOT code, and NOT a spec. Hands off to plan mode / validate-plan when the fog lifts. Runs in one session by default; escalates to /handover-save only if it genuinely outgrows one. Restraint-gated: "you already know how to do this, go do it" is a first-class result.
+description: "Explore a problem you don't yet know how to handle — name what \"done\" actually looks like, fan out breadth-first across every open question between here and there, then settle them one at a time until the route is clear. Invoke with /scout when you have an idea or a problem but no plan yet and can't tell where to start. Output is a named destination plus the decisions that get you there — NOT code, and NOT a spec. Hands off to plan mode / validate-plan when the fog lifts. Runs in one session by default; escalates to /handover-save only if it genuinely outgrows one. Restraint-gated: \"you already know how to do this, go do it\" is a first-class result."
 ---
 
 # /scout — Where am I actually going, and how do I get there?

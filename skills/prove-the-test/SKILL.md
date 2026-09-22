@@ -1,6 +1,6 @@
 ---
 name: prove-the-test
-description: Before trusting a test you just wrote, break the thing it guards and confirm it actually fails. Catches tests that pass no matter what — a wrong assertion API, an assertion that cannot observe the thing, a path the test never reaches. Invoke with /prove-the-test after writing or changing a regression test, or when the user asks "is that test actually testing anything / would it catch it / does it fail without the fix". Runs on tests you or someone else just wrote; it does NOT audit a whole suite. Restraint-gated: one targeted revert per test, not a mutation-testing campaign.
+description: "Before trusting a test you just wrote, break the thing it guards and confirm it actually fails. Catches tests that pass no matter what — a wrong assertion API, an assertion that cannot observe the thing, a path the test never reaches. Invoke with /prove-the-test after writing or changing a regression test, or when the user asks \"is that test actually testing anything / would it catch it / does it fail without the fix\". Runs on tests you or someone else just wrote; it does NOT audit a whole suite. Restraint-gated: one targeted revert per test, not a mutation-testing campaign."
 ---
 
 A passing test proves nothing on its own. It passes when the code is right, and it *also* passes
