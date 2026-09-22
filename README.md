@@ -1,6 +1,12 @@
-# claude-skills
+# agent-skills
 
-My personal collection of [Claude Code](https://docs.claude.com/en/docs/claude-code) skills, synced across machines.
+My personal collection of agent skills, synced across machines — works with [Claude Code](https://docs.claude.com/en/docs/claude-code) and Kimi Code CLI.
+
+## Layout
+
+- `skills/` — portable skills, loaded by both tools as-is
+- `commands/` — Claude Code slash commands (invoked as `/<name>`)
+- `kimi-skills/` — Kimi Code CLI ports of the commands (invoked as `/skill:<name>`)
 
 ## Skills
 
@@ -77,6 +83,8 @@ How far up front you start depends on how much fog there is. `scout` is the furt
 
 ## Commands
 
+These are **Claude Code** slash commands. On Kimi Code CLI the same workflows live in `kimi-skills/` and are invoked as `/skill:<name>`.
+
 The MR/PR commands work on **either GitHub or GitLab** (self-hosted or SaaS). They auto-detect the provider from the git remote — `github.com` → `gh`/PR, everything else → `glab`/MR — with an optional `.claude/repo-config.json` `"provider"` override. See [docs/provider-resolution.md](docs/provider-resolution.md) for the detection rule + the GitLab↔GitHub CLI cheat-sheet embedded in each command.
 
 | Command | What it does |
@@ -97,36 +105,50 @@ The `handover-*` trio is a self-contained local workflow (no GitHub/GitLab invol
 
 ## Install
 
-Clone anywhere, then symlink into your Claude config so edits stay in sync:
+Clone anywhere, then point your tool's config at the repo so edits stay in sync.
+
+### Claude Code
 
 ```sh
-git clone https://github.com/AhmedMerza/claude-skills.git ~/claude-skills
+git clone https://github.com/AhmedMerza/agent-skills.git ~/agent-skills
 
 # back up existing dirs if you have them, then link:
-ln -s ~/claude-skills/skills ~/.claude/skills
+ln -s ~/agent-skills/skills ~/.claude/skills
 
 # commands: link the individual files (your ~/.claude/commands may hold other, local-only commands)
-for f in mr-create mr-guide mr-review fix-review commit issue browse handover-save handover-resume handover-list checkpoint; do ln -sf ~/claude-skills/commands/$f.md ~/.claude/commands/$f.md; done
+for f in mr-create mr-guide mr-review fix-review commit issue browse handover-save handover-resume handover-list checkpoint; do ln -sf ~/agent-skills/commands/$f.md ~/.claude/commands/$f.md; done
 
 # the /browse command needs its helper script on the standard path:
-mkdir -p ~/.claude/scripts && ln -sf ~/claude-skills/scripts/browse.mjs ~/.claude/scripts/browse.mjs
+mkdir -p ~/.claude/scripts && ln -sf ~/agent-skills/scripts/browse.mjs ~/.claude/scripts/browse.mjs
 ```
 
 Or copy them if you'd rather not symlink:
 
 ```sh
-cp -r ~/claude-skills/skills/. ~/.claude/skills/
-cp ~/claude-skills/commands/*.md ~/.claude/commands/
+cp -r ~/agent-skills/skills/. ~/.claude/skills/
+cp ~/agent-skills/commands/*.md ~/.claude/commands/
 ```
 
 Restart Claude Code to pick up newly-added skills/commands. Invoke any of them with `/<name>`.
 
-## Updating
+### Kimi Code CLI
 
-Edit a skill or command (in either `~/.claude/...` or `~/claude-skills/...` — they're the same files if symlinked), then:
+Add both directories to `extra_skill_dirs` in `~/.kimi-code/config.toml`:
 
-```sh
-cd ~/claude-skills && git add -A && git commit -m "update <skill>" && git push
+```toml
+extra_skill_dirs = [ "~/agent-skills/skills", "~/agent-skills/kimi-skills" ]
 ```
 
-On another machine: `cd ~/claude-skills && git pull`.
+Then run `/reload` or start a new session. The command ports are `type: flow`, so they only run when you invoke them — `/skill:mr-create`, `/skill:commit`, etc. (`kimi-skills/browse/browse.mjs` is a symlink into `scripts/`, so `/skill:browse` needs no extra install step.)
+
+Kimi parses skill frontmatter strictly: keep it to `name` + `description` (+ optional `type`), and **double-quote any description containing `: `** (escaping inner quotes as `\"`) — an unquoted one fails parsing and the skill is silently skipped.
+
+## Updating
+
+Edit a skill or command (in `~/agent-skills/...` — or via the symlinks/config above, they're the same files), then:
+
+```sh
+cd ~/agent-skills && git add -A && git commit -m "update <skill>" && git push
+```
+
+On another machine: `cd ~/agent-skills && git pull`.

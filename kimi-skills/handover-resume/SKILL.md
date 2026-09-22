@@ -1,0 +1,51 @@
+---
+name: handover-resume
+description: Reload a saved handover plan from .kimi-code/handover/, re-sync it against current code, and re-anchor this session to continue the work.
+type: flow
+---
+
+You are resuming work from a previously saved handover plan (written by `/skill:handover-save`).
+
+## 1. Locate the plan
+
+- If `$ARGUMENTS` names a slug, read `.kimi-code/handover/<slug>.md`.
+- If no argument: run `git branch --show-current`, derive a slug, and try `.kimi-code/handover/<slug>.md`.
+- If neither resolves, list the files in `.kimi-code/handover/` (with their `# Title` and `**Status:**`
+  lines) and ask the user which one — do not guess. If the directory is missing or empty, tell the
+  user there are no saved handovers yet.
+
+## 2. Re-anchor — verify before trusting
+
+The doc reflects what was true when it was saved; the codebase may have moved on. Before you
+continue:
+
+- Read the plan fully.
+- Spot-check the **Key code anchors** — confirm the cited file:line references still point at what
+  the doc claims (Read/grep them). Note any that have drifted.
+- Check the branch matches; if `git status` shows relevant uncommitted work, reconcile it against
+  the plan's checkbox state (something may already be done that isn't checked off).
+
+**Persist the corrections — don't just report them.** As you verify, update the doc in place so it
+stays a trustworthy resume point:
+
+- Refresh drifted `file:line` anchors to their current values (grep the symbol, rewrite the number).
+- Check off steps that are already done, and update the **Status** line.
+- For *structural* drift — new code that expands or invalidates the plan, not just moved lines (e.g.
+  a sibling feature now needs the same fix) — do NOT silently rewrite the plan. Add a dated note under
+  **Open questions** (or a short `## Drift since save` section) describing what changed and its impact,
+  and flag it in your briefing so the user decides how to adjust scope.
+
+Leave the doc more accurate than you found it — whether or not you go on to execute it this session.
+
+## 3. Report back, then continue
+
+Give a short briefing:
+- **Where we are:** the Status line + what's actually done vs pending (corrected for any drift).
+- **Any drift you found:** stale anchors, already-completed steps, changed assumptions.
+- **Next step:** the first unchecked, unblocked item.
+
+If every step is already checked (or the Status line says the work is complete), don't invent new
+work — report that the plan is done and ask the user what they want next.
+
+Otherwise proceed with that next step (or ask which item to start on if several are unblocked). As
+you complete steps, keep the handover doc's checkboxes updated so it stays an accurate resume point.
