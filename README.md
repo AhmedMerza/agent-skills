@@ -7,6 +7,7 @@ My personal collection of agent skills, synced across machines — works with [C
 - `skills/` — portable skills, loaded by both tools as-is
 - `commands/` — Claude Code slash commands (invoked as `/<name>`)
 - `kimi-skills/` — Kimi Code CLI ports of the commands (invoked as `/skill:<name>`)
+- `docs/handbook.md` — the detailed companion: per-flow notes, trap list, provenance tables, authoring conventions
 
 ## Skills
 
@@ -140,6 +141,17 @@ extra_skill_dirs = [ "~/agent-skills/skills", "~/agent-skills/kimi-skills" ]
 ```
 
 Then run `/reload` or start a new session. The command ports are `type: flow`, so they only run when you invoke them — `/skill:mr-create`, `/skill:commit`, etc. (`kimi-skills/browse/browse.mjs` is a symlink into `scripts/`, so `/skill:browse` needs no extra install step.)
+
+**Recommended: configure a `[secondary_model]` pool** in the same `config.toml` — it enables the Agent tool's `model` parameter, and `mr-review` pins its five parallel reviewers to the pool's cheap/fast alias (measured: same verdicts at ~half the tokens and ~a quarter of the wall clock):
+
+```toml
+[secondary_model]
+default_model = "kimi-code/kimi-for-coding"
+
+[secondary_model.models]
+"kimi-code/kimi-for-coding" = "Default. Full-capability model, same as the main session."
+"kimi-code/kimi-for-coding-highspeed" = "Cheaper and faster. Use for parallel subagent fan-out (review swarms) and routine chores."
+```
 
 Kimi parses skill frontmatter strictly: keep it to `name` + `description` (+ optional `type`), and **double-quote any description containing `: `** (escaping inner quotes as `\"`) — an unquoted one fails parsing and the skill is silently skipped.
 
