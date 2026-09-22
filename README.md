@@ -2,48 +2,50 @@
 
 My personal collection of agent skills, synced across machines — works with [Claude Code](https://docs.claude.com/en/docs/claude-code) and Kimi Code CLI.
 
+**Full descriptions, per-flow traps, provenance and authoring conventions live in [docs/handbook.md](docs/handbook.md).** This page is the index.
+
 ## Layout
 
 - `skills/` — portable skills, loaded by both tools as-is
 - `commands/` — Claude Code slash commands (invoked as `/<name>`)
 - `kimi-skills/` — Kimi Code CLI ports of the commands (invoked as `/skill:<name>`)
-- `docs/handbook.md` — the detailed companion: per-flow notes, trap list, provenance tables, authoring conventions
+- `docs/handbook.md` — the detailed companion
 
 ## Skills
 
 | Skill | What it does |
 | --- | --- |
-| `animate` | Adds professional, physical, choreographed motion to a UI target (Vue 3 / Vuetify or Flutter). |
-| `design` | Industry-specific UI/UX recommendations (colors, type pairings, layout patterns) before building. |
-| `design-drift` | Whole-repo design-system health — token adoption as ratios, scales never built, duplicate component kits, icon sprawl — then scaffolds the missing layer and guards it. |
-| `explain` | Reverse-engineers an unfamiliar feature end-to-end into a navigable `file:line` map — flow, key components, and the non-obvious coupling/gotchas. |
-| `video-teardown` | Reverse-engineers a product you can only see in videos — pulls a channel's walkthroughs, extracts narration + UI screenshots, maps flows/screens, diffs against your own codebase. |
-| `scout` | For a problem you don't yet know how to handle. Names what *done* actually looks like, fans out **breadth-first** over every open question between here and there, sorts them **sharp / foggy / out-of-scope** (the test is whether you can *state* the question, not *answer* it), then settles them one at a time until the route is clear. Produces decisions, not code — hands off to plan mode. Runs in one session by default, escalating to `/handover-save` only if the work genuinely outgrows one. Destination-first framing, the breadth-first fan-out, the fog test and the scope/sharpness split grafted from [Matt Pocock's wayfinder](https://github.com/mattpocock/skills); its issue-tracker map and one-ticket-per-session rule deliberately dropped. |
-| `grill-me` | Interviews you relentlessly about a plan until you reach shared understanding. Adapted from [Matt Pocock's grill-me](https://github.com/mattpocock/skills). |
-| `root-cause` | Investigates a bug against ground truth before any fix — reproduce, quantify prevalence, trace the true root cause, map the blast radius. Symptom-triage table, upstream/known-dependency-bug search (sanitize before searching), and a 3-strike stop rule grafted from [garrytan/gstack](https://github.com/garrytan/gstack) `investigate`. |
-| `second-opinion` | Judges whether a decision you directed (code placement, migration approach, data model) is actually best, or if a better way exists — merit only, authorship ignored. |
-| `wait-what` | Repairs a message that didn't land — re-pitches from a running start in controlled English, keeping the project's domain terms intact. Explicit request only. |
-| `qa-crawl` | Grinds through a few hundred routes unattended and resumably — one page per iteration, durable ledger in gitignored `.claude/qa-crawl/`, running in its own git worktree so your checkout is never touched. Objective errors are diagnosed, fixed and re-verified; UI findings are recorded as **proposals**, never auto-applied. Opens one small before/after MR per page that needed changes (clean pages open nothing). Pair with `/loop` to keep it going while you work. Owns only the ledger, the per-page contract and the isolation — the judgment comes from `qa-sweep`, `root-cause`, `ponytail`, `ship-check` and `ui-audit`/`ux-audit`. |
-| `qa-sweep` | Drives the running app in a real browser and hunts for what's actually broken — dead controls, failing forms, console errors, unbuilt empty states, regressions on adjacent routes. Diff-aware by default: derives scope from the branch diff and looks routes up (`artisan route:list`, Inertia render sites) rather than guessing them. Reports findings with repro steps and screenshot evidence; never fixes. Driver-agnostic (claude-in-chrome, or Playwright via the project's own install). Diff-aware routing, two evidence tiers and the smoke-fallback guard grafted from [garrytan/gstack](https://github.com/garrytan/gstack) `qa`. |
-| `ponytail` | Lazy-senior-dev coding discipline — YAGNI, reuse/stdlib first, no unrequested abstractions, design-for-reuse only when a second consumer is real. **Auto-applies by default** to any coding task (not opt-in). Adapted from [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) (MIT), then customized. |
-| `ui-audit` | Technical UI quality checks (a11y, performance, theming, responsive, interaction states) → scored report. |
-| `ui-polish` | UI polish, animation decisions, and the invisible details that make interfaces feel right. Adapted from Emil Kowalski's design engineering philosophy. |
-| `ux-audit` | Judges whether a page/flow actually works for the human using it — cognitive load, friction, clarity — tied to the page's one real goal. Advisory, ethics-gated (flags dark patterns). |
-| `validate-plan` | Adversarially stress-tests an existing plan before executing — verifies assumptions against the real codebase, surfaces alternatives, red-teams failure modes, returns a proceed/reconsider verdict. |
-| `ship-check` | The final gate before merging — audits a finished diff against the problem it claims to solve: what's missing (unpatched sibling caller, unhandled branch, no backfill), where it breaks on edge cases, whether the approach is right. Splits review-driven fixes into *structural* (re-run `mr-review` before merge) vs *additive* (merge on the tests), because self-review reliably misses what you just wrote — and says so, rather than spawning its own reviewer to duplicate the five `mr-review` runs minutes later. `validate-plan`'s bookend. Returns a merge/fix-first/reconsider verdict. |
-| `prove-the-test` | Breaks the thing a new test guards and confirms the test actually fails, then restores it. A regression test first runs against *already-correct* code, so you never see red unless you make it — and green looks identical whether the assertion works or is pointed at nothing. Catches assertion-API misuse (a helper reading your failure message as an expected value), boundary tests decided by an unfrozen clock rather than by the code, and fallback branches the test never reaches. One targeted revert per test — not mutation testing, not a suite audit. |
-| `spinoff` | Harvests what a finished branch made **cheap** — the helper other sites now hand-roll, the thing deferred *on cost* that just got small, the convention that forked in two. Gated on a real *before → now* cost delta: any suggestion that would have been equally valid before the branch is discarded, which is most of them. Caps at 3, feeds `/issue`, and **never commits on the branch** — the output is a backlog, not a bigger diff. `ship-check`'s optional twin: that finds what's *missing* and blocks the merge, this finds what's *cheap* and blocks nothing. |
-| `api-docs-complete` | Finishes an API docblock that already has its happy path. Hunts the statuses that are **real but invisible in the handler** — `401` from auth middleware, `429` from a throttle inherited by a middleware *group*, `403` from a policy or guard object, `422` from validation, `500` from the catch-all, plus anything a same-class helper returns. Bodies must be **captured from a real run**, never invented (envelopes lie: a `429` using a different success key than the rest of the API is not findable by reading code), and the **generated output is verified per endpoint** afterwards, because a malformed annotation block usually produces wrong docs rather than an error. Restraint-gated: an endpoint that can only 200-or-401 is done at two responses. |
-| `changelog-generate` | Generates changelogs & release notes from commits/PRs/MRs. Auto-detects the forge (GitHub `#` vs GitLab `!`, including self-hosted) and whether the repo uses tags — skipping all tag/version/semver noise for tag-less repos. Adapted from [patricio0312rev/skills](https://github.com/patricio0312rev/skills) changelog-writer, then customized. |
-| `i18n-sync` | Keeps a project's translations in locale parity. Bundled scanner deep-diffs nested keys to find strings present in one locale but missing/empty in another (a silent fallback that ships the wrong language); mirrors new keys to every locale. |
-| `tool-compare` | Judges whether an external tool/library/package is worth adopting for THIS project — reads source not README, verifies claims against the tool's own tests, checks the project has the problem at all. Verdict: adopt / adopt part / not now / skip. |
-| `skill-compare` | Judges an external skill or skills repo against this collection — measures real content vs. framework boilerplate, prices the infrastructure it assumes (runtime deps, state dirs, `settings.json` mutation), diffs it against the incumbent by procedure step rather than description, and tests the runnable core on a real repo fixture. Verdict: adopt / graft these mechanisms / skip. |
-| `skill-audit` | The maintenance loop for the skills already installed — `skill-compare` guards the front door, this one watches the incumbents. **Stage 1** (after a merge, cheap) records only *externally observable* evidence that a skill misbehaved — an instruction the user overrode, a correction, a misfire, findings rejected as padding, a step the environment made impossible — to a local `~/.claude/skill-audit/log.jsonl`, and never edits a skill. **Stage 2** (rare, opt-in) fires only when the same complaint about the same skill recurs across **different sessions**, then proposes a minimal diff to that `SKILL.md` for approval. Self-assessment is banned as evidence — every entry must quote the offending instruction or the user's actual words — and logging nothing is the normal outcome. |
+| `animate` | Physical, choreographed motion for a UI target (Vue/Vuetify, Flutter). |
+| `design` | Industry-specific colors, type pairings, layout patterns — before building. |
+| `design-drift` | Whole-repo design-system health: token adoption, missing scales, duplicate kits. |
+| `explain` | Maps an unfamiliar feature end-to-end into a navigable `file:line` map. |
+| `video-teardown` | Reverse-engineers a product from its video walkthroughs; diffs against your codebase. |
+| `scout` | No plan yet — names what "done" looks like, settles open questions breadth-first. |
+| `grill-me` | Interviews you about a plan until shared understanding. |
+| `root-cause` | Diagnoses a bug against ground truth before any fix. Output: a diagnosis, not a patch. |
+| `second-opinion` | Judges one decision head-to-head, merit only. |
+| `wait-what` | Re-pitches a message that didn't land, in plain controlled English. |
+| `where-were-we` | Lost the thread of a long session? Reports state, not history — landed vs open. |
+| `qa-crawl` | Unattended, resumable crawl over hundreds of routes; one before/after MR per page. |
+| `qa-sweep` | Drives the running app in a real browser to find what's broken. Reports, never fixes. |
+| `ponytail` | Lazy-senior-dev discipline — YAGNI, reuse first. Auto-applies to any coding task. |
+| `ui-audit` | Technical UI checks (a11y, perf, theming, responsive) → scored report. |
+| `ui-polish` | Craft on one screen — type, color, spacing, interaction states. |
+| `ux-audit` | Does the page work for the human — friction, cognitive load. Ethics-gated. |
+| `validate-plan` | Adversarially stress-tests a plan before executing. Verdict: proceed/reconsider. |
+| `ship-check` | Final gate before merge — is the change complete against the problem it claims to solve? |
+| `prove-the-test` | Breaks the thing a new test guards; confirms the test actually goes red. |
+| `spinoff` | Banks what a finished branch made cheap — as a backlog, never a bigger diff. |
+| `api-docs-complete` | Completes an API docblock with the real-but-invisible statuses (401/403/422/429/500). |
+| `changelog-generate` | Changelogs and release notes from commits/PRs; forge- and tag-aware. |
+| `i18n-sync` | Keeps locale files in key parity; finds silent-fallback strings. |
+| `tool-compare` | Is this external tool worth adopting for THIS project? Reads source, not README. |
+| `skill-compare` | Prices an external skill against this collection. Verdict: adopt/graft/skip. |
+| `skill-audit` | Watches installed skills for misbehavior; proposes fixes only on repeat evidence. |
 
 ## When to reach for which
 
-Most of these skills guard a different stage of *"am I doing the right thing?"* — chained across the life of a change.
-**Reading the chains:** steps that aren't in the skills table above (`mr-create`, `mr-review`, `fix-review`, `handover-*`, …) are **commands**, not skills — Claude Code finds them in `commands/`, Kimi Code CLI in `kimi-skills/` as `/skill:<name>`.
+The skills form a pipeline — each guards one stage of *"am I doing the right thing?"*:
 
 ```
 something's broken:
@@ -57,57 +59,28 @@ a new idea:
    destination) the plan)
 ```
 
-**This map is the single source of truth for the chain.** Skills that need to place work on it
-(`where-were-we`) point here rather than restating it — two copies drift, and drifted copies put
-work at the wrong step.
-
-Note the order around the MR: **the MR is opened first, then the gates run against it.**
-`ship-check` vets the diff on an open MR, `mr-review` reviews it, `fix-review` fixes and resolves
-what review found, and `spinoff` banks whatever the branch made cheap — as follow-up issues, or
-folded into the same MR if they're small. Opening the MR early is deliberate: it gives the gates
-a stable target with real diff refs to anchor comments against.
-
-**The tail of the chain can loop, and sometimes must.** When `fix-review`'s fixes are *structural* —
-a deleted branch, a decision moved across a lock, a change to who owns one — go back to `mr-review`
-before merging. Fixes written against a reviewer's framing land in code the tests were written
-against, and they are where self-introduced defects come from. Additive fixes (a test, a validation,
-a null guard) merge on the tests. If a third round still finds something, the MR is too large to
-converge and splitting beats iterating.
-
-How far up front you start depends on how much fog there is. `scout` is the furthest upstream — reach for it when you can't yet say what *done* looks like, so there's no plan to sharpen; it ends by naming that destination. `grill-me` picks up from a plan you can already state and stress-tests it into shared understanding. `second-opinion` spot-checks any single decision along the way. `skill-compare` and `skill-audit` sit outside the chain entirely — they judge the *toolkit* rather than the work: one prices a stranger's skill before you adopt it, the other watches the ones you already run and, after the same complaint turns up twice, proposes a fix to the skill itself.
-
-**Commonly confused — same spirit, different moment:**
-
-- `validate-plan` vs `ship-check` vs `mr-review` — adversarial review at three points: the **plan** (pre-code) → the **finished diff** (pre-merge) → the **code lines** (review).
-- `scout` vs `grill-me` — **no destination yet** (fan out breadth-first to find it) vs **a plan you can already state** (walk its decision tree depth-first). Running `grill-me` on fog interrogates the first branch you happened to notice; running `scout` on a clear plan is pure ceremony.
-- `second-opinion` vs `validate-plan` — one **decision** judged head-to-head vs a whole **plan** stress-tested.
-- `ship-check` vs `spinoff` — both read the finished diff, opposite questions: what's **missing** (required, blocks the merge, fix it in this branch) vs what's now **cheap** (optional, blocks nothing, file it for later). Anything that would break production by not being done is a ship-check finding, never a spinoff.
-- `prove-the-test` vs `ship-check` — both run on finished work, different objects: one asks whether the **test** is real (break the code, the test must go red), the other whether the **change** is complete. A vacuous test makes ship-check's "tests pass" evidence worthless, so prove it first.
-- `skill-compare` vs `skill-audit` — **intake** vs **maintenance**: pricing someone else's skill before adopting it vs watching your own for drift once they're running.
-- `qa-sweep` vs `ui-audit` vs `ux-audit` — three questions about the same screen: does it **work at all** (drive it in a browser, find what's broken) vs is it **built correctly** (a11y/perf/theming, read statically) vs does it **work for the human** (friction/cognitive load).
-- `design` / `animate` / `ui-polish` — *before* building (colors/type/layout) vs *while* building (motion, interaction details).
+**This map is the single source of truth for the chain.** Steps not in the skills table
+(`mr-create`, `mr-review`, `fix-review`, …) are **commands**, not skills — Claude Code finds
+them in `commands/`, Kimi Code CLI in `kimi-skills/`. The MR is opened **first**, then the
+gates run against it; the tail can loop (structural fixes go back to `mr-review`).
+Commonly-confused pairs, per-flow traps, and the reasoning behind the order: [docs/handbook.md](docs/handbook.md).
 
 ## Commands
 
-These are **Claude Code** slash commands. On Kimi Code CLI the same workflows live in `kimi-skills/` and are invoked as `/skill:<name>`.
-
-The MR/PR commands work on **either GitHub or GitLab** (self-hosted or SaaS). They auto-detect the provider from the git remote — `github.com` → `gh`/PR, everything else → `glab`/MR — with an optional `.claude/repo-config.json` `"provider"` override. See [docs/provider-resolution.md](docs/provider-resolution.md) for the detection rule + the GitLab↔GitHub CLI cheat-sheet embedded in each command.
+Claude Code slash commands (Kimi: same workflows as `/skill:<name>` from `kimi-skills/`).
+The MR/PR commands auto-detect GitHub (`gh`) vs GitLab (`glab`) from the git remote.
 
 | Command | What it does |
 | --- | --- |
-| `mr-create` | Create a PR/MR for the current branch — commit-analysis title/body, stack-agnostic pre-flight checks, reviewer/label suggestions, fork-aware. |
-| `mr-guide` | Write the reviewer's guide for a PR/MR or branch — what changed in product terms, before/after, data model, UI states, blast radius — plus any divergence from the linked issue's acceptance criteria. Auto-screenshots frontend changes from a throwaway worktree. Publishes into the description under a marker, so re-runs replace in place. Not a code review — that's `mr-review`. |
-| `mr-review` | Comprehensive code review of a PR/MR — fetches the diff, posts inline + summary comments. |
-| `fix-review` | Read review threads on a PR/MR, fix the issues in code, reply, and resolve. |
-| `commit` | Smart commit — auto-branches off the detected default branch, stack-aware format/test, conventional message, push. Provider-agnostic. |
-| `issue` | Turn a natural-language description into a structured issue with codebase context, labels, and template selection. **GitLab-only** (`glab`). |
-| `browse` | Authenticated, scrolling Playwright screenshots of a running app page. Needs the `scripts/browse.mjs` helper (see Install) + Playwright installed in the target repo; app-specifics come from an optional `.claude/browse-config.json`, credentials only from `PW_EMAIL`/`PW_PASS` env. |
-| `handover-save` | Materialize the current conversation's plan into a durable, gitignored doc under the project's `.claude/handover/` — status, decisions, checkboxed steps, `file:line` anchors, gotchas — so it survives `/clear` and session handoffs. |
-| `handover-resume` | Reload a saved handover plan and re-anchor the session — re-verifies its `file:line` anchors against current code, reconciles checkbox state, then continues from the first unblocked step. |
-| `handover-list` | List the saved handover plans in the current project (slug / title / status, newest first) so you can pick one to resume. |
-| `checkpoint` | Triage a long session — splits what is **DONE** (droppable, recoverable from git/files) from what is **LIVE** (would be lost with the context), then recommends keep going / compact / handover+clear. Reports only: it never clears or compacts, because clearing throws away a warm prompt cache and only pays at a genuine task boundary — a judgment the percentage alone can't make. Reach for it when the statusline turns yellow (≥50%) or red (≥80%). |
-
-The `handover-*` trio is a self-contained local workflow (no GitHub/GitLab involved): `save` writes a plan, `list` finds them, `resume` reloads and continues one. The docs live in each project's gitignored `.claude/handover/`, so they're personal scratch — never committed.
+| `mr-create` | Open a PR/MR for the current branch — title/body, pre-flight checks, reviewer suggestions. |
+| `mr-guide` | Writes the reviewer's guide into the PR description (product-level, auto-screenshots). |
+| `mr-review` | Reviews a PR/MR — five parallel reviewers, inline + summary comments. |
+| `fix-review` | Fixes review findings in code, replies, resolves threads. |
+| `commit` | Smart commit — auto-branch, format/test, conventional message, push. |
+| `issue` | Structured issue from natural language. **GitLab-only**. |
+| `browse` | Authenticated scrolling Playwright screenshots of a running page. |
+| `handover-save` / `-list` / `-resume` | Durable session plans in gitignored `.claude/handover/` (Kimi: `.kimi-code/handover/`). |
+| `checkpoint` | Triage a long session: what's DONE vs LIVE; recommends continue / compact / handover. |
 
 ## Install
 

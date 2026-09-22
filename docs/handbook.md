@@ -68,6 +68,41 @@ UI in the mix: `/design` before building → `/ui-polish` · `/animate` while �
 - **`/skill-compare` is for prompts; `/tool-compare` is for everything else.** A skill is judged against your other skills. A tool or library is judged against whether this project has the problem at all, so "no demonstrated need" is its most common honest verdict.
 - **`/ui-audit` is per-page; `/design-drift` is per-repo.** A page audit can never see that you own two button kits or that no type scale exists — it only inspects what's on the page. Duplication and *absence* need the whole tree.
 
+## The chain, in detail
+
+**The MR is opened first, then the gates run against it.** `ship-check` vets the diff on an
+open MR, `mr-review` reviews it, `fix-review` fixes and resolves what review found, and
+`spinoff` banks whatever the branch made cheap — as follow-up issues, or folded into the same
+MR if they're small. Opening the MR early is deliberate: it gives the gates a stable target
+with real diff refs to anchor comments against.
+
+**The tail of the chain can loop, and sometimes must.** When `fix-review`'s fixes are
+*structural* — a deleted branch, a decision moved across a lock, a change to who owns one —
+go back to `mr-review` before merging. Fixes written against a reviewer's framing land in
+code the tests were written against, and they are where self-introduced defects come from.
+Additive fixes (a test, a validation, a null guard) merge on the tests. If a third round
+still finds something, the MR is too large to converge and splitting beats iterating.
+
+**How far up front you start depends on how much fog there is.** `scout` is the furthest
+upstream — reach for it when you can't yet say what *done* looks like, so there's no plan to
+sharpen; it ends by naming that destination. `grill-me` picks up from a plan you can already
+state and stress-tests it into shared understanding. `second-opinion` spot-checks any single
+decision along the way. `skill-compare` and `skill-audit` sit outside the chain entirely —
+they judge the *toolkit* rather than the work: one prices a stranger's skill before you adopt
+it, the other watches the ones you already run and, after the same complaint turns up twice,
+proposes a fix to the skill itself.
+
+**Commonly confused — same spirit, different moment:**
+
+- `validate-plan` vs `ship-check` vs `mr-review` — adversarial review at three points: the **plan** (pre-code) → the **finished diff** (pre-merge) → the **code lines** (review).
+- `scout` vs `grill-me` — **no destination yet** (fan out breadth-first to find it) vs **a plan you can already state** (walk its decision tree depth-first). Running `grill-me` on fog interrogates the first branch you happened to notice; running `scout` on a clear plan is pure ceremony.
+- `second-opinion` vs `validate-plan` — one **decision** judged head-to-head vs a whole **plan** stress-tested.
+- `ship-check` vs `spinoff` — both read the finished diff, opposite questions: what's **missing** (required, blocks the merge, fix it in this branch) vs what's now **cheap** (optional, blocks nothing, file it for later). Anything that would break production by not being done is a ship-check finding, never a spinoff.
+- `prove-the-test` vs `ship-check` — both run on finished work, different objects: one asks whether the **test** is real (break the code, the test must go red), the other whether the **change** is complete. A vacuous test makes ship-check's "tests pass" evidence worthless, so prove it first.
+- `skill-compare` vs `skill-audit` — **intake** vs **maintenance**: pricing someone else's skill before adopting it vs watching your own for drift once they're running.
+- `qa-sweep` vs `ui-audit` vs `ux-audit` — three questions about the same screen: does it **work at all** (drive it in a browser, find what's broken) vs is it **built correctly** (a11y/perf/theming, read statically) vs does it **work for the human** (friction/cognitive load).
+- `design` / `animate` / `ui-polish` — *before* building (colors/type/layout) vs *while* building (motion, interaction details).
+
 ## Planning & Judgment
 
 | Skill | What it does |
