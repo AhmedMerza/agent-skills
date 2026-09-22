@@ -41,7 +41,7 @@ Review a merge/pull request by fetching everything from the provider's API. Does
 
 ## Usage
 ```
-/mr-review <mr-or-pr-number-or-url> [--comment]
+/skill:mr-review <mr-or-pr-number-or-url> [--comment]
 ```
 
 Accepts a bare number (`123`, `!123`, `#123`) or a full MR/PR URL on either provider. Strip any `!`/`#` prefix and, for a URL, extract the trailing number.
@@ -65,7 +65,7 @@ If you need to write any temporary/scratch artefact during this review (raw API 
 Rules:
 - Create the directory with `mkdir -p .kimi-code/tmp/mr-review/<NUMBER>` before writing.
 - Use descriptive filenames (e.g. `mr-meta.json`, `diffs.json`, `review-security.md`).
-- `.kimi-code/` is already gitignored, so nothing leaks into the repo.
+- **Verify `.kimi-code/` is gitignored in this repo first** (`grep -qx '.kimi-code' .gitignore`); if it isn't, add it before writing scratch files — Kimi Code CLI does not add the ignore rule automatically, and an un-ignored scratch dir dirties the working tree.
 - Existing `Read`/`Write` permissions cover this path — no extra prompts.
 - Do NOT write to `/tmp`, `/var/tmp`, `$TMPDIR`, or anywhere outside the project root.
 - Cleanup is optional — leave the dir for the user to inspect; it's gitignored.
@@ -157,7 +157,7 @@ Spawn 5 review agents in a SINGLE message so they run in parallel. Each agent re
 
 **IMPORTANT**: Do NOT paste file content or diffs into these prompts. Hand agents the ref and let them read what they need. If Step 3 fell back to the API path, paste content inline as the old flow did — that fallback is the only case where inline content is correct.
 
-**Run all five on the session's default model — do not escalate by default.** Measured on MR !3192 (a controller dedupe touching a policy path and a form-request `authorize()`), running the security reviewer on a heavier tier returned the identical verdict at 1.9× the tokens and 4.2× the wall clock (9m 03s vs 2m 08s). The wall clock is the decisive part: these five run in parallel, so **the slowest agent gates the entire review**. One heavy-tier agent turns every review into a nine-minute wait — paid on all reviews, including the clean majority.
+**Run all five on a fast/cheap model when one is configured — do not escalate by default.** In Kimi Code CLI, subagents inherit the session model by default; a `[secondary_model]` pool in `config.toml` enables the Agent tool's `model` parameter (advertised in the tool description when configured). If a pool exists, pass its fast/cheap alias (e.g. a `*-highspeed` entry) as `model=` on **all five** spawns; if no pool is configured, let them inherit. Pinning matters independently of the value: without it, these five run at whatever the session happens to be on. Measured on MR !3192 (a controller dedupe touching a policy path and a form-request `authorize()`), running the security reviewer on a heavier tier returned the identical verdict at 1.9× the tokens and 4.2× the wall clock (9m 03s vs 2m 08s). The wall clock is the decisive part: these five run in parallel, so **the slowest agent gates the entire review**. One heavy-tier agent turns every review into a nine-minute wait — paid on all reviews, including the clean majority.
 
 > Caveat on that A/B: both agents were told to return only a JSON array. The cheaper tier complied; the heavier one narrated first. That makes the heavy tier's checking *visible* and the cheap tier's invisible — it does not establish that the cheap tier checked less. The result supports the cost claim, not a claim about relative depth.
 
