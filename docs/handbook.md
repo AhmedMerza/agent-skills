@@ -1,11 +1,16 @@
-# Claude Skills
+# Skill handbook
 
-My local skill collection for Claude Code (and other agents). Every skill here is a
+The detailed companion to the repo [README](../README.md) — per-flow notes, trap list,
+provenance tables, and authoring conventions. **The README's "When to reach for which" map is
+the single source of truth for the chain**; the flows below are the same chains with their
+reasoning, not a second map. When the two disagree, the README wins.
+
+My local skill collection for Claude Code and Kimi Code CLI (and other agents). Every skill here is a
 plain owned directory — `Source: local` in `npx skills list` — so nothing is tracked
 or overwritten by `npx skills update`. Some were adapted from public skills and then
 customized; provenance is noted where it applies.
 
-Invoke any skill with `/<name>` or by describing the task so its trigger fires.
+Invoke any skill with `/<name>` in Claude Code or `/skill:<name>` in Kimi Code CLI, or by describing the task so its trigger fires.
 
 ## Flows — which one do I reach for?
 
@@ -135,12 +140,16 @@ it asks about the system, not the screen.
 
 ## Adding a skill
 
-- **Build your own:** create `~/.claude/skills/<name>/SKILL.md` with `name:` + `description:`
-  frontmatter. It's `local` and update-proof by default.
+- **Build your own:** create `skills/<name>/SKILL.md` in this repo with `name:` + `description:`
+  frontmatter. Keep frontmatter to those two fields and quote any description containing `: `
+  — Kimi Code CLI parses it strictly and silently skips the skill otherwise. It's `local` and
+  update-proof by default.
 - **Adapt a public one:** install via `npx skills add <owner/repo@skill> -g`, then to make it
   yours (edit-safe from `npx skills update`): copy it into a real `~/.claude/skills/<name>/`
   dir, remove the npx symlink + `~/.agents/.skill-lock.json` entry, and note provenance in a
   header comment.
+- **Don't put loose `.md` files at the top of `skills/`** — Kimi registers every top-level
+  `.md` as a skill (that is why this handbook lives in `docs/`).
 
 ## Naming conventions
 
