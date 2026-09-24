@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: changelog-generate
 description: Generates changelogs and release notes from git commits, PR/MR titles, and issue references. Auto-detects the forge (GitHub or GitLab) and whether the repo uses tags, adapting reference links and skipping tag/version steps for tag-less repos. Organizes changes by impact type (breaking, features, fixes, improvements) and formats to the Keep a Changelog standard. Use when users request "create changelog", "write release notes", "document version changes", or "prepare release".
 ---

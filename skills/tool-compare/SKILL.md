@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: tool-compare
 description: "Decide whether an external tool, library, package or service is worth adopting in THIS project, and, only when asked, turn the findings into upstream issues and a picture of the competition. Invoke with /tool-compare when handed a link or a name with a question like \"check this out for this project\", \"will it make any difference\", \"should we use X\". Covers anything that isn't a Claude skill (skills go to /skill-compare). Checks for an existing verdict first, pins the version, reads the source instead of the README, verifies every headline claim against the code and the tool's own tests, establishes whether the project actually has the problem, prices the cost, and records the verdict in .claude/project-docs/<tool>-evaluation.md. Restraint-gated: \"no demonstrated need here\" is a first-class verdict, and filing issues or surveying competitors happens only on request."
 ---

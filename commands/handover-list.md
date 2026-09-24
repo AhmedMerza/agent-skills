@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 description: List the saved handover plans in this project's .claude/handover/ with their title, status, and slug.
 argument-hint: "(no args)"
 allowed-tools: Bash(ls:*), Read, Grep, Glob
