@@ -418,6 +418,7 @@ a 4-file MR ran two full rounds for 1.17M tokens with no trigger recorded, more 
 ### Coverage
 - **Checks run**: <which deterministic checks ran, and what they covered>
 - **Rules used**: <per reviewer: project-specific rules file, or generic practice because the file was missing. Name any role that fell back — silence reads as "checked against project rules" when it wasn't>
+- **Round 2**: <"ran — <trigger>: <what>" or "skipped — no money/auth/tenancy trigger">
 - **Not examined**: <union of the agents' COVERAGE-GAPS>
 - **Estimated remaining**: <see below>
 
