@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: explain
 description: "Reverse-engineer an unfamiliar feature, subsystem, or flow end-to-end and produce a navigable map — the real data/control flow with file:line anchors, the key components and how they connect, and the non-obvious coupling and gotchas that would bite someone changing it. Invoke with /explain when onboarding to code you didn't write, before modifying an unfamiliar area, or to hand off understanding. Restraint-gated: surface what's SURPRISING and load-bearing, don't narrate every line or restate the obvious."
 ---

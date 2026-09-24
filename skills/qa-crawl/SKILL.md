@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: qa-crawl
 description: "Work through an app's pages one at a time, unattended and resumably — sweep each for runtime errors, auto-fix and verify what's objectively broken, record UI improvements as proposals rather than applying them, and open a small before/after merge request per page that needed changes. Keeps a durable ledger so it can be stopped and resumed across sessions, and runs in its own git worktree so it never touches your working tree. Invoke with /qa-crawl to start or continue a crawl; pair with /loop to keep it going while you work on something else. Restraint-gated: most pages are clean and produce nothing — that is the expected outcome, not a failure."
 ---

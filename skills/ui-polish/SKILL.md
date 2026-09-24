@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: ui-polish
 description: Visual and interaction craft for Vue 3 / Vuetify and Flutter UI — typography, color and contrast, spacing and hierarchy, interaction states, responsive behaviour, UX copy, and the invisible details that make interfaces feel considered. Use when reviewing or building UI that looks generic, unbalanced, or unfinished, or when choosing type scales, palettes, spacing systems, focus/hover/disabled states, or button and error copy. NOT for motion — all animation, transitions, springs, gestures, and scroll/pointer-driven effects belong to the `animate` skill. Adapted from Emil Kowalski's design engineering philosophy.
 ---

@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: api-docs-complete
 description: "Finish an API docblock that already has its happy path — find the status codes the endpoint can ACTUALLY return but that never appear in the handler's body (401 from auth middleware, 429 from a throttle, 403 from an authorization layer, 422 from validation, 500 from the catch-all), and document each with a body captured from a real run rather than invented. Invoke with /api-docs-complete right after annotating a new or changed endpoint, when asked to \"finish the API docs\" or \"check the docs are complete\", or before regenerating generated API reference. Tool-agnostic — Scribe, OpenAPI/Swagger annotations, FastAPI, drf-spectacular. Restraint-gated: an endpoint that genuinely only returns 200 and 401 is complete at two responses; never pad with codes it cannot emit."
 ---

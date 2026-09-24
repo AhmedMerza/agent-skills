@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: video-teardown
 description: "Reverse-engineer a product you can only see in videos — pull a YouTube channel's walkthroughs, extract narration and UI screenshots, map their flows/screens/fields, then diff that against your own codebase with file:line evidence and return a ranked build-or-skip call. Invoke with /video-teardown when handed a competitor's channel, a product demo, or a conference talk and asked \"what do they have that we don't / should we add this\". Restraint-gated: \"they built that for a market you're not in\" is a first-class verdict — but ONLY after you've asked where the product is heading. Not for videos you cannot get captions or frames for."
 ---

@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: design-drift
 description: "Measure whether an existing design system actually held — token adoption as ratios, scales that were never built, competing component kits, icon-pack sprawl, direction-unsafe padding — then scaffold the missing layer and guard it so the drift can't return. Works on Flutter (ThemeExtension / ThemeData) and Vue 3 + Vuetify. Invoke with /design-drift when a codebase \"looks fine but is drifting\", before standardising several apps on one system, or when you want to know if polish is enforced or just hand-tuned. This is `design`'s bookend — that picks a system for new UI; this checks the system survived contact with the codebase. Restraint-gated: \"the system held, nothing to do\" is a first-class verdict."
 ---
