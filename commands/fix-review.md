@@ -103,6 +103,7 @@ Once the user approves the CRITICAL+IMPORTANT fixes:
 4. Reply to each review thread with a brief note about what was fixed (see "Reply to a thread" below).
 5. Resolve all fixed threads (see "Resolve a thread" below).
 6. Show a summary of what was committed, pushed, replied to, and resolved.
+7. **If any fix was structural, say so and recommend re-running `/mr-review` before merge.** Structural = deleted a branch, moved a decision across a lock/transaction/guard, changed who owns a lock, changed a constructor's visibility, collapsed two paths into one. Every structural review-fix measured so far introduced a defect the next review caught; `/ship-check` misses them because it is self-review. Additive fixes (a test, a tightened validation, a null guard) need no re-review — merge on the tests.
 
 ### Phase 4: Handle MINORs (auto-fix the safe ones, ask about the rest)
 After Phase 3 completes, triage the MINOR findings by effort / scope:
@@ -140,7 +141,7 @@ Keep BOTH paths below. Pick the one matching the provider resolved at the top. `
 1. Read the diff. **Prefer the local ref** — `git diff <base_sha>..refs/mr/<N>`, after the freshness check in Phase 1 step 2. Fall back to the API only if that fails (GitLab: `glab api projects/<id>/merge_requests/<n>/diffs`; GitHub: `gh api repos/{owner}/{repo}/pulls/<n>/files`).
 2. Parse each diff hunk header (e.g., `@@ -564,9 +567,11 @@`) — the `+567,11` means new lines start at 567.
 3. Count the `+` and unchanged lines in the hunk to find exact new line numbers.
-4. Use ONLY these line numbers.
+4. Use ONLY these line numbers — and **anchor to an ADDED (`+`) or removed (`-`) line, never an unchanged context line.** A context line needs BOTH `old_line` and `new_line`; posting it with `new_line` alone is rejected by GitLab (HTTP 400, `line_code can't be blank`). When the finding's own line is context, snap to the nearest **added** line. (Same rule as `/mr-review`; measured 3 of 16 posts failing this way, 2026-09-17.)
 
 If you cannot determine the exact diff line, fall back to a **general comment/thread** with file:line in the body.
 
@@ -195,6 +196,10 @@ Use this when the finding cannot be mapped to a specific diff line, or as a fall
   ```bash
   glab api --method PUT "projects/<id>/merge_requests/<n>/discussions/{discussion_id}" \
     -F resolved=true
+  ```
+  Verify by checking only the **resolvable** notes — the reply note comes back `resolvable: false, resolved: false` even on a resolved thread, so `all(n['resolved'] for n in notes)` reports a false failure and a retry duplicates the reply:
+  ```bash
+  glab api "projects/<id>/merge_requests/<n>/discussions/{discussion_id}" | python3 -c 'import json,sys; ns=json.JSONDecoder(strict=False).decode(sys.stdin.read())["notes"]; print("resolved" if all(n["resolved"] for n in ns if n.get("resolvable")) else "NOT RESOLVED")'
   ```
 - **GitHub:** there is **no simple per-thread resolve CLI flag**. Resolve either via the GraphQL `resolveReviewThread` mutation, or manually in the web UI. Be honest about this gap — don't invent a REST flag. GraphQL approach (needs the thread's node id, obtained from a `reviewThreads` query on the PR):
   ```bash
