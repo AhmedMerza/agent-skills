@@ -89,7 +89,10 @@ Triage the output before reporting any of it (checks trade precision for recall,
 positives), fold the survivors into the final report, and tell the Step 4 agents which classes are
 already covered so they don't spend budget re-deriving them.
 
-No checks directory? Say so once and continue. Afterwards, any confirmed finding whose *class* is
+Not in cwd? Look in the main checkout before concluding there are none — `.claude/` is often
+gitignored, so a worktree (e.g. `.claude/tmp/<slug>/`) lacks it while the main checkout has it:
+`python3 "$(git worktree list | head -1 | awk '{print $1}')/.claude/checks/run.py" <base_sha> <head_sha>`.
+No checks directory in either? Say so once and continue. Afterwards, any confirmed finding whose *class* is
 mechanically detectable should become a new check — that is what makes reviews compound instead of
 re-rolling the dice at ~250k a throw.
 
@@ -405,6 +408,7 @@ Skip it on small or low-risk diffs; it is a real cost.
 
 ### Coverage
 - **Checks run**: <which deterministic checks ran, and what they covered>
+- **Rules used**: <per reviewer: project-specific rules file, or generic practice because the file was missing. Name any role that fell back — silence reads as "checked against project rules" when it wasn't>
 - **Not examined**: <union of the agents' COVERAGE-GAPS>
 - **Estimated remaining**: <see below>
 
