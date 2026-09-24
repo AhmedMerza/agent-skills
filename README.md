@@ -101,8 +101,9 @@ for f in mr-create mr-guide mr-review fix-review commit issue browse handover-sa
 
 # the /browse command needs its helper script on the standard path:
 mkdir -p ~/.claude/scripts && ln -sf ~/agent-skills/scripts/browse.mjs ~/.claude/scripts/browse.mjs
-# /mr-review and /fix-review compute inline-comment anchors with this:
+# /mr-review and /fix-review post, list and resolve GitLab threads with these:
 ln -sf ~/agent-skills/scripts/diff-anchor.py ~/.claude/scripts/diff-anchor.py
+ln -sf ~/agent-skills/scripts/mr-note.py ~/.claude/scripts/mr-note.py
 ```
 
 Or copy them if you'd rather not symlink:
