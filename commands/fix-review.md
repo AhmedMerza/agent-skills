@@ -1,6 +1,6 @@
 ---
 name: fix-review
-version: 1.1.0
+version: 1.2.0
 description: Post review notes on a GitHub PR or GitLab MR, fix the issues in code, reply to the threads, and resolve them.
 ---
 
@@ -8,34 +8,16 @@ description: Post review notes on a GitHub PR or GitLab MR, fix the issues in co
 
 ## Provider resolution (GitHub or GitLab)
 
-This command works on **either GitHub or GitLab** (self-hosted or SaaS). Resolve the provider once at the start, then use that provider's CLI for every operation below.
+Resolve the provider once, then use its CLI throughout:
 
-1. **Detect the provider** from the push remote's host — `git remote get-url origin`:
-   - host is `github.com` (or `*.github.com`) → **GitHub** · CLI `gh` · term **PR**
-   - any other host (self-hosted GitLab, `gitlab.com`, …) → **GitLab** · CLI `glab` · term **MR**
-   - **Override wins:** if `.claude/repo-config.json` has `"provider": "github"` or `"gitlab"`, use that (for ambiguous/self-hosted hosts).
-2. **Target resolution** — let the provider CLI auto-detect host/namespace/IDs from git remotes; never hardcode them. Fork workflow (both `origin` and `upstream` remotes present): `origin` = your push target, `upstream` = the MR/PR target.
-3. **Shortcuts & config** — optional per-repo `.claude/repo-config.json` (or legacy `.claude/gitlab-config.json`) supplies `developers` (reviewer/assignee shortcuts → usernames/ids) and `labels` (auto-label rules). **Absent → degrade gracefully:** accept a raw username, skip label automation, don't error.
+- push remote host (`git remote get-url origin`) is `github.com` → **GitHub** · `gh` · **PR**; any other host → **GitLab** · `glab` · **MR**.
+- **Override wins:** `.claude/repo-config.json` with `"provider": "github"` or `"gitlab"`.
+- Let the CLI resolve host/namespace/IDs from the git remote (`glab api projects/:id/…`, `gh api repos/{owner}/{repo}/…`); never hardcode them. Fork setup: `upstream` is the MR/PR target.
 
-> Examples below use placeholders (`<HOST>`, `<PROJECT_PATH>`, usernames `alice`/`bob`/`carol`) — resolve real values at runtime.
-
-### CLI cheat-sheet — GitLab ↔ GitHub
-| Operation | GitLab (`glab`) | GitHub (`gh`) |
-| --- | --- | --- |
-| Create MR/PR | `glab api --method POST projects/<id>/merge_requests -F source_branch=… -F target_branch=…` (fork: add `-F target_project_id=<up>`) | `gh pr create --base <target> --head <branch> --title … --body …` (handles remotes/fork itself) |
-| Reviewer | `-F reviewer_ids[]=<id>` (resolve id first) | `--reviewer <username>` (or `gh pr edit <n> --add-reviewer <u>`) |
-| Assignee | `-F assignee_id=<id>` | `--assignee <username>` |
-| Draft | prefix title `Draft: …` | `--draft` |
-| username → id | `glab api "users?username=<u>" \| jq '.[0].id'` | not needed — `gh` uses usernames directly |
-| List MRs/PRs | `glab mr list` | `gh pr list` |
-| View diff | `glab mr diff <id>` (or `glab api projects/<id>/merge_requests/<n>/changes`) | `gh pr diff <n>` |
-| MR/PR metadata | `glab api projects/<id>/merge_requests/<n>` | `gh pr view <n> --json …` |
-| Comment (general) | `glab mr note <n> -m "…"` | `gh pr comment <n> --body "…"` |
-| Inline/threaded review comment | `glab api --method POST projects/<id>/merge_requests/<n>/discussions --header "Content-Type: application/json" --input <file.json>` — **JSON body, not `-F`; see "Post an inline comment"** | `gh api --method POST repos/{owner}/{repo}/pulls/<n>/comments -f body=… -f commit_id=… -f path=… -F line=…` |
-| Resolve a thread | `glab api --method PUT …/discussions/<discussion_id> -F resolved=true` | `gh api graphql` `resolveReviewThread` (or resolve in UI) |
-| Approve | `glab mr approve <n>` | `gh pr review <n> --approve` |
-
-**Notes:** GitHub creation is simpler — prefer `gh pr create` (no project IDs / fork math). Keep the `glab api` fork recipe for GitLab. Where an operation has no clean CLI on a provider (e.g. resolving a specific review thread on GitHub), say so and fall back to the closest equivalent or the web UI rather than pretending.
+GitLab threads are posted, listed and resolved with `~/.claude/scripts/mr-note.py` — never a
+hand-written glab/python loop. Measured 2026-08-31..09-23: posting by hand failed with
+`line_code can't be blank` in ~25 sessions and `JSONDecodeError` in 8+; the script's header lists
+every trap it closes.
 
 ---
 
@@ -45,7 +27,6 @@ Post code review findings as review threads on the MR/PR, fix the issues, then r
 ```
 /fix-review <mr-or-pr-number-or-url>
 ```
-Accepts an MR/PR number or a full MR/PR URL. Resolve the provider first (see above); the number/URL selects the target on that provider.
 
 ## Process
 
@@ -56,170 +37,81 @@ Before posting or fixing anything, split the findings into two kinds:
 - **Defects** — objectively wrong: crashes, security holes, logic errors, broken/contradictory behavior, real data bugs. These flow through the normal phases.
 - **Intent questions** — anything subjective, aesthetic, or *plausibly intentional* (e.g. "roundness 0 makes corners fully square", "this default could be different", "this threshold/copy could change"). The `/mr-review` report lists these under "Open Questions"; also re-scan the defect list and pull out anything that fails this test: **would a reasonable author unambiguously agree it's broken?** If not, it's an intent question.
 
-**Hard rule for intent questions: never silently implement them, and never pre-suggest a specific code change as if it were the fix.** Do not put them in Phase 2, and do not offer them as a ready-to-apply "fix" option in Phase 4. Instead, **ask the user whether the current behavior is intended** (a plain question — "Is X intended, or should it be Y?"), with NO change staged. Only if the user confirms it's wrong does it become a defect you may fix. When in doubt about which bucket a finding is in, treat it as an intent question and ask. This prevents "fixing" deliberate behavior (the exact failure of suggesting a roundness floor when 0 = square was intended).
+**Hard rule for intent questions: never silently implement them, and never pre-suggest a specific code change as if it were the fix.** Do not put them in Phase 2, and do not offer them as a ready-to-apply "fix" option in Phase 4. Instead, **ask the user whether the current behavior is intended** (a plain question — "Is X intended, or should it be Y?"), with NO change staged. Only if the user confirms it's wrong does it become a defect you may fix. When in doubt, treat it as an intent question and ask. This prevents "fixing" deliberate behavior (the exact failure of suggesting a roundness floor when 0 = square was intended).
 
-### Phase 1: Post Resolvable Review Threads
-1. List all unresolved findings from the most recent `/mr-review` output in this conversation.
-2. **Compute the anchor map with the script — never read the diff into this context, and don't spawn an agent for it.** Write the findings to a file, one per line: `<n>|<path>|<new-file line>` (or `<n>|<path>|old:<line>` for removed code). Pipe the diff straight into `~/.claude/scripts/diff-anchor.py`, so the diff never enters context and only the map comes back:
-   - one line per finding — `<n>: <path> new_line <N>`, `<n>: <path> old_line <N>`, or `<n>: unanchorable`
-   - it applies the anchoring rules itself (context lines snap to the nearest added line; lines outside any hunk are unanchorable).
+### Phase 1: Collect the findings and make sure each has a thread
 
-   An agent doing this same job measured 58,815 tokens and 85s; the script takes ~0.1s and was verified against 452 real added lines with 0 mismatches.
+1. **Where the findings come from:**
+   - A `/mr-review` report (or ad-hoc review) **in this conversation** → use it.
+   - **None in context** (after `/clear`, another session, a human reviewer) → the MR's open threads
+     *are* the findings: `~/.claude/scripts/mr-note.py open <N>` prints
+     `<discussion_id> <path>:<line> <heading>` per unresolved thread. Read a thread's full body
+     (`glab api projects/:id/merge_requests/<N>/discussions/<id>`) only for the ones you will fix.
+     GitHub: `gh api repos/{owner}/{repo}/pulls/<N>/comments`.
+   - **Neither** → stop and say so. Do not reconstruct a review from memory.
+2. **Post the defects that have no thread yet** (GitLab). Write them with `json.dump` to
+   `.claude/tmp/mr-review/<N>/findings.json` —
+   `[{"title", "path", "line": <new-file line> | "old:<n>" | null, "body"}]`, body
+   `### <🔴|🟡|🔵> <SEVERITY>: <title>\n\n<description>\n\n**Fix**: <suggestion>` — then
+   `~/.claude/scripts/mr-note.py post <N> .claude/tmp/mr-review/<N>/findings.json`.
+   Findings `/mr-review --comment` (or an earlier run) already posted come back `exists <id>` —
+   nothing is duplicated. Keep the finding → `discussion_id` map for Phase 3. Report any `FAILED` line.
+   GitHub: follow `/mr-review` Step 7's GitHub path.
+3. Intent questions are not posted as defect threads (Phase 0).
 
-   **The diff is usually already on disk — don't re-download it.** `/mr-review` runs immediately before this in the chain and fetches the head into `refs/mr/<N>` (GitLab) / `refs/pr/<N>` (GitHub). Run this sequence:
-
-   ```bash
-   # a. diff refs from the API — tiny JSON, and GitLab validates comment positions against it
-   glab api projects/<id>/merge_requests/<n> --jq '.diff_refs'   # base_sha, head_sha, start_sha
-   # b. is the local ref current?
-   git rev-parse refs/mr/<N> 2>/dev/null
-   # c. missing or != head_sha → refresh (incremental, usually a no-op)
-   git fetch <remote> "+refs/merge-requests/<N>/head:refs/mr/<N>"   # GitHub: refs/pull/<N>/head:refs/pr/<N>
-   # d. anchor map from the local diff — the diff is piped, never printed
-   git diff <base_sha>..refs/mr/<N> | ~/.claude/scripts/diff-anchor.py findings.txt
-   ```
-
-   **Step (b) is not optional.** A ref left from an earlier `/mr-review` points at the head *as of that run*. If anything was pushed since — and on this chain something usually was, because Phase 3 pushes fixes — every anchor computed from it is off, and the notes land on wrong lines with no error. Take the SHAs from the API, the content from git.
-
-   If the fetch fails (some self-hosted GitLab instances disable `merge-requests/*` refs, or the checkout lacks the target remote), fall back to one `sonnet` subagent that reads the API diff with the **API Reference** steps below as its spec and returns only the map in the same format.
-3. Post each finding using the map: `new_line`/`old_line` → **line-specific review comment** with those refs; `unanchorable` → **general comment/thread** with `file:line` referenced in the body. Verify each post is actually anchored (see the verification snippet below) — that check stays here, it is one line of output per note.
-4. Each note should include: severity tag, description, and suggested fix.
-5. Format: `**{SEVERITY}: {title}**\n\n{description}\n\n**Fix**: {suggestion}`
+Always post BEFORE fixing, so the MR/PR records what was found.
 
 ### Phase 2: Fix Issues
-0. **Only fix DEFECTS** (per Phase 0). Never fix an intent question here — those go to the Phase 0 "ask first" path, even if the `/mr-review` agent attached a tidy "Fix:" suggestion to them. A suggested fix in the report is not permission to apply it when the underlying behavior may be intentional.
+0. **Only fix DEFECTS** (per Phase 0). A tidy "Fix:" suggestion attached to an intent question is not permission to apply it.
 1. Fix all CRITICAL and IMPORTANT issues in the code.
 2. For each fix, briefly state what was changed.
-3. Run relevant tests / linters / static analysis if they exist for the project (e.g. the repo's test runner, formatter, and analyzer — whatever the stack uses).
+3. **Run the tests that cover the files you touched** (targeted filter, not the whole suite) plus the
+   repo's formatter/analyzer on those files, and report the command and pass/fail. If you cannot run
+   them, say why — never skip silently. Measured: 13 of 72 runs made no test call at all. A new
+   regression test is not trusted until it fails with the fix reverted (`/prove-the-test`).
 4. **Ask the user to confirm** the fixes look correct before proceeding.
 
 ### Phase 3: Commit, Push, Reply, Resolve
 Once the user approves the CRITICAL+IMPORTANT fixes:
-1. Stage the fixes, state what is staged and the commit message you intend (e.g., `fix: address review findings — <brief summary>`), and **ask before committing**. Approving the FIXES is not approving the landing of them — that is a separate decision, and it is the last chance to catch a "fix" that is actually a behavior change.
+1. Stage the fixes, state what is staged and the commit message you intend (e.g., `fix: address review findings — <brief summary>`), and **ask before committing**. Approving the FIXES is not approving the landing of them.
 2. State what is about to be pushed, and **ask before pushing**.
 3. Once the push is approved, finish the rest without further prompting.
-4. Reply to each review thread with a brief note about what was fixed (see "Reply to a thread" below).
-5. Resolve all fixed threads (see "Resolve a thread" below).
-6. Show a summary of what was committed, pushed, replied to, and resolved.
-7. **If any fix was structural, say so and recommend re-running `/mr-review` before merge.** Structural = deleted a branch, moved a decision across a lock/transaction/guard, changed who owns a lock, changed a constructor's visibility, collapsed two paths into one. Every structural review-fix measured so far introduced a defect the next review caught; `/ship-check` misses them because it is self-review. Additive fixes (a test, a tightened validation, a null guard) need no re-review — merge on the tests.
+4. Reply and resolve each fixed thread:
+   - **GitLab:** `~/.claude/scripts/mr-note.py resolve <N> <discussion_id> "<what was fixed, commit sha>"` — posts the reply (never twice), resolves, and verifies; prints `resolved` or `NOT RESOLVED`.
+   - **GitHub:** reply via `gh api --method POST "repos/{owner}/{repo}/pulls/<N>/comments/<comment_id>/replies" -f body="…"`, then resolve (see below).
+5. Show a summary of what was committed, pushed, replied to, and resolved.
+6. **If any fix was structural, say so and recommend re-running `/mr-review` before merge.** Structural = deleted a branch, moved a decision across a lock/transaction/guard, changed who owns a lock, changed a constructor's visibility, collapsed two paths into one. Every structural review-fix measured so far introduced a defect the next review caught; `/ship-check` misses them because it is self-review. Additive fixes (a test, a tightened validation, a null guard) need no re-review — merge on the tests.
 
-### Phase 4: Handle MINORs (auto-fix the safe ones, ask about the rest)
+### Phase 4: Handle MINORs (auto-edit the safe ones, ask about the rest)
 After Phase 3 completes, triage the MINOR findings by effort / scope:
 - **Quick wins** (1–5 lines each, high value/effort ratio) — **auto-fix**
 - **Small refactors** (10–30 lines, stylistic or moderate impact) — **auto-fix**
 - **Tech debt / pre-existing** (recommend separate follow-up MR/PR) — **do NOT auto-fix; ask**
 - **Security / out-of-scope** (definitely separate MR/PR) — **do NOT auto-fix; ask**
-- **Intent questions** (per Phase 0) — list these SEPARATELY, phrased as questions, NOT as fixable options. For each, ask "Is X intended?" and present the alternative behavior neutrally. Do NOT pre-write or stage a change for these, and do NOT mark one "(Recommended)". Only fix one if the user confirms the current behavior is actually wrong.
+- **Intent questions** (per Phase 0) — list these SEPARATELY, phrased as questions, NOT as fixable options. Do NOT pre-write or stage a change for these, and do NOT mark one "(Recommended)".
 
-**Auto-fix the quick wins and small refactors** in this same MR/PR — making the EDITS needs no permission:
-1. Fix all quick-win and small-refactor MINORs.
-2. **Ask before committing**, as a separate commit (keeps the MINOR fixes traceable apart from the IMPORTANT ones).
-3. **Ask before pushing.** Same rule as Phase 3 — the edits are automatic, landing them is not.
-4. If any of the fixed MINORs had been posted as threads, reply and resolve them too.
+For the quick wins and small refactors, making the EDITS needs no permission:
+1. Fix them, and run their tests as in Phase 2.3.
+2. **Ask before committing** — as a separate commit, so the MINOR fixes stay traceable apart from the IMPORTANT ones.
+3. **Ask before pushing.**
+4. Reply and resolve any of them that had threads.
 5. Show a summary of what was fixed.
 
-**Then, if any tech debt / out-of-scope MINORs or intent questions remain**, present them to the user: recommend a separate follow-up MR/PR for the tech-debt/out-of-scope items, and ask the intent questions as plain questions. Only fix these if the user opts in.
+Then present any remaining tech-debt / out-of-scope MINORs (recommend a follow-up MR/PR) and ask the intent questions. Only fix these if the user opts in.
 
 Skip Phase 4 entirely only if there are no MINORs at all.
 
-## API Reference (provider-aware)
+## GitHub: resolving a thread
 
-Keep BOTH paths below. Pick the one matching the provider resolved at the top. `<n>` = the MR/PR number.
-
-### Fetch review comments / threads
-- **GitLab:** `glab api projects/<id>/merge_requests/<n>/discussions`
-- **GitHub:** `gh api repos/{owner}/{repo}/pulls/<n>/comments` (inline review comments) and `gh api repos/{owner}/{repo}/pulls/<n>/reviews` (review summaries). `{owner}/{repo}` are auto-filled by `gh` in a repo checkout.
-
-### Post a line-specific review comment
-
-**CRITICAL**: the target line MUST be an actual line from the diff (a `+` line or in-hunk context line), NOT an arbitrary file line number. Providers only anchor comments to lines that appear in the diff. To find the correct line number:
-
-> Steps 1–4 are what `~/.claude/scripts/diff-anchor.py` does. They are here as the spec for the fallback subagent (when the local ref can't be fetched) — never run them in this context, or the whole diff lands here.
-
-1. Read the diff. **Prefer the local ref** — `git diff <base_sha>..refs/mr/<N>`, after the freshness check in Phase 1 step 2. Fall back to the API only if that fails (GitLab: `glab api projects/<id>/merge_requests/<n>/diffs`; GitHub: `gh api repos/{owner}/{repo}/pulls/<n>/files`).
-2. Parse each diff hunk header (e.g., `@@ -564,9 +567,11 @@`) — the `+567,11` means new lines start at 567.
-3. Count the `+` and unchanged lines in the hunk to find exact new line numbers.
-4. Use ONLY these line numbers — and **anchor to an ADDED (`+`) or removed (`-`) line, never an unchanged context line.** A context line needs BOTH `old_line` and `new_line`; posting it with `new_line` alone is rejected by GitLab (HTTP 400, `line_code can't be blank`). When the finding's own line is context, snap to the nearest **added** line. (Same rule as `/mr-review`; measured 3 of 16 posts failing this way, 2026-09-17.)
-
-If you cannot determine the exact diff line, fall back to a **general comment/thread** with file:line in the body.
-
-**GitLab** — send a raw JSON body via `--input`. For lines being **removed** (old code), use `old_line`/`old_path` in the position object instead of the `new_*` keys:
-
+There is no per-thread resolve flag in `gh`. Use the GraphQL mutation with the thread's node id (from a `reviewThreads` query on the PR), or tell the user to resolve in the web UI — don't invent a REST flag:
 ```bash
-# Build with a real serializer (python json.dump) — note bodies contain
-# newlines, backticks, quotes and emoji that break hand-built JSON.
-glab api --method POST "projects/<id>/merge_requests/<n>/discussions" \
-  --header "Content-Type: application/json" \
-  --input note.json
-# note.json:
-# {"body":"{note_body}","position":{"position_type":"text",
-#  "base_sha":"{base_sha}","head_sha":"{head_sha}","start_sha":"{start_sha}",
-#  "new_path":"{file_path}","old_path":"{file_path}","new_line":{line_number_from_diff}}}
+gh api graphql -f query='
+  mutation($threadId: ID!) {
+    resolveReviewThread(input: { threadId: $threadId }) { thread { id isResolved } }
+  }' -F threadId="{thread_node_id}"
 ```
-
-> ⚠️ **Do NOT use `-F "position[...]=..."`.** The nested form keys are dropped in transit: the request returns **HTTP 201 with a normal-looking discussion**, so it looks like it worked, but the note is UNANCHORED and lands on the Overview tab instead of on the code. Observed on self-hosted GitLab 2026-08.
-
-**Verify each post** instead of trusting the exit code — an anchored note is `"type": "DiffNote"` with a non-null `position`, an unanchored one is `"type": "DiscussionNote"` with `position: null`:
-
-```bash
-... --input note.json | python3 -c 'import json,sys; n=json.JSONDecoder(strict=False).decode(sys.stdin.read())["notes"][0]; print("anchored" if n.get("position") else "NOT ANCHORED")'
-```
-
-`JSONDecoder(strict=False)`, not `json.load` — GitLab echoes the note body back containing raw control characters, and the strict parser raises `Invalid control character` on any multi-line note. That reads exactly like a failed POST even though the note was created, so retrying duplicates it.
-
-If it comes back unanchored, delete it before retrying or you leave a duplicate:
-`glab api --method DELETE "projects/<id>/merge_requests/<n>/discussions/{discussion_id}/notes/{note_id}"`
-
-**GitHub** — anchor to the head commit sha; use `line` (and `side=LEFT` for a removed/old line):
-```bash
-gh api --method POST "repos/{owner}/{repo}/pulls/<n>/comments" \
-  -f body="{note_body}" \
-  -f commit_id="{head_sha}" \
-  -f path="{file_path}" \
-  -F line={line_number_from_diff} \
-  -f side=RIGHT
-```
-
-### Post a general comment
-Use this when the finding cannot be mapped to a specific diff line, or as a fallback when line-specific posting fails.
-- **GitLab:** `glab api --method POST "projects/<id>/merge_requests/<n>/discussions" -F "body={note_body}"` (or `glab mr note <n> -m "{note_body}"`)
-- **GitHub:** `gh pr comment <n> --body "{note_body}"`
-
-### Reply to a thread
-- **GitLab:** `glab api --method POST "projects/<id>/merge_requests/<n>/discussions/{discussion_id}/notes" -F "body={reply}"` (or `glab mr note <n> -m "{reply}"` for a non-threaded note)
-- **GitHub:** reply to a specific inline thread via `gh api --method POST "repos/{owner}/{repo}/pulls/<n>/comments/{comment_id}/replies" -f body="{reply}"`, or drop a general reply with `gh pr comment <n> --body "{reply}"`.
-
-### Resolve a thread
-- **GitLab:** clean per-thread resolve:
-  ```bash
-  glab api --method PUT "projects/<id>/merge_requests/<n>/discussions/{discussion_id}" \
-    -F resolved=true
-  ```
-  Verify by checking only the **resolvable** notes — the reply note comes back `resolvable: false, resolved: false` even on a resolved thread, so `all(n['resolved'] for n in notes)` reports a false failure and a retry duplicates the reply:
-  ```bash
-  glab api "projects/<id>/merge_requests/<n>/discussions/{discussion_id}" | python3 -c 'import json,sys; ns=json.JSONDecoder(strict=False).decode(sys.stdin.read())["notes"]; print("resolved" if all(n["resolved"] for n in ns if n.get("resolvable")) else "NOT RESOLVED")'
-  ```
-- **GitHub:** there is **no simple per-thread resolve CLI flag**. Resolve either via the GraphQL `resolveReviewThread` mutation, or manually in the web UI. Be honest about this gap — don't invent a REST flag. GraphQL approach (needs the thread's node id, obtained from a `reviewThreads` query on the PR):
-  ```bash
-  gh api graphql -f query='
-    mutation($threadId: ID!) {
-      resolveReviewThread(input: { threadId: $threadId }) {
-        thread { id isResolved }
-      }
-    }' -F threadId="{thread_node_id}"
-  ```
-  If the node id isn't readily available, tell the user to resolve those threads in the PR web UI.
-
-### Get diff refs (for line-specific comments)
-The Phase 1 subagent already returns these alongside the anchor map — use those and skip the extra call. Fetch directly only if you skipped Phase 1 (e.g. re-posting a single note later):
-- **GitLab:** `glab api "projects/<id>/merge_requests/<n>" | jq '.diff_refs'` (base/head/start shas)
-- **GitHub:** `gh pr view <n> --json headRefOid,baseRefOid` (head sha = `commit_id` for inline comments)
 
 ## Notes
-- **Ask before every `git commit` and every `git push`, without exception.** A user approving a set of fixes has approved the FIXES; it does not extend to landing them, nor to any later commit in the same session. State what is staged / what will be pushed, and wait. This supersedes any "automatic" or "do not ask first" wording elsewhere in this file.
-- Always post notes BEFORE fixing, so the MR/PR has a record of what was found.
-- If a line-specific comment fails (wrong position), fall back to a general comment/thread with file:line in the body.
-- **CRITICAL and IMPORTANT**: always fix in Phase 2, after confirming the plan with the user.
-- **MINOR**: auto-fix quick wins and small refactors in Phase 4 (bundle into this MR/PR as a separate commit, no need to ask). Do NOT auto-fix tech-debt/pre-existing or security/out-of-scope MINORs — recommend a separate follow-up MR/PR and ask. Group them by effort (quick wins / small refactors / tech debt / out-of-scope) so the split is clear.
-- On GitHub, resolving threads may require GraphQL or the web UI — surface this to the user rather than silently skipping resolution.
-- Always ask the user to confirm fixes before committing.
+- **Ask before every `git commit` and every `git push`, without exception.** A user approving a set of fixes has approved the FIXES; it does not extend to landing them, nor to any later commit in the same session.
+- CRITICAL and IMPORTANT: always fixed in Phase 2, after confirming the plan with the user. MINOR: split by effort as in Phase 4.
+- If `mr-note.py` prints `FAILED` for a thread, report it with the reason; re-running the script is safe (it skips what already exists).
