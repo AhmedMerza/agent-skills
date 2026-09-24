@@ -81,7 +81,10 @@ Rare, careful, and it is the only part that can change a file.
 
 1. **State the pattern and cite the evidence.** Every occurrence, with its artifact. If the two occurrences aren't actually the same complaint, stop — that's one anecdote twice, not a pattern.
 2. **Find the exact cause in the file.** The specific line or step that produced the behavior. "The skill is too aggressive" is not a cause; `fix-review.md:93 "do not ask first"` is.
-3. **Propose the minimal diff.** Change the instruction that caused it. Do **not** rewrite the skill, restructure it, or "improve" adjacent prose while you're in there — that's the same scope creep `/spinoff` exists to prevent, aimed at your tooling.
+3. **Propose the minimal diff.** Change the instruction that caused it. Do **not** rewrite the skill, restructure it, or "improve" adjacent prose while you're in there — that's the same scope creep `/spinoff` exists to prevent, aimed at your tooling. Shape the diff by three rules (from mattpocock's `writing-for-agents`):
+   - **Delete before adding.** If the cause is a line the model would follow anyway (a no-op) or one that restates what config or `--help` already says (a stale copy), removing it is the fix. Test "does this line change behavior?" by running the skill, not by arguing.
+   - **Say what to do, not what to avoid.** The reflex fix for misbehavior is a new "don't X" line, and it backfires: naming X puts it in context and makes it *more* likely. Write the wanted behavior instead.
+   - **Misfires live in the `description:`.** Put the main trigger word first, and keep one trigger phrase per distinct case — synonyms for the same case are one case written twice.
 4. **Check the blast radius.** Does the edit break another step that depends on the old behavior? A skill is a program; changing step 3 can strand step 5.
 5. **Show before → after and ask.** Never edit unasked.
 6. **On approval:** apply the edit, then mark those log entries `"resolved":true` so the pattern stops re-firing. Note the change in the skill's provenance comment if it has one.
