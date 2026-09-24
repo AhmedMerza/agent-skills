@@ -60,15 +60,13 @@ Before posting or fixing anything, split the findings into two kinds:
 
 ### Phase 1: Post Resolvable Review Threads
 1. List all unresolved findings from the most recent `/mr-review` output in this conversation.
-2. **Delegate the diff parse — never fetch the diff into this context.** Spawn ONE subagent (`general-purpose`, `model: "sonnet"`) whose entire job is read-only: fetch the diff, parse the hunks, and hand back an anchor map. Give it the findings list (`file:line` each), the MR/PR number, the resolved provider, and the **"Post a line-specific review comment"** section below as its parsing spec (it carries the `old_line` vs `new_line` rule it must follow).
+2. **Compute the anchor map with the script — never read the diff into this context, and don't spawn an agent for it.** Write the findings to a file, one per line: `<n>|<path>|<new-file line>` (or `<n>|<path>|old:<line>` for removed code). Pipe the diff straight into `~/.claude/scripts/diff-anchor.py`, so the diff never enters context and only the map comes back:
+   - one line per finding — `<n>: <path> new_line <N>`, `<n>: <path> old_line <N>`, or `<n>: unanchorable`
+   - it applies the anchoring rules itself (context lines snap to the nearest added line; lines outside any hunk are unanchorable).
 
-   Require exactly this back, and nothing else:
-   - one line per finding — `<n>: <path> new_line <N>` (or `old_line <N>` for a removed line), or `<n>: unanchorable`
-   - the diff refs once — `base_sha`, `head_sha`, `start_sha`
+   An agent doing this same job measured 58,815 tokens and 85s; the script takes ~0.1s and was verified against 452 real added lines with 0 mismatches.
 
-   **Ask for the map only.** Never the diff, never file contents, never hunk excerpts. A 30-file diff parsed inline sits in context for the rest of the session and is used once to produce a dozen integers; the map is those integers. If the agent returns diff text anyway, discard it — do not quote it back into this context.
-
-   **The diff is usually already on disk — don't re-download it.** `/mr-review` runs immediately before this in the chain and fetches the head into `refs/mr/<N>` (GitLab) / `refs/pr/<N>` (GitHub). Give the subagent this sequence:
+   **The diff is usually already on disk — don't re-download it.** `/mr-review` runs immediately before this in the chain and fetches the head into `refs/mr/<N>` (GitLab) / `refs/pr/<N>` (GitHub). Run this sequence:
 
    ```bash
    # a. diff refs from the API — tiny JSON, and GitLab validates comment positions against it
@@ -77,13 +75,13 @@ Before posting or fixing anything, split the findings into two kinds:
    git rev-parse refs/mr/<N> 2>/dev/null
    # c. missing or != head_sha → refresh (incremental, usually a no-op)
    git fetch <remote> "+refs/merge-requests/<N>/head:refs/mr/<N>"   # GitHub: refs/pull/<N>/head:refs/pr/<N>
-   # d. read the diff from git rather than downloading it
-   git diff <base_sha>..refs/mr/<N>
+   # d. anchor map from the local diff — the diff is piped, never printed
+   git diff <base_sha>..refs/mr/<N> | ~/.claude/scripts/diff-anchor.py findings.txt
    ```
 
    **Step (b) is not optional.** A ref left from an earlier `/mr-review` points at the head *as of that run*. If anything was pushed since — and on this chain something usually was, because Phase 3 pushes fixes — every anchor computed from it is off, and the notes land on wrong lines with no error. Take the SHAs from the API, the content from git.
 
-   If the fetch fails (some self-hosted GitLab instances disable `merge-requests/*` refs, or the checkout lacks the target remote), fall back to the API diff — same parsing spec, just a more expensive read.
+   If the fetch fails (some self-hosted GitLab instances disable `merge-requests/*` refs, or the checkout lacks the target remote), fall back to one `sonnet` subagent that reads the API diff with the **API Reference** steps below as its spec and returns only the map in the same format.
 3. Post each finding using the map: `new_line`/`old_line` → **line-specific review comment** with those refs; `unanchorable` → **general comment/thread** with `file:line` referenced in the body. Verify each post is actually anchored (see the verification snippet below) — that check stays here, it is one line of output per note.
 4. Each note should include: severity tag, description, and suggested fix.
 5. Format: `**{SEVERITY}: {title}**\n\n{description}\n\n**Fix**: {suggestion}`
@@ -136,7 +134,7 @@ Keep BOTH paths below. Pick the one matching the provider resolved at the top. `
 
 **CRITICAL**: the target line MUST be an actual line from the diff (a `+` line or in-hunk context line), NOT an arbitrary file line number. Providers only anchor comments to lines that appear in the diff. To find the correct line number:
 
-> Steps 1–4 are the **Phase 1 subagent's** job, not this context's — hand it this section as its spec and take back only the anchor map. Steps 1–4 are also what makes it a subagent: they are the part that would otherwise drag the whole diff in here.
+> Steps 1–4 are what `~/.claude/scripts/diff-anchor.py` does. They are here as the spec for the fallback subagent (when the local ref can't be fetched) — never run them in this context, or the whole diff lands here.
 
 1. Read the diff. **Prefer the local ref** — `git diff <base_sha>..refs/mr/<N>`, after the freshness check in Phase 1 step 2. Fall back to the API only if that fails (GitLab: `glab api projects/<id>/merge_requests/<n>/diffs`; GitHub: `gh api repos/{owner}/{repo}/pulls/<n>/files`).
 2. Parse each diff hunk header (e.g., `@@ -564,9 +567,11 @@`) — the `+567,11` means new lines start at 567.
