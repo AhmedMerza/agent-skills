@@ -23,12 +23,13 @@ My personal collection of agent skills, synced across machines — works with [C
 | `scout` | No plan yet — names what "done" looks like, settles open questions breadth-first. |
 | `grill-me` | Interviews you about a plan until shared understanding. |
 | `root-cause` | Diagnoses a bug against ground truth before any fix. Output: a diagnosis, not a patch. |
+| `best-option` | Handed a menu of options? Explains each, checks for a better unlisted one, picks ONE. |
 | `second-opinion` | Judges one decision head-to-head, merit only. |
 | `wait-what` | Re-pitches a message that didn't land, in plain controlled English. |
 | `where-were-we` | Lost the thread of a long session? Reports state, not history — landed vs open. |
 | `qa-crawl` | Unattended, resumable crawl over hundreds of routes; one before/after MR per page. |
 | `qa-sweep` | Drives the running app in a real browser to find what's broken. Reports, never fixes. |
-| `ponytail` | Lazy-senior-dev discipline — YAGNI, reuse first. Auto-applies to any coding task. |
+| `ponytail` | Lazy-senior-dev discipline — YAGNI, reuse first. Put its ladder in `CLAUDE.md` to make it always-on; as a skill it rarely auto-fires. |
 | `ui-audit` | Technical UI checks (a11y, perf, theming, responsive) → scored report. |
 | `ui-polish` | Craft on one screen — type, color, spacing, interaction states. |
 | `ux-audit` | Does the page work for the human — friction, cognitive load. Ethics-gated. |
@@ -37,6 +38,7 @@ My personal collection of agent skills, synced across machines — works with [C
 | `prove-the-test` | Breaks the thing a new test guards; confirms the test actually goes red. |
 | `spinoff` | Banks what a finished branch made cheap — as a backlog, never a bigger diff. |
 | `api-docs-complete` | Completes an API docblock with the real-but-invisible statuses (401/403/422/429/500). |
+| `daily` | Morning briefing from yesterday's assembled project snapshot — never queries production. |
 | `changelog-generate` | Changelogs and release notes from commits/PRs; forge- and tag-aware. |
 | `i18n-sync` | Keeps locale files in key parity; finds silent-fallback strings. |
 | `tool-compare` | Is this external tool worth adopting for THIS project? Reads source, not README. |
@@ -74,7 +76,7 @@ The MR/PR commands auto-detect GitHub (`gh`) vs GitLab (`glab`) from the git rem
 | --- | --- |
 | `mr-create` | Open a PR/MR for the current branch — title/body, pre-flight checks, reviewer suggestions. |
 | `mr-guide` | Writes the reviewer's guide into the PR description (product-level, auto-screenshots). |
-| `mr-review` | Reviews a PR/MR — five parallel reviewers, inline + summary comments. |
+| `mr-review` | Reviews a PR/MR — up to five parallel reviewers matched to the diff, inline + summary comments. |
 | `fix-review` | Fixes review findings in code, replies, resolves threads. |
 | `commit` | Smart commit — auto-branch, format/test, conventional message, push. |
 | `issue` | Structured issue from natural language. **GitLab-only**. |
