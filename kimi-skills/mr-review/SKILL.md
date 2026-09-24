@@ -15,27 +15,6 @@ This command works on **either GitHub or GitLab** (self-hosted or SaaS). Resolve
    - any other host (self-hosted GitLab, `gitlab.com`, …) → **GitLab** · CLI `glab` · term **MR**
    - **Override wins:** if `.kimi-code/repo-config.json` has `"provider": "github"` or `"gitlab"`, use that (for ambiguous/self-hosted hosts).
 2. **Target resolution** — let the provider CLI auto-detect host/namespace/IDs from git remotes; never hardcode them. Fork workflow (both `origin` and `upstream` remotes present): `origin` = your push target, `upstream` = the MR/PR target.
-3. **Shortcuts & config** — optional per-repo `.kimi-code/repo-config.json` (or legacy `.kimi-code/gitlab-config.json`) supplies `developers` (reviewer/assignee shortcuts → usernames/ids) and `labels` (auto-label rules). **Absent → degrade gracefully:** accept a raw username, skip label automation, don't error.
-
-> Examples below use placeholders (`<HOST>`, `<PROJECT_PATH>`, usernames `alice`/`bob`/`carol`) — resolve real values at runtime.
-
-### CLI cheat-sheet — GitLab ↔ GitHub
-| Operation | GitLab (`glab`) | GitHub (`gh`) |
-| --- | --- | --- |
-| Create MR/PR | `glab api --method POST projects/<id>/merge_requests -F source_branch=… -F target_branch=…` (fork: add `-F target_project_id=<up>`) | `gh pr create --base <target> --head <branch> --title … --body …` (handles remotes/fork itself) |
-| Reviewer | `-F reviewer_ids[]=<id>` (resolve id first) | `--reviewer <username>` (or `gh pr edit <n> --add-reviewer <u>`) |
-| Assignee | `-F assignee_id=<id>` | `--assignee <username>` |
-| Draft | prefix title `Draft: …` | `--draft` |
-| username → id | `glab api "users?username=<u>" \| jq '.[0].id'` | not needed — `gh` uses usernames directly |
-| List MRs/PRs | `glab mr list` | `gh pr list` |
-| View diff | `glab mr diff <id>` (or `glab api projects/<id>/merge_requests/<n>/changes`) | `gh pr diff <n>` |
-| MR/PR metadata | `glab api projects/<id>/merge_requests/<n>` | `gh pr view <n> --json …` |
-| Comment (general) | `glab mr note <n> -m "…"` | `gh pr comment <n> --body "…"` |
-| Inline/threaded review comment | `glab api --method POST projects/<id>/merge_requests/<n>/discussions --header "Content-Type: application/json" --input <file.json>` — **JSON body, not `-f`; see Step 7b** | `gh api --method POST repos/{owner}/{repo}/pulls/<n>/comments -f body=… -f commit_id=… -f path=… -F line=…` |
-| Resolve a thread | `glab api --method PUT …/discussions/<discussion_id> -F resolved=true` | `gh api graphql` `resolveReviewThread` (or resolve in UI) |
-| Approve | `glab mr approve <n>` | `gh pr review <n> --approve` |
-
-**Notes:** GitHub creation is simpler — prefer `gh pr create` (no project IDs / fork math). Keep the `glab api` fork recipe for GitLab. Where an operation has no clean CLI on a provider (e.g. resolving a specific review thread on GitHub), say so and fall back to the closest equivalent or the web UI rather than pretending.
 
 Review a merge/pull request by fetching everything from the provider's API. Does NOT touch local files, branches, or git state.
 
@@ -71,6 +50,30 @@ Rules:
 - Cleanup is optional — leave the dir for the user to inspect; it's gitignored.
 
 ## Step-by-Step Implementation
+
+### Step 0: Run the repo's deterministic checks FIRST
+
+If the repo has `.claude/checks/run.py` (or `scripts/checks/`), run it before spawning anything:
+
+```bash
+python3 .claude/checks/run.py <base_sha> <head_sha>
+```
+
+Seconds, no agents, and it **cannot miss its class** — the one thing agents cannot promise.
+Measured on oreem !3379: this layer found a cross-tenant IDOR in 3 seconds that a 303k-token
+security agent took 11 minutes to reach and a sibling agent read the same file and missed
+entirely — plus a second unscoped admin endpoint that **seven agent runs never surfaced at all**.
+
+Triage the output before reporting any of it (checks trade precision for recall, so expect false
+positives), fold the survivors into the final report, and tell the Step 4 agents which classes are
+already covered so they don't spend budget re-deriving them.
+
+Not in cwd? Look in the main checkout before concluding there are none — `.claude/` is often
+gitignored, so a worktree (e.g. `.claude/tmp/<slug>/`) lacks it while the main checkout has it:
+`python3 "$(git worktree list | head -1 | awk '{print $1}')/.claude/checks/run.py" <base_sha> <head_sha>`.
+No checks directory in either? Say so once and continue. Afterwards, any confirmed finding whose *class* is
+mechanically detectable should become a new check — that is what makes reviews compound instead of
+re-rolling the dice at ~250k a throw.
 
 ### Step 1: Parse the MR/PR reference
 
@@ -155,6 +158,13 @@ Agents receive `refs/mr/<N>`, `BASE`, and the changed-file list — **never file
 
 Spawn 5 review agents in a SINGLE message so they run in parallel. Each agent receives the **git ref, the base sha, and the changed-file list** — not file content.
 
+**Scope gate — match the reviewers to what the diff touches.** Decide from the changed-file list alone:
+- **Only test files** → spawn **general + testing** only. Measured: a 1-file test-only MR ran 4-5 reviewers for 341k tokens and zero findings; security/performance/architecture average ~60-70k each and have nothing to review there. General stays as the broad net (a test that disables a policy check is still a regression).
+- **Only docs / comments / translations** (`*.md`, lang/locale files) → **general** only.
+- **Anything else** → all five. When unsure, run all five — the gate only drops a reviewer whose domain is provably absent.
+
+State in the report's Coverage which reviewers ran and why any were skipped.
+
 **IMPORTANT**: Do NOT paste file content or diffs into these prompts. Hand agents the ref and let them read what they need. If Step 3 fell back to the API path, paste content inline as the old flow did — that fallback is the only case where inline content is correct.
 
 **Run all five on a fast/cheap model when one is configured — do not escalate by default.** In Kimi Code CLI, subagents inherit the session model by default; a `[secondary_model]` pool in `config.toml` enables the Agent tool's `model` parameter (advertised in the tool description when configured). If a pool exists, pass its fast/cheap alias (e.g. a `*-highspeed` entry) as `model=` on **all five** spawns; if no pool is configured, let them inherit. Pinning matters independently of the value: without it, these five run at whatever the session happens to be on. Measured on MR !3192 (a controller dedupe touching a policy path and a form-request `authorize()`), running the security reviewer on a heavier tier returned the identical verdict at 1.9× the tokens and 4.2× the wall clock (9m 03s vs 2m 08s). The wall clock is the decisive part: these five run in parallel, so **the slowest agent gates the entire review**. One heavy-tier agent turns every review into a nine-minute wait — paid on all reviews, including the clean majority.
@@ -181,6 +191,27 @@ Changed files:
 <one path per line>
 ```
 
+**The return block** — substitute verbatim for `<RETURN BLOCK>`:
+
+```
+Return findings as a JSON array. Each finding MUST have:
+- severity: CRITICAL, IMPORTANT, or MINOR
+- file: the new path of the file (for a missing test, the production file)
+- line: the exact line in the NEW version of the file (for a missing test, the untested method's line)
+- title: short one-line summary
+- description: detailed explanation with suggested fix
+Example: [{\"severity\":\"IMPORTANT\",\"file\":\"src/foo.ext\",\"line\":42,\"title\":\"Missing null check\",\"description\":\"...\"}]
+```
+
+**IMPORTANT (every agent)**: end each prompt with a required coverage declaration —
+*"After the JSON, add one line — `COVERAGE-GAPS:` what you did NOT examine closely, and why."*
+
+This is not bookkeeping. Silence from a reviewer currently reads as "checked, it's fine" when it
+usually means "never looked", and the gaps are where the next round should start. Measured on
+!3379: round 1's declared gaps became round 2's targets, and round 2 found the worst bug in the MR.
+Read the field for what it is, though — it reports what was not **read**, not what was read and not
+**noticed**, which is where most misses actually live.
+
 **IMPORTANT (every agent)**: Append this line to each agent prompt below — *"Report only objective defects (crashes, security holes, logic errors, broken/contradictory behavior, real data bugs). Do NOT report subjective preferences, aesthetic opinions, or behavior that is plausibly intentional as findings. If you think a behavior might be a bug but it could just as easily be a deliberate design choice, do not assert it — leave it out (the synthesizer handles intent questions). Never invent a 'fix' for an intended behavior."*
 
 **Agent 1** — General Review (spawn via the Agent tool, description `General MR/PR review`):
@@ -193,13 +224,7 @@ Description: <description>
 <READ BLOCK>
 
 Focus on: logic errors, missing edge cases, error handling, code clarity, test coverage gaps.
-Return findings as a JSON array. Each finding MUST have:
-- severity: CRITICAL, IMPORTANT, or MINOR
-- file: the new path of the file
-- line: the exact line number in the NEW version of the file where the issue is
-- title: short one-line summary
-- description: detailed explanation with suggested fix
-Example: [{"severity":"IMPORTANT","file":"src/controllers/foo.ext","line":42,"title":"Missing null check","description":"..."}]
+<RETURN BLOCK>
 ```
 
 **Agent 2** — Security Review (spawn via the Agent tool, description `Security MR/PR review`):
@@ -211,13 +236,7 @@ MR/PR: <N> - <title>
 <READ BLOCK>
 
 Check for: injection (SQL/command/template), XSS, CSRF, missing authorization/permission checks, hardcoded secrets, mass assignment / over-posting, tenant or ownership scoping in multi-tenant systems, unvalidated user input, unsafe deserialization.
-Return findings as a JSON array. Each finding MUST have:
-- severity: CRITICAL, IMPORTANT, or MINOR
-- file: the new path of the file
-- line: the exact line number in the NEW version of the file where the issue is
-- title: short one-line summary
-- description: detailed explanation with suggested fix
-Example: [{"severity":"CRITICAL","file":"src/controllers/foo.ext","line":15,"title":"SQL injection","description":"..."}]
+<RETURN BLOCK>
 ```
 
 **Agent 3** — Performance Review (spawn via the Agent tool, description `Performance MR/PR review`):
@@ -229,13 +248,7 @@ MR/PR: <N> - <title>
 <READ BLOCK>
 
 Check for: N+1 / repeated queries (missing eager loading/batching), fetching more columns/rows than needed, missing pagination, missing caching, expensive work inside loops, missing indexes for new query patterns, unnecessary data loading.
-Return findings as a JSON array. Each finding MUST have:
-- severity: CRITICAL, IMPORTANT, or MINOR
-- file: the new path of the file
-- line: the exact line number in the NEW version of the file where the issue is
-- title: short one-line summary
-- description: detailed explanation with suggested fix
-Example: [{"severity":"IMPORTANT","file":"src/models/order.ext","line":88,"title":"N+1 query","description":"..."}]
+<RETURN BLOCK>
 ```
 
 **Agent 4** — Architecture Review (spawn via the Agent tool, description `Architecture MR/PR review`):
@@ -247,13 +260,7 @@ MR/PR: <N> - <title>
 <READ BLOCK>
 
 Check for: business logic leaking into controllers/handlers (should live in a service/domain layer), missing input-validation layer, missing DTOs/value objects for complex data, correct transaction boundaries for multi-entity writes, dependency injection vs hardcoded construction, proper separation of concerns.
-Return findings as a JSON array. Each finding MUST have:
-- severity: CRITICAL, IMPORTANT, or MINOR
-- file: the new path of the file
-- line: the exact line number in the NEW version of the file where the issue is
-- title: short one-line summary
-- description: detailed explanation with suggested fix
-Example: [{"severity":"IMPORTANT","file":"src/controllers/foo.ext","line":30,"title":"Fat controller","description":"..."}]
+<RETURN BLOCK>
 ```
 
 **Agent 5** — Testing Review (spawn via the Agent tool, description `Testing MR/PR review`):
@@ -266,22 +273,46 @@ Description: <description>
 <READ BLOCK>
 
 Check for: missing test coverage for new/changed public methods, weak assertions (status-only without checking the response body/state), missing edge-case tests, isolation between test cases, correct fixtures/factories, and (in multi-tenant systems) tenant/ownership scoping in tests.
-Return findings as a JSON array. Each finding MUST have:
-- severity: CRITICAL, IMPORTANT, or MINOR
-- file: the new path of the file (for missing tests, use the production file path)
-- line: the exact line number in the NEW version of the file where the issue is (for missing tests, use the line of the untested method)
-- title: short one-line summary
-- description: detailed explanation with suggested fix
-Example: [{"severity":"IMPORTANT","file":"src/services/order_service.ext","line":45,"title":"Missing test for processRefund()","description":"..."}]
+<RETURN BLOCK>
 ```
+
+### Step 4b: One handoff round (high-stakes MRs)
+
+When the change moves money, touches auth/tenancy, or is otherwise expensive to get wrong, run ONE
+more agent after the parallel set — same generalist brief, but handed:
+
+- **every finding so far, with "do NOT re-report these"**, and
+- **the union of the agents' `COVERAGE-GAPS`, as its starting priorities.**
+
+Ask it for new findings, plus a `CORRECTIONS:` line naming anything already reported that is wrong
+or mis-severitied.
+
+This is the highest-yield agent in the whole command, because it is the only one not re-sampling
+ground already covered. On !3379 it cost ~219k and returned two findings nobody else had — including
+the most severe in the MR (a Cart whose auto-capture fails takes the customer's money and never
+creates an order, with no recovery path). It also re-verified five earlier findings and corrected
+none, which is itself worth knowing.
+
+Skip it on small or low-risk diffs; it is a real cost (~140-220k). **Name the trigger in the report's
+Coverage** ("round 2: moves money — Cart capture path") — no nameable trigger, no round 2. Measured:
+a 4-file MR ran two full rounds for 1.17M tokens with no trigger recorded, more than several larger MRs.
 
 ### Step 5: Collect and Merge Results
 
-1. Wait for all 5 agents to complete
+1. Wait for every agent you spawned (five, or fewer under the scope gate)
 2. Parse the JSON arrays from each agent's response
 3. Tag each finding with its source category: `security`, `performance`, `architecture`, `testing`, or `general`
 4. **Critically evaluate each finding** — do NOT blindly accept agent findings. For each finding, ask: "Is this a real problem in the actual usage context, or just a theoretical edge case?" Downgrade or discard findings that are technically correct but practically irrelevant. Review agents tend to flag theoretical issues that may never occur in practice — your job is to filter signal from noise.
 4b. **Separate DEFECTS from DESIGN/INTENT questions.** A finding is only a *defect* (CRITICAL/IMPORTANT/MINOR) when it is objectively wrong: a crash, a security hole, a logic error, a broken/contradictory behavior, a real data bug. If instead the finding is a **subjective preference, an aesthetic opinion, or a behavior that is plausibly intentional** (e.g. "roundness 0 makes corners fully square", "this default could be different", "this copy/UX could be nicer", "consider a different threshold"), it is **NOT a defect** — do not assign it a severity and do not prescribe a "fix". Reclassify it as an **Open Question** with `category: "question"` and phrase it as a question to the author ("Is X intended?"), never as "Fix: change X". When unsure whether something is a defect or an intentional choice, default to treating it as a question. The bar: would a reasonable author unambiguously agree it's broken? If not, it's a question, not a finding.
+4c. **Verify every surviving finding against the code before it reaches the report.** Open the file,
+   confirm the claim, and check the mitigation the agent may not have looked for — a global scope, a
+   middleware, a framework default. Agents are accurate about *what they looked at* and confidently
+   wrong about *what they assumed*. Measured on !3379: 7 of 7 findings were substantively correct,
+   but one claimed a lock was held indefinitely "because no timeout is set" when Laravel's HTTP
+   client defaults to `timeout => 30` — real worst case ~90s, not unbounded. Posting the overstated
+   version would have got it dismissed, and taken the credibility of the other six with it. Cost: a
+   handful of greps.
+
 5. Deduplicate — if 2+ agents found the same issue (same file + same/adjacent line), keep the most detailed one
 6. Cross-reference — if 2+ agents flagged the same thing, note it as corroborated but do NOT automatically upgrade severity. Multiple agents agreeing on a theoretical issue doesn't make it more real.
 7. Sort by severity: CRITICAL > IMPORTANT > MINOR
@@ -321,11 +352,31 @@ Example: [{"severity":"IMPORTANT","file":"src/services/order_service.ext","line"
 ### Open Questions (design / intent — NOT defects)
 <Anything reclassified per Step 5.4b: plausibly-intentional behavior, subjective/aesthetic preferences, or "could be different" choices. Phrase each as a question for the author, with NO prescribed fix and NO severity. If there are none, omit this section. These never count toward the severity breakdown or change the verdict.>
 
+### Coverage
+- **Checks run**: <which deterministic checks ran, and what they covered>
+- **Rules used**: <per reviewer: project-specific rules file, or generic practice because the file was missing. Name any role that fell back — silence reads as "checked against project rules" when it wasn't>
+- **Round 2**: <"ran — <trigger>: <what>" or "skipped — no money/auth/tenancy trigger">
+- **Not examined**: <union of the agents' COVERAGE-GAPS>
+- **Estimated remaining**: <see below>
+
 ### Verdict
 **APPROVED** / **APPROVED WITH SUGGESTIONS** / **CHANGES REQUESTED**
 - Any CRITICAL → CHANGES REQUESTED
 - Only IMPORTANT/MINOR → APPROVED WITH SUGGESTIONS
 - Clean → APPROVED
+
+**Never present a clean review as proof the code is clean.** Say "no findings from the passes that
+ran", and name what was not examined. This is not hedging; it is measured. On !3379, two runs of the
+*same* reviewer role agreed on only 20–33% of findings; one agent read the exact file containing a
+cross-tenant IDOR and reported something else in it; and after seven runs and ~1.6M tokens a fresh
+reviewer still found three issues with **zero** overlap with the previous thirteen. A single pass
+finds roughly a quarter to a half of what is there, and you cannot tell which.
+
+**Estimate what's left** when two or more passes covered the same ground: if pass A found `a`, pass B
+found `b`, and they share `m`, then total ≈ `a × b / m`, so remaining ≈ that minus what you have. It
+is a floor — easy bugs are found by both passes and inflate `m`, which biases the estimate down. If
+`m` is 0, you have no estimate at all and no evidence of saturation; say exactly that and recommend
+another round rather than implying completeness.
 
 ---
 🤖 Generated by Kimi Code CLI `/mr-review`
@@ -333,98 +384,47 @@ Example: [{"severity":"IMPORTANT","file":"src/services/order_service.ext","line"
 
 ### Step 7: Post to the provider (if --comment)
 
-If the `--comment` flag was provided, ask the user for permission first, then post each finding as an **inline comment on the specific line** in the diff, followed by one summary comment.
+If `--comment` was passed, ask the user first, then post each **defect** as a resolvable thread on
+its line, and one summary comment. Open Questions go in the summary, phrased as questions — not as threads.
 
-#### Step 7a: Get the positioning info
+**GitLab — run the script; never hand-write the posting loop.** Write the findings with a real
+serializer (a Python heredoc calling `json.dump`) to `.kimi-code/tmp/mr-review/<N>/findings.json`:
 
-**GitLab** — from the MR metadata (Step 2), extract the SHA values needed for positioning a diff discussion:
-- `diff_refs.base_sha` — the merge base
-- `diff_refs.head_sha` — the latest commit on the source branch
-- `diff_refs.start_sha` — the start of the diff
-
-**GitHub** — inline PR comments need the head commit SHA and the diff `line`:
-- `commit_id` — the head commit SHA (`headRefOid` from Step 2, or `gh pr view <N> --json headRefOid -q .headRefOid`)
-- `path` + `line` — the file path and the line number in the NEW version of the file
-
-#### Step 7b: Post each finding as an inline comment
-
-**GitLab** — create a resolvable discussion on the specific diff line. **Send a raw JSON body via `--input`, NOT `-f` form fields** (see the warning below):
-
-```bash
-# Write the payload to the scratch dir, one file per finding.
-cat > .kimi-code/tmp/mr-review/<N>/note-<i>.json <<'JSON'
-{
-  "body": "### <SEVERITY_EMOJI> <severity>: <title>\n\n<description>\n\n---\n_Category: <category> | Review by Kimi Code CLI `/mr-review`_",
-  "position": {
-    "position_type": "text",
-    "base_sha": "<base_sha>",
-    "head_sha": "<head_sha>",
-    "start_sha": "<start_sha>",
-    "new_path": "<file>",
-    "old_path": "<old_path_from_diffs>",
-    "new_line": <line>
-  }
-}
-JSON
-
-glab api --method POST "projects/<id>/merge_requests/<N>/discussions" \
-  --header "Content-Type: application/json" \
-  --input .kimi-code/tmp/mr-review/<N>/note-<i>.json
+```json
+[{"title": "<title>", "path": "<new path>", "line": 42,
+  "body": "### <EMOJI> <SEVERITY>: <title>\n\n<description>\n\n---\n_Category: <category> | Review by Kimi Code CLI `/mr-review`_"}]
 ```
 
-Build the JSON with a real serializer (a small Python heredoc calling `json.dump`), never by string-concatenating the body — findings contain newlines, backticks, quotes and emoji, and hand-built JSON breaks on them.
-
-> ⚠️ **`-f "position[...]=..."` silently produces an UNANCHORED comment.**
-> `glab api -f` sends form fields, and the nested `position[...]` keys are dropped on the way through. The request returns **HTTP 201 with a normal-looking discussion**, so it reads as success — but the note lands on the Overview tab instead of on the code, and every finding ends up detached from its line. Observed on self-hosted GitLab 2026-08; `--input` with a JSON body works on the same instance.
-
-**Verify each post rather than trusting the exit code.** An anchored note comes back as `"type": "DiffNote"` with a non-null `position`; an unanchored one as `"type": "DiscussionNote"` with `position: null`:
+`line` is the finding's line in the NEW file, `"old:<n>"` for removed code, or `null`. The heading
+must carry the same `title` string — that is how a later run recognises the thread.
 
 ```bash
-glab api --method POST "projects/<id>/merge_requests/<N>/discussions" \
-  --header "Content-Type: application/json" --input <payload> \
-  | python3 -c 'import json,sys; n=json.JSONDecoder(strict=False).decode(sys.stdin.read())["notes"][0]; print("anchored" if n.get("position") else "NOT ANCHORED")'
+~/.claude/scripts/mr-note.py post <N> .kimi-code/tmp/mr-review/<N>/findings.json
 ```
 
-`JSONDecoder(strict=False)`, not `json.load` — GitLab echoes the note body back with raw control characters in it, and the strict parser raises `Invalid control character` on any multi-line note. That failure looks identical to a failed POST while the note was in fact created, so the retry duplicates it.
+It anchors each finding against the MR's **current** head (context lines snap to the nearest added
+line; lines outside the diff become general threads carrying `path:line`), checks every note came
+back anchored, skips findings already on the MR, and prints one line per finding —
+`anchored|general|exists <discussion_id>` or `FAILED <reason>`. Report any `FAILED` line. Re-running
+is safe: nothing is posted twice.
 
-When writing a shell loop over the findings, check the parsed response — not `$?`. A wrapper that inspects the exit status of the pipeline will report failure on success (and vice versa), and retrying on a false failure leaves duplicate threads.
+**Why a script:** posting was the most-failing step of this command. Measured 2026-08-31..09-23 across
+81 runs: GitLab rejected context-line anchors (`line_code can't be blank`) in ~25 sessions, and
+hand-rolled response parsing threw `JSONDecodeError` in 8+ — each run re-deriving the same loop and
+tripping a different trap. The traps are listed in the script's header.
 
-If a note does come back unanchored, delete it before retrying, or the retry duplicates it:
-
-```bash
-glab api --method DELETE "projects/<id>/merge_requests/<N>/discussions/<discussion_id>/notes/<note_id>"
-```
-
-**GitHub** — create a review comment on the specific line (`{owner}/{repo}` is auto-resolved by `gh` from remotes):
+**GitHub** — anchor first (`git diff <BASE>..refs/pr/<N> | ~/.claude/scripts/diff-anchor.py findings.txt`,
+lines `<n>|<path>|<line>`), then per finding:
 ```bash
 gh api --method POST "repos/{owner}/{repo}/pulls/<N>/comments" \
-  -f body="### <SEVERITY_EMOJI> <severity>: <title>
-
-<description>
-
----
-_Category: <category> | Review by Kimi Code CLI \`/mr-review\`_" \
-  -f commit_id="<head_sha>" \
-  -f path="<file>" \
-  -F line=<line> \
-  -f side=RIGHT
+  -f body="<body>" -f commit_id="<headRefOid>" -f path="<file>" -F line=<line> -f side=RIGHT
 ```
-(`side=RIGHT` targets the new version of the file. For a multi-line range add `-F start_line=<n> -f start_side=RIGHT`.)
+`side=LEFT` for an `old_line` anchor; `unanchorable` → `gh pr comment <N> --body "…"` with `path:line` in the body.
 
-**Severity emojis**: CRITICAL = `🔴`, IMPORTANT = `🟡`, MINOR = `🔵`
+**Summary comment** — `glab mr note <N> -m "…"` / `gh pr comment <N> --body "…"`:
 
-**IMPORTANT notes on positioning**:
-- The target line MUST be a line that appears in the diff (added or unchanged context). If the finding's line is not in the diff, snap to the nearest line that is, or fall back to a general comment (Step 7c handling).
-- GitLab: `old_path` = the `old_path` from the `/diffs` response for that file (for new files, use the same value as `new_path`); comment on `new_line` only (the new version), not `old_line`.
-- GitHub: `line` is the line in the NEW file; keep `side=RIGHT`.
-
-#### Step 7c: Post the summary comment
-
-After all inline comments, post one summary comment.
-
-**GitLab:**
-```bash
-glab mr note <N> -m "## Code Review Summary — MR <N>
+```markdown
+## Code Review Summary — MR/PR <N>
 
 | Severity | Count |
 |----------|-------|
@@ -434,52 +434,11 @@ glab mr note <N> -m "## Code Review Summary — MR <N>
 
 **Verdict**: <APPROVED / APPROVED WITH SUGGESTIONS / CHANGES REQUESTED>
 
-Each finding is posted as a separate resolvable discussion on the relevant code line.
+Each finding is posted as a separate resolvable thread on the relevant line.
+<Open Questions, if any, as questions>
 
 ---
-_Review by Kimi Code CLI \`/mr-review\`_"
-```
-
-**GitHub:**
-```bash
-gh pr comment <N> --body "## Code Review Summary — PR <N>
-
-| Severity | Count |
-|----------|-------|
-| 🔴 CRITICAL | N |
-| 🟡 IMPORTANT | N |
-| 🔵 MINOR | N |
-
-**Verdict**: <APPROVED / APPROVED WITH SUGGESTIONS / CHANGES REQUESTED>
-
-Each finding is posted as a separate inline review comment on the relevant code line.
-
----
-_Review by Kimi Code CLI \`/mr-review\`_"
-```
-
-#### Handling position errors
-
-If an inline comment POST fails with a position error (e.g. the line isn't in the diff), fall back to posting it as a general comment with the location in the body.
-
-**GitLab:**
-```bash
-glab mr note <N> -m "### <SEVERITY_EMOJI> <severity>: <title> (\`<file>:<line>\`)
-
-<description>
-
----
-_Category: <category> | Review by Kimi Code CLI \`/mr-review\`_"
-```
-
-**GitHub:**
-```bash
-gh pr comment <N> --body "### <SEVERITY_EMOJI> <severity>: <title> (\`<file>:<line>\`)
-
-<description>
-
----
-_Category: <category> | Review by Kimi Code CLI \`/mr-review\`_"
+_Review by Kimi Code CLI `/mr-review`_
 ```
 
 ## Large MRs/PRs (20+ files)
@@ -493,58 +452,6 @@ If the MR/PR has 20+ changed files:
 4. Note in the report if any agent said it fell back to diff-only, and for which files.
 
 This is a soft budget, not the old hard cap: an agent that needs file #40 can still read it. Nothing is withheld from agents — they simply choose what to spend context on.
-
-## API Reference
-
-**GitLab (`glab`):**
-```bash
-# MR metadata (includes diff_refs with base_sha, head_sha, start_sha)
-glab api projects/<id>/merge_requests/<N>
-
-# MR diffs (changed files with diff content)
-glab api projects/<id>/merge_requests/<N>/diffs
-
-# Raw file content from a branch
-glab api "projects/<PROJECT_ID>/repository/files/<URL_ENCODED_PATH>/raw?ref=<BRANCH>"
-
-# Post resolvable discussion on a specific diff line.
-# JSON body via --input; `-f "position[...]"` returns 201 but drops the position.
-glab api --method POST "projects/<id>/merge_requests/<N>/discussions" \
-  --header "Content-Type: application/json" \
-  --input note.json
-# note.json: {"body":"...","position":{"position_type":"text","base_sha":"...",
-#   "head_sha":"...","start_sha":"...","new_path":"...","old_path":"...","new_line":42}}
-
-# Confirm it anchored (DiffNote + non-null position) rather than trusting exit code.
-# strict=False: GitLab echoes note bodies with raw control characters, which json.load rejects.
-glab api "projects/<id>/merge_requests/<N>/discussions?per_page=100" \
-  | python3 -c 'import json,sys; d=json.JSONDecoder(strict=False).decode(sys.stdin.read()); print(sum(1 for x in d if x["notes"][0].get("type")=="DiffNote"), "anchored")'
-
-# Delete a note (to undo an unanchored post before retrying)
-glab api --method DELETE "projects/<id>/merge_requests/<N>/discussions/<discussion_id>/notes/<note_id>"
-
-# Post general note (for summary or fallback)
-glab mr note <N> -m "..."
-```
-
-**GitHub (`gh`):**
-```bash
-# PR metadata + changed files (pick the fields you need)
-gh pr view <N> --json number,title,body,author,labels,state,headRefName,baseRefName,headRefOid,files
-
-# Unified diff for the whole PR
-gh pr diff <N>
-
-# Raw file content from the head branch
-gh api "repos/{owner}/{repo}/contents/<PATH>?ref=<BRANCH>" -q '.content' | base64 -d
-
-# Post inline review comment on a specific diff line
-gh api --method POST "repos/{owner}/{repo}/pulls/<N>/comments" \
-  -f body="..." -f commit_id="<head_sha>" -f path="<file>" -F line=<line> -f side=RIGHT
-
-# Post general comment (for summary or fallback)
-gh pr comment <N> --body "..."
-```
 
 ## What This Command Does NOT Do
 
