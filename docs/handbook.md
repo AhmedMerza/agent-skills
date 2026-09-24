@@ -34,6 +34,9 @@ UI in the mix: `/design` before building → `/ui-polish` · `/animate` while �
 **Code you didn't write**
 `/explain` → then whichever flow above fits
 
+**You're handed options and don't know which to pick**
+`/best-option` — explains each option, checks for a better unlisted one, picks ONE. Standalone; no chain.
+
 **You already made the call and want it challenged**
 `/second-opinion` — one decision, head-to-head. Standalone; no chain.
 
@@ -96,6 +99,7 @@ proposes a fix to the skill itself.
 
 - `validate-plan` vs `ship-check` vs `mr-review` — adversarial review at three points: the **plan** (pre-code) → the **finished diff** (pre-merge) → the **code lines** (review).
 - `scout` vs `grill-me` — **no destination yet** (fan out breadth-first to find it) vs **a plan you can already state** (walk its decision tree depth-first). Running `grill-me` on fog interrogates the first branch you happened to notice; running `scout` on a clear plan is pure ceremony.
+- `best-option` vs `second-opinion` — **before** the choice (a menu is on the table, nothing picked) vs **after** it (a decision already made, often built).
 - `second-opinion` vs `validate-plan` — one **decision** judged head-to-head vs a whole **plan** stress-tested.
 - `ship-check` vs `spinoff` — both read the finished diff, opposite questions: what's **missing** (required, blocks the merge, fix it in this branch) vs what's now **cheap** (optional, blocks nothing, file it for later). Anything that would break production by not being done is a ship-check finding, never a spinoff.
 - `prove-the-test` vs `ship-check` — both run on finished work, different objects: one asks whether the **test** is real (break the code, the test must go red), the other whether the **change** is complete. A vacuous test makes ship-check's "tests pass" evidence worthless, so prove it first.
