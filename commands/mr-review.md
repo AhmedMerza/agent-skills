@@ -179,6 +179,13 @@ Agents receive `refs/mr/<N>`, `BASE`, and the changed-file list — **never file
 
 Spawn 5 review agents in a SINGLE message so they run in parallel. Each agent receives the **git ref, the base sha, and the changed-file list** — not file content.
 
+**Scope gate — match the reviewers to what the diff touches.** Decide from the changed-file list alone:
+- **Only test files** → spawn **general + testing** only. Measured: a 1-file test-only MR ran 4-5 reviewers for 341k tokens and zero findings; security/performance/architecture average ~60-70k each and have nothing to review there. General stays as the broad net (a test that disables a policy check is still a regression).
+- **Only docs / comments / translations** (`*.md`, lang/locale files) → **general** only.
+- **Anything else** → all five. When unsure, run all five — the gate only drops a reviewer whose domain is provably absent.
+
+State in the report's Coverage which reviewers ran and why any were skipped.
+
 **IMPORTANT**: Do NOT paste file content or diffs into these prompts. Hand agents the ref and let them read what they need. If Step 3 fell back to the API path, paste content inline as the old flow did — that fallback is the only case where inline content is correct.
 
 **All five agents are pinned to sonnet — keep the `model=` argument on every call.** Pinning matters independently of the value: without it, editing an agent's frontmatter silently retunes `/mr-review`, because these agents are shared with `/review` and `/nitpick`.
@@ -349,7 +356,9 @@ the most severe in the MR (a Cart whose auto-capture fails takes the customer's 
 creates an order, with no recovery path). It also re-verified five earlier findings and corrected
 none, which is itself worth knowing.
 
-Skip it on small or low-risk diffs; it is a real cost.
+Skip it on small or low-risk diffs; it is a real cost (~140-220k). **Name the trigger in the report's
+Coverage** ("round 2: moves money — Cart capture path") — no nameable trigger, no round 2. Measured:
+a 4-file MR ran two full rounds for 1.17M tokens with no trigger recorded, more than several larger MRs.
 
 ### Step 5: Collect and Merge Results
 
@@ -524,11 +533,13 @@ _Category: <category> | Review by Claude Code \`/mr-review\`_" \
   the finding's own line is context, snap to the nearest **added** line rather than the nearest line
   of any kind. Measured 2026-09-17: 3 of 16 posts failed this way; all three were context-line snaps
   and all three succeeded once re-anchored to added lines.
-- **Compute the anchor with a script, not an agent.** Parsing hunk headers to turn a code string into
-  a line number is deterministic work. Measured: a subagent spent 58,815 tokens and 85s to produce
-  six integers; a ~60-line script reproduced the same map in 0.19s for ~120 tokens, with no
-  hunk-arithmetic mistakes. Main context already knows which code each finding is about, so it can
-  supply an identifying string for free — the expensive part was only ever reading the diff to count.
+- **Compute the anchor with the script, never an agent:** write `<n>|<path>|<new line>` per finding
+  (`old:<line>` for removed code) to a file, then
+  `git diff <base_sha>..refs/mr/<N> | ~/.claude/scripts/diff-anchor.py findings.txt`. The diff is piped,
+  so it never enters context; the script applies the context-line snap above. Measured: an anchor
+  agent cost 58,815 tokens and 85s for six integers, and 3 of 8 recent runs still spawned one
+  (64–83k each) because the script existed only as prose. The script: ~0.1s, verified on 452 real
+  added lines with 0 mismatches.
 - The target line MUST be a line that appears in the diff. If the finding's line is not in the diff at all, fall back to a general comment (Step 7c handling).
 - GitLab: `old_path` = the `old_path` from the `/diffs` response for that file (for new files, use the same value as `new_path`); comment on `new_line` only (the new version), not `old_line`.
 - GitHub: `line` is the line in the NEW file; keep `side=RIGHT`.
