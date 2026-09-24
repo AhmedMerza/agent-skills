@@ -46,24 +46,26 @@ Pick the winner and give the substantive reason it wins on the axis that matters
 
 ## Output shape
 
+Answer first, then the reasoning — the user should get the pick from the first line without reading further.
+
 ```
-## Best option: <the decision, one line>
+## Pick: <option> — <the substantive reason it wins, one sentence>
 
 **What's really being decided:** <the stakes and constraints, 1-2 lines>
 
 **The options:**
-- **A — <name>:** <what it means in practice; real strengths; real costs>
-- **B — <name>:** <...>
-- **C — <name>:** <...>
+- **A — <name>** ✅: <what it means in practice; its strength; its cost — and why it wins>
+- **B — <name>** ❌: <what it means; its genuine strength; the concrete reason it loses>
+- **C — <name>** ⛔: <… — use ⛔ for a disqualifier (security, data loss, doesn't solve the problem)>
+- **Off the menu** (only if one beats the listed options — otherwise one line: "none needed"): <the hybrid / missing alternative / reframe, and why it beats the best listed one>
 
-**Off the menu:** <a hybrid / missing alternative / reframe that beats the listed options, and why — or "none, the listed options cover it">
-
-**Head-to-head:** <only the axes that differentiate — who wins each and why>
-
-**Recommendation: <option>** — <the substantive reason it wins long-term>
-**Why not the others:** <option>: <concrete reason it loses> · <option>: <concrete reason it loses>
-**Doing it right:** <1-3 must-dos that decide whether the pick succeeds in practice — omit if none>
+**Deciding factor:** <the one or two axes that actually separated the winner — skip axes where one option wins everything by default; for a close call, name the tie-breaker and what would flip the pick>
+**Doing it right:** <1-3 must-dos for the pick — omit if none>
 ```
+
+**Say each point once.** Each option's verdict lives on its own line — don't restate it in a separate "why not" list or repeat an off-menu idea under "Doing it right".
+
+**Size the answer to the stakes.** A small, easily reversed choice (a UI component, test structure, a naming call) gets the pick plus one line per option — roughly 100-200 words, no "Deciding factor" section unless it's close. Reserve the full shape for load-bearing, hard-to-reverse choices (data model, money, security, infrastructure). Length is a cost the user pays; thoroughness shows in the reasoning, not the word count.
 
 Keep explanations in plain language — the user may not know the jargon, so spell out terms briefly when you use them.
 
