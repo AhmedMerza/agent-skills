@@ -11,3 +11,4 @@ settings.local.json
 **/browse-config.json
 .env
 .env.*
+__pycache__/
