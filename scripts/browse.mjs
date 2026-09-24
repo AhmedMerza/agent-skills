@@ -86,6 +86,12 @@ async function login (page) {
 // ---- main ------------------------------------------------------------------
 const browser = await chromium.launch({ channel })
 const ctxOpts = mobile && devices['iPhone 14'] ? { ...devices['iPhone 14'] } : { viewport: { width: 1920, height: 1080 } }
+
+// Opt-in determinism, for callers that DIFF screenshots rather than look at them.
+// Off by default: a skill inspecting motion (/animate, /ui-polish) wants the page
+// to behave normally. Set BROWSE_FREEZE=1 to suppress motion instead.
+const freeze = process.env.BROWSE_FREEZE === '1'
+if (freeze) ctxOpts.reducedMotion = 'reduce'
 if (!forceLogin && existsSync(statePath)) ctxOpts.storageState = statePath
 const context = await browser.newContext(ctxOpts)
 const page = await context.newPage()
@@ -145,6 +151,24 @@ while (Date.now() < deadline) {
 // Let the frame that consumed the last response actually paint.
 await page.waitForTimeout(400)
 
+// Kill anything still moving. `reducedMotion` alone is advisory — it only helps
+// where the app honours prefers-reduced-motion — so the rule is forced here, and
+// any element mid-transition is snapped to its end state.
+if (freeze) {
+  await page.addStyleTag({ content: `
+    *, *::before, *::after {
+      animation-duration: 0s !important;
+      animation-delay: 0s !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0s !important;
+      transition-delay: 0s !important;
+      scroll-behavior: auto !important;
+      caret-color: transparent !important;
+    }
+  ` }).catch(() => {})
+  await page.waitForTimeout(200)
+}
+
 // ---- scrolling screenshots -------------------------------------------------
 const vh = page.viewportSize()?.height || 1080
 const total = await page.evaluate(() => document.body.scrollHeight)
@@ -154,7 +178,10 @@ for (let i = 0; i < pages; i++) {
   await page.evaluate(y => window.scrollTo(0, y), i * vh)
   await page.waitForTimeout(400)
   const f = join(outDir, `page-${i + 1}.png`)
-  await page.screenshot({ path: f })
+  // animations:'disabled' fast-forwards finite CSS animations to their end and
+  // resets infinite ones — it does NOT stop a JS timer swapping DOM nodes, which
+  // is why callers that diff must also run a volatility pass.
+  await page.screenshot(freeze ? { path: f, animations: 'disabled', caret: 'hide' } : { path: f })
   shots.push(f)
 }
 console.log(`OK ${url}`)
