@@ -1,6 +1,6 @@
 ---
 name: validate-plan
-description: "Adversarially stress-test an existing plan before executing it — verify its load-bearing assumptions against the real codebase, surface genuinely-different alternatives (only when they exist), red-team failure modes, and return a proceed / proceed-with-changes / reconsider verdict. Invoke with /validate-plan after a plan or proposal exists (plan mode, or any approach Claude just laid out). Restraint-gated: a clean \"proceed\" is a valid, valued result — do not manufacture objections or alternatives to fill a menu."
+description: "Adversarially stress-test an existing plan before executing it — verify its load-bearing assumptions against the real codebase, check its design horizon (is it adding the Nth copy of something that should be a row/entry, can the next case be added without editing existing code, will it hold at real production volume), surface genuinely-different alternatives (only when they exist), red-team failure modes, and return a proceed / proceed-with-changes / reconsider verdict. Invoke with /validate-plan after a plan or proposal exists (plan mode, or any approach Claude just laid out). Restraint-gated: a clean \"proceed\" is a valid, valued result — do not manufacture objections or alternatives to fill a menu."
 ---
 
 # /validate-plan — Adversarial plan review
@@ -11,7 +11,7 @@ This is self-critique on an existing plan. It runs **after** a plan exists (Clau
 
 **The restraint gate — read this first.** The failure mode of this skill is manufacturing doubt: inventing alternatives nobody needs and objections that don't hold, turning a sound plan into noise. Don't. If the plan is the right shape, **say so plainly** and hand back the one risk worth watching. A confident "this is sound, proceed — just watch X" is a first-class outcome, not a failure to find enough. Only surface an alternative when a *genuinely different* approach exists with a real trade-off; only raise a risk you can *name concretely*. Depth over volume: three real findings beat ten filler ones.
 
-## The four passes
+## The five passes
 
 Run these in order. Each is skippable-with-a-sentence if it genuinely yields nothing — but you must have actually *looked*, not assumed.
 
@@ -20,12 +20,57 @@ Extract the plan's **load-bearing assumptions**: the facts it would collapse wit
 
 Mark each assumption ✅ verified / ⚠️ unverified / ❌ false. **An unverified load-bearing assumption is itself a finding** — the plan can't be trusted above it. This is the highest-value pass; spend the most here.
 
-### 2. Alternatives — only when real
+### 2. Design horizon — will this shape survive the next 2–3 requests?
+Does the plan build on a shape that holds as the feature grows, or patch today's need in a way the next request has to undo? Three checks, then one rule that decides what to do with them.
+
+**a. The Nth-one test.** Is the plan adding the Nth copy of something that should be one entry in a list?
+
+| Area | Adding the Nth… | Better shape |
+|---|---|---|
+| Database | `cost_*` / `sales_*` column | Child table of rows (`invoice_cost_lines`: parent_id, type, amount, …) |
+| Model flags | mutually exclusive `is_x` / `is_y` booleans | One status enum |
+| Branching | `if ($type === 'x')` repeated across files | One enum/match or strategy map in one place |
+| Integrations | carrier/provider special-cased in shared code | An interface each one implements |
+| Methods | copy-pasted method differing by one value | A parameter |
+| Config | near-identical config block / env var | A list |
+| Permissions | inline role check | A policy |
+
+Push for the better shape only on **evidence of growth**, never "might need it someday". Two copies are not a pattern. Evidence is:
+- a third copy already exists;
+- migrations / git history show them added one at a time (`git log --oneline -- database/migrations | grep -i <family>`);
+- code sums or loops over them by hand (`$i->cost_a + $i->cost_b + …` — every new one means editing every sum);
+- each value needs its own details (currency, tax, who/when, note);
+- the count varies per row, or most of the columns are NULL on most rows;
+- reports need to group by type and can only do it with a `CASE` over every column;
+- the user said more are coming.
+
+A new column / flag / branch is fine when it is a genuine one-to-one attribute (a status, a date, one reference) or the set is fixed and small with no growth in the history.
+
+**b. Room to extend.** Can the *next* case be added as a new row, enum value, or class, without editing existing code? Aim this at the axis that is actually growing (per the evidence above) — not at "make everything extensible". Speculative abstraction is its own finding (see `ponytail`).
+
+**c. Scale — real volumes, not guesses.** Measure before judging (`measure-dont-extrapolate`): current row count and growth rate of every table the plan writes to or reads from, and request rate of the endpoint if relevant. Project from those — and remember a child table multiplies rows (1M invoices × 8 lines = 8M). Then check the plan for:
+- missing indexes on new foreign keys and filter/sort columns;
+- `->get()` over a growing table where `chunk`/`lazy`/cursor belongs;
+- N+1 queries; unpaginated lists;
+- heavy work inside the request that belongs on a queue;
+- lock contention / hot rows under concurrent writes.
+Match the concern to real growth: a table gaining 200 rows/month does not need a 10M-row design; orders, shipments, MQTT/telemetry do.
+
+**d. Cost of fixing later decides the action.**
+- **Data shape and public API contracts** (schema, stored JSON shape, mobile/partner API responses) — expensive to change once production data or clients depend on it. With evidence → blocker (🔧 or 🛑). **Without evidence → ask the user exactly one question, with a recommendation**, e.g. *"Will there be more cost types beyond these 3? Yes → cost-lines table now (Recommended — invoices has added cost columns in 3 separate migrations); No → column is fine."* This is the one case where the skill asks instead of deciding.
+- **Internal code shape** — cheap to refactor later. With evidence → note, not blocker. Without evidence → don't ask; the simple version stands, say so in one line.
+- **Scale** — a finding backed by real volumes is a risk (goes in Risks); one without numbers is a guess — measure or cut it.
+
+If the plan also reveals the *existing* code already has the bad shape (e.g. invoices already has 7 `cost_*` columns), name it — but moving existing data is a **separate piece of work with its own backfill**, never silently folded into this plan.
+
+If nothing here yields a finding, one line: "Shape holds — <why>."
+
+### 3. Alternatives — only when real
 Is there a *materially different* way to achieve the same goal — not a cosmetic variation? A different layer to change (shared function vs. per-caller), a reuse of something already in the codebase instead of new code, a simpler mechanism that covers the actual requirement, a native/platform feature the plan reinvents.
 
 If yes: present 1–2, each with its honest trade-off, and recommend. If the plan is clearly the right approach, **write one line saying so and move on** — do not invent alternatives to populate a list.
 
-### 3. Red-team — what breaks this?
+### 4. Red-team — what breaks this?
 Attack the plan as an adversary who wants it to fail in production:
 - **Edge cases** the plan's happy path ignores (empty, null, concurrent, huge, first-run, retried).
 - **Blast radius** — the sibling caller / dependent / consumer the plan forgot. If it touches a shared function, does it fix the *root cause* or just the one path named? Who else calls it?
@@ -33,7 +78,7 @@ Attack the plan as an adversary who wants it to fail in production:
 - **Hidden coupling** — ordering, caching, queue/worker code that must be restarted, config that won't reload.
 - **Scope drift** — is it over-built (abstractions/deps nobody asked for) or under-built (a shortcut with an unnamed ceiling)?
 
-### 4. Verdict
+### 5. Verdict
 Close with a clear call — no hedging:
 
 - **✅ Proceed** — sound as-is. Name the one thing to keep an eye on (there's always one).
@@ -51,6 +96,11 @@ Keep it skimmable — this is a decision aid, not an essay. Roughly:
 - ✅ <assumption> — verified: <how / what you found>
 - ⚠️ <assumption> — UNVERIFIED: <what you'd need to check>
 - ❌ <assumption> — false: <the reality>
+
+**Design horizon**  (or: "Shape holds — <why>")
+- <Nth-one / extensibility finding> — evidence: <migrations / file:line / counts> — <block / note>
+- Scale: <table> has <N> rows, +<M>/month → <concern or "fine">
+- ❓ <one question for the user, with recommendation> (only for data/API shape without evidence)
 
 **Alternatives**  (or: "None materially better — the plan's approach is right because …")
 - <Approach B>: <trade-off>. <recommend / not>
