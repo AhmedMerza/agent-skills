@@ -125,7 +125,7 @@ proposes a fix to the skill itself.
 
 | Skill | What it does |
 |-------|--------------|
-| `lead` | Turns the session into a coordinator over subagent teammates (`/lead Task: … Roles: …`). The lead **never writes project code** — it delegates, verifies read-only, batches teammate questions into one round with recommended defaults, and relays answers with `SendMessage` so teammates keep context. Startup sets contracts first (owner publishes API shapes early), shared-resource slots (ports, emulator, DB, migrations), a worktree per code-writing teammate, a ledger file that survives `/clear`, and role-and-focus names for teammates. Every brief carries a definition of done and a report template. Status reports only when something changed. Restraint-gated: small or file-sharing work → "skip the team". *(custom, local)* |
+| `lead` | Turns the session into a coordinator over subagent teammates (`/lead Task: … Roles: …`). The lead **never writes project code** — it delegates, verifies read-only, batches teammate questions into one round with recommended defaults, and relays answers with `SendMessage` so teammates keep context. Startup: a **worktree per writer** (no shared-tree writers), contracts published first, shared-resource slots, a ledger kept outside tracked paths, role-and-focus teammate names. Teammates commit on their branch; the lead **integrates one branch at a time** and runs the suite plus a cross-teammate end-to-end check on merged `HEAD`. Also: mid-run request triage, stall checks, reports only on change. Brief/ledger/integration templates in `skills/lead/reference/templates.md`. Restraint-gated: small or file-sharing work → "skip the team". *(custom, local)* |
 
 ## Investigation
 
