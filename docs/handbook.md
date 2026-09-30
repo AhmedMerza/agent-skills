@@ -121,6 +121,12 @@ proposes a fix to the skill itself.
 | `ship-check` | The final gate before merging — checks a finished diff against the problem it claims to solve. Verdict: merge / fix-first / reconsider. Bookend to `validate-plan`. |
 | `spinoff` | Harvests what the finished branch made **cheap** — the helper other sites now hand-roll, the deferred thing that just got small, the convention that forked. Gated on a real *before → now* cost delta: anything equally valid on `master` yesterday is discarded. Caps at 3, feeds `/issue`, and **never commits on the branch**. Restraint-gated — "nothing spun off" is the normal answer. |
 
+## Coordination
+
+| Skill | What it does |
+|-------|--------------|
+| `lead` | Turns the session into a coordinator over subagent teammates (`/lead Task: … Roles: …`). The lead **never writes project code** — it delegates, verifies read-only, batches teammate questions into one round with recommended defaults, and relays answers with `SendMessage` so teammates keep context. Startup sets contracts first (owner publishes API shapes early), shared-resource slots (ports, emulator, DB, migrations), a worktree per code-writing teammate, a ledger file that survives `/clear`, and role-and-focus names for teammates. Every brief carries a definition of done and a report template. Status reports only when something changed. Restraint-gated: small or file-sharing work → "skip the team". *(custom, local)* |
+
 ## Investigation
 
 | Skill | What it does |
