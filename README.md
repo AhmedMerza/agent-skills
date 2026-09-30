@@ -27,7 +27,7 @@ My personal collection of agent skills, synced across machines — works with [C
 | `second-opinion` | Judges one decision head-to-head, merit only. |
 | `wait-what` | Re-pitches a message that didn't land, in plain controlled English. |
 | `where-were-we` | Lost the thread of a long session? Reports state, not history — landed vs open. |
-| `lead` | Session becomes a coordinator over subagent teammates — never codes, batches questions, relays answers, reports status. |
+| `lead` | Session becomes a coordinator over subagent teammates — never codes; worktree per writer, batched questions, one-branch-at-a-time integration with a merged-HEAD check. |
 | `qa-crawl` | Unattended, resumable crawl over hundreds of routes; one before/after MR per page. |
 | `qa-sweep` | Drives the running app in a real browser to find what's broken. Reports, never fixes. |
 | `ponytail` | Lazy-senior-dev discipline — YAGNI, reuse first. Put its ladder in `CLAUDE.md` to make it always-on; as a skill it rarely auto-fires. |
