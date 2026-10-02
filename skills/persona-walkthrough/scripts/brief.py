@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Fill references/persona-brief.md from a persona file and print the subagent prompt.
 
-usage: brief.py persona.md [--droid PATH]
+usage: brief.py persona.md [--droid PATH] [--serial S] [--outdir DIR]
+
+${VAR} in the persona file is expanded from the environment (e.g. ${SMS_INBOX}); --serial/--outdir override the header.
 
 Persona file = header lines `key: value`, then `## section` blocks.
   header: name, serial, outdir, package, budget (default 40), sms (optional command that
@@ -41,7 +43,14 @@ def main():
     droid = str(HERE / "droid.sh")
     if "--droid" in sys.argv:
         droid = sys.argv[sys.argv.index("--droid") + 1]
-    meta, sec = parse(sys.argv[1])
+    text_path = sys.argv[1]
+    meta, sec = parse(text_path)
+    import os
+    expand = lambda v: re.sub(r"\$\{(\w+)\}", lambda m: os.environ.get(m.group(1), m.group(0)), v)
+    meta = {k: expand(v) for k, v in meta.items()}
+    sec = {k: expand(v) for k, v in sec.items()}
+    for flag, key in (("--serial", "serial"), ("--outdir", "outdir")):
+        if flag in sys.argv: meta[key] = sys.argv[sys.argv.index(flag) + 1]
     for key in ("name", "serial", "outdir", "package"):
         if key not in meta:
             sys.exit(f"persona file is missing header '{key}:'")
@@ -49,6 +58,11 @@ def main():
         if key not in sec:
             sys.exit(f"persona file is missing section '## {key}'")
     sms = meta.get("sms")
+    # per-persona wrapper: carries SERIAL/OUT so a persona's fresh shell calls can never save to the wrong place
+    outdir = Path(meta["outdir"]); outdir.mkdir(parents=True, exist_ok=True)
+    wrapper = outdir / "droid"
+    wrapper.write_text(f'#!/usr/bin/env bash\nexport SERIAL="{meta["serial"]}" OUT="{outdir}"\nexec "{droid}" "$@"\n')
+    wrapper.chmod(0o755)
     values = {
         "name": meta["name"],
         "who": sec["who"],
@@ -57,7 +71,7 @@ def main():
         "outdir": meta["outdir"],
         "serial": meta["serial"],
         "package": meta["package"],
-        "droid": droid,
+        "droid": str(wrapper),
         "allowed_commands": "`droid.sh`" + (" and `sms-inbox.sh`" if sms else ""),
         "rules_extra": sec.get("rules", ""),
         "sms_line": f"{sms}   # your Messages app: open it when you are waiting for a text\n" if sms else "",

@@ -11,6 +11,7 @@ Build a persona from one **role seed** plus **2–3 axes**. Write them as people
 | Language | Arabic-first (switches the app to Arabic, reads slowly in English) · English-first expat · bilingual |
 | Patience | Gives up after 2 stalls · normal · explores everything |
 | Reading style | Reads everything · skims headings · reads nothing, taps the biggest button |
+| Device | Modern phone · small/old phone (480x800, slow, low storage) · tablet (family tablet, often landscape) · foldable (opens/closes mid-task) · weak or flaky network |
 | Context | Hurried (one hand, on a bus) · at leisure · distracted (will leave and come back) · large font / dark mode |
 | Trust | Wary of phone number/ID/payment requests · trusting |
 | Intent | Specific need today · just browsing · comparing prices · checking if a friend's recommendation is real |
@@ -40,6 +41,14 @@ Adapt to the app's actual roles; drop any not built. Goals are stated as the per
 - **New admin**: given a login and told "approve the new artists and handle problems." Hasn't seen the tool. (goal: finds and approves an artist, understands consequences)
 - **Support handler**: a ticket/refund request arrives. (goal: resolves it, knows what each button will do before pressing it)
 - **Cautious operator**: afraid of irreversible actions. (goal: tests whether destructive actions warn and explain)
+
+### Explorer (goal-less)
+No errand. "You just installed this app and have 10 minutes to see what it is. Look at everything: every tab, every setting, every button that looks tappable; open lists and details; go back and forth." One per role (a customer explorer, an artist explorer with a login, an admin explorer with a login). Budget 80-100 actions. The point is coverage and unplanned discoveries, so tell them to keep a running list of screens they have seen. Feed their run dir to `scripts/coverage.py`.
+
+### Device-driven seeds (run the role's main goal on each shape)
+- **Old-phone user**: 480x800 screen, `droid.sh profile old-phone` + `network edge`, on a real old phone when you have one. Judges: does anything clip, is text still readable, is it too slow to bother waiting.
+- **Family tablet user**: `profile tablet`; grandmother or parent booking from the shared tablet. Judges: do layouts use the space or stretch phone UI, are tap targets and line lengths sane, does rotation keep their place.
+- **Foldable owner**: starts on the outer screen, `profile fold-open` in the middle of a booking, then back. Judges: is progress, the form and the selected slot kept across the posture change.
 
 ## Cast examples (mix freely)
 
