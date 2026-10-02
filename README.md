@@ -30,6 +30,7 @@ My personal collection of agent skills, synced across machines — works with [C
 | `lead` | Session becomes a coordinator over subagent teammates — never codes; worktree per writer, batched questions, one-branch-at-a-time integration with a merged-HEAD check. |
 | `qa-crawl` | Unattended, resumable crawl over hundreds of routes; one before/after MR per page. |
 | `qa-sweep` | Drives the running app in a real browser to find what's broken. Reports, never fixes. |
+| `persona-walkthrough` | Blind persona subagents (new customer, artist, admin…) use the app cold on an emulator and report where they get lost, how it feels, and why — each finding with a code-verified fix. |
 | `ponytail` | Lazy-senior-dev discipline — YAGNI, reuse first. Put its ladder in `CLAUDE.md` to make it always-on; as a skill it rarely auto-fires. |
 | `ui-audit` | Technical UI checks (a11y, perf, theming, responsive) → scored report. |
 | `ui-polish` | Craft on one screen — type, color, spacing, interaction states. |
