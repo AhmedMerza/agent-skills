@@ -6,7 +6,12 @@
 // Credentials NEVER come from config — pass them via PW_EMAIL / PW_PASS env.
 //
 // Usage (run with cwd = project root):
-//   node ~/.claude/scripts/browse.mjs [--mobile] [--login] [--user EMAIL] <url-path>
+//   node ~/.claude/scripts/browse.mjs [--mobile] [--width PX --height PX] [--login] [--user EMAIL] <url-path>
+//
+// --mobile is a shorthand for a real device profile (iPhone 14). --width/
+// --height set an arbitrary desktop-type viewport instead (e.g. a laptop,
+// ultrawide, or tablet breakpoint) — pass both together; mixing --mobile with
+// them is not supported, --mobile wins. Omit both for the 1920x1080 default.
 //
 // Resolves Playwright from the PROJECT's install (config.playwrightDir, else
 // ./storage/playwright, else project root). Browse only works where Playwright
@@ -26,7 +31,7 @@ const auth = cfg.auth || {}
 
 // ---- parse args ------------------------------------------------------------
 const argv = process.argv.slice(2)
-let mobile = false, forceLogin = false, userArg = null, waitArg = null
+let mobile = false, forceLogin = false, userArg = null, waitArg = null, widthArg = null, heightArg = null
 const rest = []
 for (let i = 0; i < argv.length; i++) {
   const a = argv[i]
@@ -34,6 +39,8 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === '--login') forceLogin = true
   else if (a === '--user') userArg = argv[++i]
   else if (a === '--wait') waitArg = Number(argv[++i])
+  else if (a === '--width') widthArg = Number(argv[++i])
+  else if (a === '--height') heightArg = Number(argv[++i])
   else rest.push(a)
 }
 const path = rest[0] || '/'
@@ -85,7 +92,9 @@ async function login (page) {
 
 // ---- main ------------------------------------------------------------------
 const browser = await chromium.launch({ channel })
-const ctxOpts = mobile && devices['iPhone 14'] ? { ...devices['iPhone 14'] } : { viewport: { width: 1920, height: 1080 } }
+const ctxOpts = mobile && devices['iPhone 14']
+  ? { ...devices['iPhone 14'] }
+  : { viewport: { width: widthArg || 1920, height: heightArg || 1080 } }
 
 // Opt-in determinism, for callers that DIFF screenshots rather than look at them.
 // Off by default: a skill inspecting motion (/animate, /ui-polish) wants the page
@@ -185,6 +194,8 @@ for (let i = 0; i < pages; i++) {
   shots.push(f)
 }
 console.log(`OK ${url}`)
-console.log(`viewport: ${mobile ? 'mobile' : 'desktop'}  shots: ${shots.length}`)
+const vpLabel = mobile ? 'mobile (iPhone 14)' : `${ctxOpts.viewport.width}x${ctxOpts.viewport.height}`
+
+console.log(`viewport: ${vpLabel}  shots: ${shots.length}`)
 shots.forEach(s => console.log(s))
 await browser.close()
