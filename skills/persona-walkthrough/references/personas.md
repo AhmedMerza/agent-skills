@@ -48,6 +48,8 @@ No errand. "You just installed this app and have 10 minutes to see what it is. L
 ### Device-driven seeds (run the role's main goal on each shape)
 - **Old-phone user**: 480x800 screen, `droid.sh profile old-phone` + `network edge`, on a real old phone when you have one. Judges: does anything clip, is text still readable, is it too slow to bother waiting.
 - **Family tablet user**: `profile tablet`; grandmother or parent booking from the shared tablet. Judges: do layouts use the space or stretch phone UI, are tap targets and line lengths sane, does rotation keep their place.
+- **Web: phone-browser visitor**: `profile: mobile`, arrives from a link a friend sent. Judges: does the site work one-handed in a phone browser, or does it assume a desktop.
+- **Web: office desktop user**: `profile: desktop` or `laptop`, works through the back office all day. Judges: density, tables, whether wide screens are used or wasted.
 - **Foldable owner**: starts on the outer screen, `profile fold-open` in the middle of a booking, then back. Judges: is progress, the form and the selected slot kept across the posture change.
 
 ## Cast examples (mix freely)
@@ -59,6 +61,8 @@ No errand. "You just installed this app and have 10 minutes to see what it is. L
 - *Ali, 31, new ops hire, careful* — first day as admin.
 
 ## Persona file format (read by `scripts/brief.py`)
+
+Android:
 
 ```
 name: Dan
@@ -78,6 +82,16 @@ device_note: The phone is set to large font (1.5x).   # optional
 ## rules            (optional extra rules, e.g. what they may or may not confirm; when they give up)
 ## checkpoint2      (optional: replaces the price/money checkpoint, e.g. the admin "before a destructive action" one)
 ## verdict_extra    (optional: e.g. "for each of your four errands (bookings, days off, add service, understand money)")
+```
+
+Web: replace `serial:` and `package:` with
+
+```
+platform: web
+url: http://localhost:8001/      # where the persona starts (the isolated server, never prod)
+profile: mobile                  # optional: mobile|tablet|laptop|desktop|ultrawide|WxH (default desktop)
+pw_dir: /path/storage/playwright # optional: dir whose node_modules has playwright (else $PW_DIR)
+locale: ar                       # optional: the browser language (default en-US)
 ```
 
 Generate: `python3 scripts/brief.py dan.md > brief.txt`, then pass `brief.txt` as the subagent prompt. Keep each project's cast files with its saved reports so later runs can reuse them.

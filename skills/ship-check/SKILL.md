@@ -10,7 +10,7 @@ The code is written. Tests maybe pass. `mr-review` maybe found no bugs. And it c
 **What this is NOT — so you invoke the right thing:**
 - Not `validate-plan` — that stress-tests a **plan** *before* code exists. This is its bookend: same adversarial spine, pointed at the **finished diff** *before* merge.
 - Not `mr-review` / `nitpick` — those are line-level bug/quality sweeps ("is the code good?"). This is holistic ("does the change solve the *right* problem, completely?"). Clean, well-tested code that fixes the wrong thing passes `mr-review` and **fails** `ship-check`.
-- Not `verify` — that *runs the app* to observe behavior. This is static reasoning against the code, the schema, and real data. (They pair well — run both before a risky merge.)
+- Not `run` — that *runs the app* to observe behavior. This is static reasoning against the code, the schema, and real data. (They pair well — run both before a risky merge.)
 - Not `second-opinion` — that's a head-to-head on *one decision*. This audits the *whole change* against its goal, and borrows second-opinion's rework-cost weighing for the approach pass.
 
 **The restraint gate — read first.** The failure mode is manufacturing gaps: inventing missing cases that aren't real and edge cases that can't happen, to look thorough on a change that's genuinely done. Don't. A confident **"✅ ship it — solid, complete, edges covered"** is a first-class outcome. Only flag a gap you can *name concretely* (this caller, this row, this input). Three real findings beat ten filler ones.
