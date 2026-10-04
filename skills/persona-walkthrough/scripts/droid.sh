@@ -30,17 +30,24 @@ scale() {  # real px per shot px (shots are downscaled so the longest side is 10
   real_size | awk -Fx '{m=($1>$2)?$1:$2; printf "%.6f", m/1000}'
 }
 to_real() { awk -v v="$1" -v s="$(scale)" 'BEGIN{printf "%d", v*s}'; }
+# shrink a PNG so its longest side is <=1000 and print "W H" — sips on macOS, Pillow elsewhere
+fit1000() {
+  if command -v sips >/dev/null; then
+    sips -Z 1000 "$1" --out "$2" >/dev/null
+    echo "$(sips -g pixelWidth "$2" | awk '/pixelWidth/{print $2}') $(sips -g pixelHeight "$2" | awk '/pixelHeight/{print $2}')"
+  else
+    python3 -c 'import sys; from PIL import Image; i=Image.open(sys.argv[1]); i.thumbnail((1000,1000)); i.save(sys.argv[2]); print(*i.size)' "$1" "$2"
+  fi
+}
 
 case "${1:-}" in
   shot)
     n=$(find "$OUT" -maxdepth 1 -name "*.png" | wc -l | tr -d ' ')
     name=${2:-$(printf 'step-%03d' $((n+1)))}
     "${ADB[@]}" exec-out screencap -p > "$OUT/$name.full.png"
-    sips -Z 1000 "$OUT/$name.full.png" --out "$OUT/$name.png" >/dev/null
+    read -r sw sh < <(fit1000 "$OUT/$name.full.png" "$OUT/$name.png")
     rm "$OUT/$name.full.png"
     rw=$(real_size | cut -dx -f1)
-    sw=$(sips -g pixelWidth "$OUT/$name.png" | awk '/pixelWidth/{print $2}')
-    sh=$(sips -g pixelHeight "$OUT/$name.png" | awk '/pixelHeight/{print $2}')
     awk -v r="$rw" -v s="$sw" 'BEGIN{printf "%.6f", r/s}' > "$SCALE_FILE"
     "$0" texts > "$OUT/$name.txt" 2>/dev/null || true
     echo "$OUT/$name.png (${sw}x${sh})";;
