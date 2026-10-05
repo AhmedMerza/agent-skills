@@ -12,7 +12,7 @@ write on every run. Each trap below was hit live, repeatedly (2026-08-31..09-23)
   - reply notes are never resolvable, so all(resolved) lies             -> check resolvable notes only
 
 Usage (run from inside the repo; glab resolves the project from the git remote):
-  mr-note.py post    <N> FINDINGS.json [--remote origin] [--dry-run]
+  mr-note.py post    <N> FINDINGS.json [--remote upstream|origin (default: upstream if present)] [--dry-run]
   mr-note.py open    <N>
   mr-note.py resolve <N> <discussion_id> "<reply>"
 
@@ -180,7 +180,9 @@ def cmd_resolve(n, did, reply):
 
 def main():
     a = sys.argv[1:]
-    remote = a[a.index('--remote') + 1] if '--remote' in a else 'origin'
+    # The MR head lives on the target project: `upstream` in a fork setup, else `origin`.
+    default_remote = 'upstream' if 'upstream' in subprocess.run(['git', 'remote'], capture_output=True, text=True).stdout.split() else 'origin'
+    remote = a[a.index('--remote') + 1] if '--remote' in a else default_remote
     dry = '--dry-run' in a
     a = [x for i, x in enumerate(a) if x not in ('--dry-run', '--remote') and (i == 0 or a[i - 1] != '--remote')]
     if len(a) == 3 and a[0] == 'post':
