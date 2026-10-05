@@ -41,6 +41,10 @@ Evaluate the options head-to-head, but **only on axes that genuinely differentia
 
 Ground every claim in the real codebase or real facts — "doesn't fit conventions" means you looked at the conventions; "unmaintained" means you checked; "the framework can't do X" means you checked the docs for the version in use. Verify, don't opine in the abstract.
 
+**Always ask "what if this piece is compromised?"** For any auth/trust design, name the blast radius of each option's most powerful credential or component (a stolen service login, a leaked token table). An option that bounds that radius beats one that doesn't, even at higher build cost. Never reject an option with "no extra benefit" until you have compared it on this axis. Failure this exists to stop: dismissed per-user tokens as "same result, more work" next to an on-behalf header whose service login could act as *any* user, admin included. The user had to propose tokens themselves.
+
+**A changed goal or fact resets the menu.** When the user corrects the goal or a load-bearing fact, re-run the comparison from move 2 across *all* options, including ones you rejected under the old premise. Do not patch the previous winner. A rejection reason like "only protects reads" dies with the premise it came from. Open the re-run with one line saying what changed and whether the earlier pick survives ("Earlier pick A doesn't survive: at 40k/day the bottleneck is X, not Y").
+
 ### 5. Recommend ONE — and explain each rejection
 Pick the winner and give the substantive reason it wins on the axis that matters most *for this project's horizon*. Then, for each rejected option, state concretely why it loses — not "also good but…", but the specific axis where it falls short or the assumption it requires that isn't true. If the runner-up is close, say what would have to change for it to win ("if you expected 100x traffic, B would be the pick — you don't, so A").
 
@@ -51,7 +55,9 @@ Answer first, then the reasoning — the user should get the pick from the first
 ```
 ## Pick: <option> — <the substantive reason it wins, one sentence>
 
-**What's really being decided:** <the stakes and constraints, 1-2 lines>
+**In plain terms:** <one sentence a non-developer could follow: what the choice is and what changes for the user/business under the pick>
+
+**What's really being decided:** <the stakes and constraints, 1-2 lines — omit for small choices>
 
 **The options:**
 - **A — <name>** ✅: <what it means in practice; its strength; its cost — and why it wins>
@@ -61,13 +67,18 @@ Answer first, then the reasoning — the user should get the pick from the first
 
 **Deciding factor:** <the one or two axes that actually separated the winner — skip axes where one option wins everything by default; for a close call, name the tie-breaker and what would flip the pick>
 **Doing it right:** <1-3 must-dos for the pick — omit if none>
+**Next:** <one line — the concrete action you'll take once the user agrees>
 ```
 
 **Say each point once.** Each option's verdict lives on its own line — don't restate it in a separate "why not" list or repeat an off-menu idea under "Doing it right".
 
-**Size the answer to the stakes.** A small, easily reversed choice (a UI component, test structure, a naming call) gets the pick plus one line per option — roughly 100-200 words, no "Deciding factor" section unless it's close. Reserve the full shape for load-bearing, hard-to-reverse choices (data model, money, security, infrastructure). Length is a cost the user pays; thoroughness shows in the reasoning, not the word count.
+**Size the answer to the stakes — hard cap 250 words by default.** Most choices are small and reversible (a UI component, test structure, a naming call, an endpoint's timing, a label, a retention window): pick plus one line per option (aim for ~150 words when one option is plainly the existing/standard path), no "What's really being decided" or "Deciding factor" section unless it's close. The full shape (up to ~450 words) is allowed ONLY when the choice touches the data model, money, security, or infrastructure — and then say which in the Pick line. Count before sending; over the cap means cut, not justify. Past use drifted to 400-600 words on small calls — that is the failure this rule exists to stop. Length is a cost the user pays; thoroughness shows in the reasoning, not the word count.
 
-Keep explanations in plain language — the user may not know the jargon, so spell out terms briefly when you use them.
+**Plain language over shorthand.** The user often lacks the context you just built up — past picks drew "I don't understand why X is better" and "what is that query parameter even used for". Name what a thing *does*, not just its identifier; spell out any term, param, or code name the first time; if the reason depends on a scenario, give the concrete scenario ("if a customer has two subscriptions, …").
+
+**Check the fact the pick hinges on.** If the recommendation rests on a data or code fact (does the quota/limit already exist, how many rows hit this path, who calls this), verify it with a query or grep before picking — don't let the user be the one to ask "why not check X?".
+
+**Pin the goal before picking — code shows today, not where it's headed.** Many picks flip on the destination (is this tool read-only forever, or replacing the system it sits on? a stopgap or the long-term home?). Check the README/HANDOVER/issue for a stated goal; if it isn't written down and it could flip the pick, do not pick on today's behaviour alone. Either ask first (one question, via AskUserQuestion), or lead with a conditional: "**If the goal is X → pick P; if Y → pick Q**", then your lean and why. Failure this exists to stop: picked "keep the new client app's own sign-in, it only reads" — wrong once the user said the app is meant to replace the legacy system's whole web UI, so it would soon write everything.
 
 ## Guardrails
 
