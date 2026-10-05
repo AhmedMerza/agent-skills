@@ -273,15 +273,18 @@ glab api --method POST projects/<id>/issues \
 [Full generated issue body here]
 ISSUE_EOF
 )" \
-  -f "labels=bug,frontend,orders,Priority Normal" \
-  -f "assignee_ids[]=<user_id>"
+  -f "labels=bug,frontend,orders,Priority Normal"
+
+# Assign in a second call — form-encoded assignee_ids returns 200 but is silently dropped
+echo '{"assignee_ids":[<user_id>]}' | glab api --method PUT projects/<id>/issues/<iid> \
+  -H "Content-Type: application/json" --input - | jq '.assignees[].username'
 ```
 
 **API Parameters:**
 - `title` - Issue title (with conventional prefix: `fix:`, `feat:`, etc.)
 - `description` - Full issue body in markdown
 - `labels` - Comma-separated label string
-- `assignee_ids[]` - GitLab user IDs (array, can have multiple)
+- `assignee_ids` - set via the JSON PUT above, never `-f`; confirm `.assignees` is non-empty
 - `milestone_id` - Optional milestone
 - `confidential` - Boolean, default false
 
@@ -358,12 +361,9 @@ glab api --method POST projects/<id>/issues \
   -f "description=## Bug Report..." \
   -f "labels=bug,frontend,orders"
 
-# With assignee
-glab api --method POST projects/<id>/issues \
-  -f "title=feat(orders): add bulk export" \
-  -f "description=## Feature Request..." \
-  -f "labels=feature,orders" \
-  -f "assignee_ids[]=<user_id>"
+# With assignee: create, then assign with a JSON body (form fields no-op)
+echo '{"assignee_ids":[<user_id>]}' | glab api --method PUT projects/<id>/issues/<iid> \
+  -H "Content-Type: application/json" --input - | jq '.assignees[].username'
 
 # Confidential issue
 glab api --method POST projects/<id>/issues \
@@ -376,7 +376,7 @@ glab api --method POST projects/<id>/issues \
 **Key API Notes:**
 - Project ID for upstream (`<PROJECT_PATH>`): auto-detected from the git remote (see **Project resolution**)
 - Use `-f` (not `-F`) for form data with `glab api`
-- `assignee_ids[]` is an array - can assign multiple people
+- `assignee_ids` only applies as a JSON array (`--input -`); `-f assignee_ids[]=` and `-F assignee_ids=` both return 200 and assign nobody
 - `labels` is a comma-separated string (not array)
 - Description supports full GitLab-flavored markdown
 
