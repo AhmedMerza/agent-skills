@@ -10,7 +10,7 @@ Writes the document a reviewer wants **before** they open the diff: what this ch
 what it looked like before and after, what moved in the data model, which UI states exist now.
 
 **This is not a code review.** It finds no bugs and makes no judgements about quality.
-Use `/mr-review` (findings), `/nitpick` (strict), or `/ship-check` (pre-merge gate) for that.
+Use `/mr-review` (findings), `/mr-review --deep` (opus on security + architecture), or `/ship-check` (pre-merge gate) for that.
 
 **Publishes by default.** The guide is written to the MR as soon as it is generated — that is
 the point of it. Use `--no-publish` (alias `--dry-run`) to print to the terminal and touch nothing.

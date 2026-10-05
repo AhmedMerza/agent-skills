@@ -13,6 +13,7 @@ Resolve the provider once, then use its CLI throughout:
 - push remote host (`git remote get-url origin`) is `github.com` → **GitHub** · `gh` · **PR**; any other host → **GitLab** · `glab` · **MR**.
 - **Override wins:** `.claude/repo-config.json` with `"provider": "github"` or `"gitlab"`.
 - Let the CLI resolve host/namespace/IDs from the git remote (`glab api projects/:id/…`, `gh api repos/{owner}/{repo}/…`); never hardcode them. Fork setup: `upstream` is the MR/PR target.
+- **Check `:id` resolved to the repo you're in** — glab can resolve it to a different default project. If so, prefix `glab api` and `mr-note.py` with `GITLAB_REPO=<namespace/repo>`.
 
 GitLab threads are posted, listed and resolved with `~/.claude/scripts/mr-note.py` — never a
 hand-written glab/python loop. Measured 2026-08-31..09-23: posting by hand failed with
@@ -48,11 +49,13 @@ Before posting or fixing anything, split the findings into two kinds:
      `<discussion_id> <path>:<line> <heading>` per unresolved thread. Read a thread's full body
      (`glab api projects/:id/merge_requests/<N>/discussions/<id>`) only for the ones you will fix.
      GitHub: `gh api repos/{owner}/{repo}/pulls/<N>/comments`.
+     Apply Phase 0's intent test to these threads too — a thread phrased as "Is X intended?" or
+     written by a human is a question for the author, not a defect to fix.
    - **Neither** → stop and say so. Do not reconstruct a review from memory.
 2. **Post the defects that have no thread yet** (GitLab). Write them with `json.dump` to
    `.claude/tmp/mr-review/<N>/findings.json` —
    `[{"title", "path", "line": <new-file line> | "old:<n>" | null, "body"}]`, body
-   `### <🔴|🟡|🔵> <SEVERITY>: <title>\n\n<description>\n\n**Fix**: <suggestion>` — then
+   `### <🔴 CRITICAL|🟡 IMPORTANT|🔵 MINOR>: <title>\n\n<description>\n\n**Fix**: <suggestion>` (same heading as `/mr-review` Step 7 — `mr-note.py` matches threads on it) — then
    `~/.claude/scripts/mr-note.py post <N> .claude/tmp/mr-review/<N>/findings.json`.
    Findings `/mr-review --comment` (or an earlier run) already posted come back `exists <id>` —
    nothing is duplicated. Keep the finding → `discussion_id` map for Phase 3. Report any `FAILED` line.

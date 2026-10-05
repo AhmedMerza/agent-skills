@@ -4,7 +4,7 @@ description: Perform comprehensive code review on a GitHub PR or GitLab MR
 type: flow
 ---
 
-# /mr-review - MR/PR Code Review (API-Only, No Local Git Changes)
+# /mr-review - MR/PR Code Review (Read-Only: Working Tree Untouched)
 
 ## Provider resolution (GitHub or GitLab)
 
@@ -16,20 +16,31 @@ This command works on **either GitHub or GitLab** (self-hosted or SaaS). Resolve
    - **Override wins:** if `.kimi-code/repo-config.json` has `"provider": "github"` or `"gitlab"`, use that (for ambiguous/self-hosted hosts).
 2. **Target resolution** — let the provider CLI auto-detect host/namespace/IDs from git remotes; never hardcode them. Fork workflow (both `origin` and `upstream` remotes present): `origin` = your push target, `upstream` = the MR/PR target.
 
-Review a merge/pull request by fetching everything from the provider's API. Does NOT touch local files, branches, or git state.
+Review a merge/pull request without touching the working tree, the current branch, or any local file. The only local write is a fetched ref under `refs/mr/` / `refs/pr/` (Step 3).
 
 ## Usage
 ```
-/skill:mr-review <mr-or-pr-number-or-url> [--comment]
+/skill:mr-review [<mr-or-pr-number-or-url>] [--comment] [--deep] [free-text follow-up]
 ```
 
 Accepts a bare number (`123`, `!123`, `#123`) or a full MR/PR URL on either provider. Strip any `!`/`#` prefix and, for a URL, extract the trailing number.
+
+**No number** (the usual case): resolve the open MR/PR for the current branch —
+`glab mr list --source-branch "$(git branch --show-current)" -F json | jq '.[0].iid'` /
+`gh pr view --json number -q .number`. Inside a worktree, that is the worktree's branch. Zero or
+several matches → ask; never guess.
+
+**Free text after the reference** ("then /skill:fix-review", "merge when done") is a follow-up instruction
+for after the report — not part of the reference, and not permission to post or merge on its own.
+
+`--comment` posts directly (Step 7). Without it, posting normally happens through `/skill:fix-review`,
+which reads `findings.json` from Step 7's path.
 
 ## CRITICAL RULES
 
 1. **NEVER run git stash, git checkout, git switch, git pull, or any command that modifies local git state**
 2. **NEVER run linters/formatters/static analysis on local files** (e.g. Pint, PHPStan, Rector, ESLint, Prettier, ruff, gofmt, clippy) — this is a remote review
-3. **ALL file content comes from the provider's API**, not from local disk
+3. **File content comes from the MR/PR head ref (Step 3) or, as fallback, the provider's API** — never from the working tree, which may be on a different branch
 4. **The local working directory must be untouched** when this command finishes
 5. **Scratch files MUST live under `.kimi-code/tmp/mr-review/<NUMBER>/`** — never `/tmp`, never the project root. See "Scratch Files" below.
 
@@ -42,7 +53,10 @@ If you need to write any temporary/scratch artefact during this review (raw API 
 ```
 
 Rules:
-- Create the directory with `mkdir -p .kimi-code/tmp/mr-review/<NUMBER>` before writing.
+- Resolve it to an **absolute** path once, from the main checkout, and use that string everywhere:
+  `SCRATCH="$(git worktree list | head -1 | awk '{print $1}')/.kimi-code/tmp/mr-review/<NUMBER>"; mkdir -p "$SCRATCH"`.
+  A relative path breaks inside worktrees — one run wrote `findings.json` to a doubled path and
+  `mr-note.py` then failed with `FileNotFoundError`.
 - Use descriptive filenames (e.g. `mr-meta.json`, `diffs.json`, `review-security.md`).
 - **Verify `.kimi-code/` is gitignored in this repo first** (`grep -qx '.kimi-code' .gitignore`); if it isn't, add it before writing scratch files — Kimi Code CLI does not add the ignore rule automatically, and an un-ignored scratch dir dirties the working tree.
 - Existing `Read`/`Write` permissions cover this path — no extra prompts.
@@ -53,10 +67,10 @@ Rules:
 
 ### Step 0: Run the repo's deterministic checks FIRST
 
-If the repo has `.claude/checks/run.py` (or `scripts/checks/`), run it before spawning anything:
+If the repo has `.claude/checks/run.py` (or `scripts/checks/`), run it before spawning anything — it needs `BASE` and the `refs/mr/<N>` ref, so run it **right after Step 3**:
 
 ```bash
-python3 .claude/checks/run.py <base_sha> <head_sha>
+python3 .claude/checks/run.py "$BASE" refs/mr/<N>
 ```
 
 Seconds, no agents, and it **cannot miss its class** — the one thing agents cannot promise.
@@ -90,25 +104,23 @@ report; the reviewer already has it above the diff.
 **GitLab:**
 ```bash
 # MR metadata (title, description, author, labels, state, diff_refs)
-glab api projects/<id>/merge_requests/<N>
+glab api projects/:id/merge_requests/<N>
 
-# Changed files with their diffs
-glab api projects/<id>/merge_requests/<N>/diffs
+# Changed-file list ONLY — project the diff bodies away, they never enter this context
+glab api "projects/:id/merge_requests/<N>/diffs?per_page=100" --paginate \
+  | jq -r '.[] | [.new_path, (if .new_file then "A" elif .deleted_file then "D" elif .renamed_file then "R" else "M" end)] | @tsv'
 ```
-From the GitLab `/diffs` response, extract per file:
-- `old_path` / `new_path` — file paths
-- `diff` — the actual diff content (unified diff format)
-- `new_file` / `deleted_file` / `renamed_file` — change type
+**Check the metadata's `web_url` names the repo you're in before going further.** glab can resolve
+`:id` to a different default project (seen on a multi-repo machine: MR 1 came back from another
+project). If it does, prefix every `glab api` and `mr-note.py` call with `GITLAB_REPO=<namespace/repo>`.
 
 **GitHub:**
 ```bash
 # PR metadata (title, body, author, labels, state, head/base SHAs)
 gh pr view <N> --json number,title,body,author,labels,state,headRefName,baseRefName,headRefOid,baseRefOid,files
 
-# Unified diff for the whole PR
-gh pr diff <N>
 ```
-`gh pr view … --json files` gives the changed-file list with `additions`/`deletions`; `gh pr diff <N>` gives the unified diff you split per file. `headRefOid` is the head commit SHA you'll need when posting inline comments.
+`--json files` gives the changed-file list with `additions`/`deletions` — that is all this context needs. Do not run `gh pr diff` here; agents read the diff from the ref. `headRefOid` is the head commit SHA you'll need when posting inline comments.
 
 Display:
 ```
@@ -135,7 +147,7 @@ git fetch <remote> "refs/merge-requests/<N>/head:refs/mr/<N>"
 git fetch <remote> "refs/pull/<N>/head:refs/pr/<N>"
 ```
 
-`<remote>` is the remote pointing at the **target** project — `upstream` in a fork setup, otherwise `origin`. Both providers expose the MR/PR head on the target project, so this covers fork MRs without adding the fork as a remote.
+`<remote>` is the remote pointing at the **target** project — **if `git remote` lists `upstream`, use it**; otherwise `origin`. Fetching from the fork fails with `couldn't find remote ref refs/merge-requests/<N>/head` — that error means wrong remote, not that refs are disabled. Both providers expose the MR/PR head on the target project, so this covers fork MRs without adding the fork as a remote.
 
 Then compute the base commit once. These two short strings are all this context needs to keep:
 
@@ -156,36 +168,49 @@ Agents receive `refs/mr/<N>`, `BASE`, and the changed-file list — **never file
 
 ### Step 4: Spawn Parallel Review Agents
 
-Spawn 5 review agents in a SINGLE message so they run in parallel. Each agent receives the **git ref, the base sha, and the changed-file list** — not file content.
+Spawn the review agents the scope gate selects (up to five) in a SINGLE message so they run in parallel. Each agent receives the **git ref, the base sha, and the changed-file list** — not file content.
 
 **Scope gate — match the reviewers to what the diff touches.** Decide from the changed-file list alone:
 - **Only test files** → spawn **general + testing** only. Measured: a 1-file test-only MR ran 4-5 reviewers for 341k tokens and zero findings; security/performance/architecture average ~60-70k each and have nothing to review there. General stays as the broad net (a test that disables a policy check is still a regression).
 - **Only docs / comments / translations** (`*.md`, lang/locale files) → **general** only.
-- **Anything else** → all five. When unsure, run all five — the gate only drops a reviewer whose domain is provably absent.
+- **Anything else** → general, architecture, testing always, plus:
+  - **security** only if the diff touches request input, routes/controllers/middleware, policies/gates/permissions, tenant or ownership scoping, queries built from input, file/upload handling, secrets/config, or outbound calls. Skip it on pure UI/styling, copy, migrations that only add columns, and internal refactors with no new entry point.
+  - **performance** only if the diff touches queries/models/repositories, loops over collections, jobs/commands, caching, eager loading, or list/table pages. Skip it on pure UI/styling, copy, config, and validation-only changes.
+
+  Measured over 395 agents (2026-10-05): security and performance each returned nothing ~35% of the time and cost ~150k tokens per surviving finding, against ~46-82k for the other three. When unsure, run it — the gate only drops a reviewer whose domain is provably absent.
 
 State in the report's Coverage which reviewers ran and why any were skipped.
 
 **IMPORTANT**: Do NOT paste file content or diffs into these prompts. Hand agents the ref and let them read what they need. If Step 3 fell back to the API path, paste content inline as the old flow did — that fallback is the only case where inline content is correct.
 
-**Run all five on a fast/cheap model when one is configured — do not escalate by default.** In Kimi Code CLI, subagents inherit the session model by default; a `[secondary_model]` pool in `config.toml` enables the Agent tool's `model` parameter (advertised in the tool description when configured). If a pool exists, pass its fast/cheap alias (e.g. a `*-highspeed` entry) as `model=` on **all five** spawns; if no pool is configured, let them inherit. Pinning matters independently of the value: without it, these five run at whatever the session happens to be on. Measured on MR !3192 (a controller dedupe touching a policy path and a form-request `authorize()`), running the security reviewer on a heavier tier returned the identical verdict at 1.9× the tokens and 4.2× the wall clock (9m 03s vs 2m 08s). The wall clock is the decisive part: these five run in parallel, so **the slowest agent gates the entire review**. One heavy-tier agent turns every review into a nine-minute wait — paid on all reviews, including the clean majority.
+**Run all five on a fast/cheap model when one is configured (except under `--deep`, below) — do not escalate by default.** In Kimi Code CLI, subagents inherit the session model by default; a `[secondary_model]` pool in `config.toml` enables the Agent tool's `model` parameter (advertised in the tool description when configured). If a pool exists, pass its fast/cheap alias (e.g. a `*-highspeed` entry) as `model=` on **all five** spawns; if no pool is configured, let them inherit. Pinning matters independently of the value: without it, these five run at whatever the session happens to be on. Measured on MR !3192 (a controller dedupe touching a policy path and a form-request `authorize()`), running the security reviewer on a heavier tier returned the identical verdict at 1.9× the tokens and 4.2× the wall clock (9m 03s vs 2m 08s). The wall clock is the decisive part: these five run in parallel, so **the slowest agent gates the entire review**. One heavy-tier agent turns every review into a nine-minute wait — paid on all reviews, including the clean majority.
 
 > Caveat on that A/B: both agents were told to return only a JSON array. The cheaper tier complied; the heavier one narrated first. That makes the heavy tier's checking *visible* and the cheap tier's invisible — it does not establish that the cheap tier checked less. The result supports the cost claim, not a claim about relative depth.
 
-**Escalation for security-sensitive MRs:** run `/nitpick` instead. Reach for it when the MR touches authorization, policies, gates, middleware, or tenant scoping — rather than paying a heavier tier on every routine review.
+**`--deep` — escalation for security-sensitive MRs.** Pin **security** and **architecture** to the
+strongest model available (the pool's heaviest alias if a `[secondary_model]` pool is configured;
+otherwise the session model, i.e. no change); keep general, performance and testing on the fast/cheap
+alias. Reach for it when the MR touches authorization, policies, gates, middleware, tenant scoping,
+or moves money — not on routine reviews, because the slowest agent gates the whole review (see the
+A/B above). Everything else — scope gate, testing reviewer, round 2, verification, posting — is
+unchanged; `--deep` changes two model pins and nothing more.
 
-⚠️ **It is not the same reviewer set.** `/nitpick` spawns **four** — general, security, performance, architecture. It has **no testing-reviewer**. So escalating trades the testing pass away for a heavier model on two agents, and the testing pass is not filler: on MR !3215 (2026-08-13) it was the one that mutated the code and found two checks nothing constrained — deleting the under-lock re-check left all 35 tests green. If the MR is security-sensitive *and* touches tests or invariants, run `/mr-review` and escalate only the finding you doubt.
-
-**The read block** — substitute this verbatim wherever a prompt below says `<READ BLOCK>`, filling in `<N>`, `<BASE>`, and the file list from Step 3. The checkout warning is not optional: all five agents share your working tree, and one `git checkout` would yank it out from under the other four and the user.
+**The read block** — substitute this verbatim wherever a prompt below says `<READ BLOCK>`, filling in `<N>`, `<BASE>`, and the file list from Step 3. The checkout warning is not optional: all the agents share your working tree, and one `git checkout` would yank it out from under the others and the user.
 
 ```
 The MR/PR head is available as the local git ref `refs/mr/<N>`. It is NOT checked out.
 Do NOT run `git checkout`, do NOT switch branches, do NOT stash, do NOT modify the
-working tree in any way — four other agents and the user are sharing it right now.
+working tree in any way — other review agents and the user are sharing it right now.
 
 Read full file content:   git show refs/mr/<N>:<path>
 See what this MR changed: git diff <BASE>..refs/mr/<N> -- <path>
 
 Read every changed file you need in full — do not review from the diff alone.
+
+Do NOT run tests, artisan/npm/composer commands, or anything that writes a file. Tests here run
+against a database other sessions share, and a scratch test file lands in the user's tree. If a
+finding would be proven by mutating code ("delete line X and the suite stays green"), state the
+mutation and the test that should catch it as the finding — do not perform it.
 
 Changed files:
 <one path per line>
@@ -194,7 +219,11 @@ Changed files:
 **The return block** — substitute verbatim for `<RETURN BLOCK>`:
 
 ```
-Return findings as a JSON array. Each finding MUST have:
+Notes first if you like, then the findings as ONE fenced json code block containing a JSON array
+(`[]` if none). Report only what this MR introduces or newly makes reachable; a problem already
+present at <BASE> goes in with `\"pre_existing\": true`. CRITICAL means data loss, a security hole,
+money moved wrongly, or a crash on a common path — a missing test is IMPORTANT at most.
+Each finding MUST have:
 - severity: CRITICAL, IMPORTANT, or MINOR
 - file: the new path of the file (for a missing test, the production file)
 - line: the exact line in the NEW version of the file (for a missing test, the untested method's line)
@@ -204,7 +233,7 @@ Example: [{\"severity\":\"IMPORTANT\",\"file\":\"src/foo.ext\",\"line\":42,\"tit
 ```
 
 **IMPORTANT (every agent)**: end each prompt with a required coverage declaration —
-*"After the JSON, add one line — `COVERAGE-GAPS:` what you did NOT examine closely, and why."*
+*"After the JSON, add two lines — `COVERAGE-GAPS:` what you did NOT examine closely, and why; and `RULES:` the project rules file you reviewed against, or `none — generic practice`."* The `RULES:` lines feed the report's **Rules used**.
 
 This is not bookkeeping. Silence from a reviewer currently reads as "checked, it's fine" when it
 usually means "never looked", and the gaps are where the next round should start. Measured on
@@ -223,7 +252,7 @@ Description: <description>
 
 <READ BLOCK>
 
-Focus on: logic errors, missing edge cases, error handling, code clarity, test coverage gaps.
+Focus on: logic errors, missing edge cases, error handling, broken behaviour across files (backend/frontend mismatch, callers not updated). Security, performance and test-coverage reviewers run alongside you — leave their core topics to them unless the issue spans domains.
 <RETURN BLOCK>
 ```
 
@@ -276,6 +305,8 @@ Check for: missing test coverage for new/changed public methods, weak assertions
 <RETURN BLOCK>
 ```
 
+**Re-runs.** If the MR already has review threads (`~/.claude/scripts/mr-note.py open <N>` on GitLab), add them to every prompt as "already reported — do NOT re-report these", and say which commits are new since the last review. 22% of MRs are reviewed more than once, and about a fifth of a re-run's findings repeated an earlier location.
+
 ### Step 4b: One handoff round (high-stakes MRs)
 
 When the change moves money, touches auth/tenancy, or is otherwise expensive to get wrong, run ONE
@@ -293,13 +324,13 @@ the most severe in the MR (a Cart whose auto-capture fails takes the customer's 
 creates an order, with no recovery path). It also re-verified five earlier findings and corrected
 none, which is itself worth knowing.
 
-Skip it on small or low-risk diffs; it is a real cost (~140-220k). **Name the trigger in the report's
+Skip it on low-risk diffs; it is a real cost (~140-220k). A trigger beats diff size — a 4-file change to login still gets round 2. **Name the trigger in the report's
 Coverage** ("round 2: moves money — Cart capture path") — no nameable trigger, no round 2. Measured:
 a 4-file MR ran two full rounds for 1.17M tokens with no trigger recorded, more than several larger MRs.
 
 ### Step 5: Collect and Merge Results
 
-1. Wait for every agent you spawned (five, or fewer under the scope gate)
+1. Wait for every agent you spawned (up to five — whatever the scope gate selected)
 2. Parse the JSON arrays from each agent's response
 3. Tag each finding with its source category: `security`, `performance`, `architecture`, `testing`, or `general`
 4. **Critically evaluate each finding** — do NOT blindly accept agent findings. For each finding, ask: "Is this a real problem in the actual usage context, or just a theoretical edge case?" Downgrade or discard findings that are technically correct but practically irrelevant. Review agents tend to flag theoretical issues that may never occur in practice — your job is to filter signal from noise.
@@ -313,57 +344,56 @@ a 4-file MR ran two full rounds for 1.17M tokens with no trigger recorded, more 
    version would have got it dismissed, and taken the credibility of the other six with it. Cost: a
    handful of greps.
 
+4d. **Pre-existing findings** (`pre_existing: true`, or the code is unchanged since `<BASE>` — check with `git show <BASE>:<path>`) go in a short "Pre-existing (not introduced here)" note in the report, not in Findings, and are never posted as threads. Measured: "pre-existing, outside the diff" was the commonest reason a posted thread was dismissed.
+
 5. Deduplicate — if 2+ agents found the same issue (same file + same/adjacent line), keep the most detailed one
 6. Cross-reference — if 2+ agents flagged the same thing, note it as corroborated but do NOT automatically upgrade severity. Multiple agents agreeing on a theoretical issue doesn't make it more real.
 7. Sort by severity: CRITICAL > IMPORTANT > MINOR
 
 ### Step 6: Generate Report
 
+Write it for the user in plain language — no skill jargon ("structural", "round 2", "a×b/m") without
+saying what it means; users repeatedly asked "explain this" when it leaked through.
+
 ```markdown
-## Code Review — MR/PR <N>
+## Code Review — MR/PR <N>: <title>
 
-### Summary
-- **Files Reviewed**: X
-- **Reviewers**: General, Security, Performance, Architecture, Testing
-- **Issues Found**: Y
+**<C> critical · <I> important · <M> minor** across <files> files — reviewers: <which ran>
 
-### Severity Breakdown
-| Severity | Count |
-|----------|-------|
-| CRITICAL | N |
-| IMPORTANT | N |
-| MINOR | N |
+### Findings
+<One list, ordered CRITICAL → IMPORTANT → MINOR. Each: `**[SEVERITY] title**` — `path:line` — category tag(s) (several if corroborated) — description with fix. One list because a deduplicated finding has no single reviewer to file it under, and the reader acts by severity, not by who found it.>
 
-### Security Findings
-<from security-reviewer>
-
-### Performance Findings
-<from performance-reviewer>
-
-### Architecture Findings
-<from architecture-reviewer>
-
-### Testing Findings
-<from testing-reviewer>
-
-### General Findings
-<from general-reviewer>
+### Pre-existing (not introduced here)
+<One line each, `path:line` — title. Omit if none. Not counted, not posted.>
 
 ### Open Questions (design / intent — NOT defects)
-<Anything reclassified per Step 5.4b: plausibly-intentional behavior, subjective/aesthetic preferences, or "could be different" choices. Phrase each as a question for the author, with NO prescribed fix and NO severity. If there are none, omit this section. These never count toward the severity breakdown or change the verdict.>
+<Anything reclassified per Step 5 item 4b, phrased as a question for the author, with NO prescribed fix and NO severity. Omit if none. Never counts toward the verdict.>
 
 ### Coverage
 - **Checks run**: <which deterministic checks ran, and what they covered>
-- **Rules used**: <per reviewer: project-specific rules file, or generic practice because the file was missing. Name any role that fell back — silence reads as "checked against project rules" when it wasn't>
+- **Rules used**: <from the agents' `RULES:` lines — name any role that fell back to generic practice>
 - **Round 2**: <"ran — <trigger>: <what>" or "skipped — no money/auth/tenancy trigger">
 - **Not examined**: <union of the agents' COVERAGE-GAPS>
-- **Estimated remaining**: <see below>
+- **Estimated remaining**: <estimate, or `n/a — single pass`>
 
 ### Verdict
 **APPROVED** / **APPROVED WITH SUGGESTIONS** / **CHANGES REQUESTED**
-- Any CRITICAL → CHANGES REQUESTED
-- Only IMPORTANT/MINOR → APPROVED WITH SUGGESTIONS
-- Clean → APPROVED
+**Re-review after fixes?** <"no — fixes are additive (tests, guards, validation); merge on green tests" or "yes — fixing <finding> means <structural change>">
+
+---
+🤖 Generated by Kimi Code CLI `/mr-review`
+```
+
+**Verdict rule:**
+- Any CRITICAL, or any IMPORTANT that is a correctness/security/data defect → CHANGES REQUESTED
+- Only MINOR, or IMPORTANT limited to maintainability/structure → APPROVED WITH SUGGESTIONS
+- No findings → APPROVED — worded as "no findings from the passes that ran", never "clean"
+
+**Re-review rule** — answer it up front, because "do we really need another /mr-review?" was the
+most common user question after a review. Use `/skill:fix-review`'s definition: a fix is *structural* if
+it deletes a branch, moves a decision across a lock/transaction/guard, changes lock ownership or
+constructor visibility, or merges two paths into one — those need a re-review. Additive fixes
+(a test, a tightened validation, a null guard) do not.
 
 **Never present a clean review as proof the code is clean.** Say "no findings from the passes that
 ran", and name what was not examined. This is not hedging; it is measured. On !3379, two runs of the
@@ -372,15 +402,11 @@ cross-tenant IDOR and reported something else in it; and after seven runs and ~1
 reviewer still found three issues with **zero** overlap with the previous thirteen. A single pass
 finds roughly a quarter to a half of what is there, and you cannot tell which.
 
-**Estimate what's left** when two or more passes covered the same ground: if pass A found `a`, pass B
+**Estimate what's left** only when two or more passes covered the same ground (round 2 ran, or two reviewers share a domain); otherwise write `n/a — single pass` and move on: if pass A found `a`, pass B
 found `b`, and they share `m`, then total ≈ `a × b / m`, so remaining ≈ that minus what you have. It
 is a floor — easy bugs are found by both passes and inflate `m`, which biases the estimate down. If
 `m` is 0, you have no estimate at all and no evidence of saturation; say exactly that and recommend
 another round rather than implying completeness.
-
----
-🤖 Generated by Kimi Code CLI `/mr-review`
-```
 
 ### Step 7: Post to the provider (if --comment)
 
