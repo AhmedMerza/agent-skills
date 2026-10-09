@@ -12,3 +12,6 @@ settings.local.json
 .env
 .env.*
 __pycache__/
+
+# Synced by the Claude desktop/web app; not ours to track.
+skills/synced/
