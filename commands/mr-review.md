@@ -1,6 +1,6 @@
 ---
 name: mr-review
-version: 2.0.0
+version: 2.1.0
 description: Perform comprehensive code review on a GitHub PR or GitLab MR
 ---
 
@@ -181,6 +181,8 @@ Spawn the review agents the scope gate selects (up to five) in a SINGLE message 
 
 State in the report's Coverage which reviewers ran and why any were skipped.
 
+**You never review the code yourself in place of the agents on a risky diff.** A diff is risky if any changed path matches a regex in `high_risk_paths` of `.claude/mr-review-risk.json` (when the file exists), or it touches money, auth or permissions, state transitions, uniqueness constraints, or concurrency. On a risky diff, spawn the reviewers the scope gate selects, and treat Step 4b as required. Cost is not a reason to skip them. Measured on a booking/payment test set (2026-10-09): when this command followed its own gate and ran agents, it caught both planted bugs in 3 of 3 runs (~$1.1-1.5 each); when it reviewed the diff itself instead, it missed one of the two bugs in 3 of 3 runs (~$0.25 each). Self-review is only for the diff types the gate already trims to a single reviewer (docs, tests-only).
+
 **IMPORTANT**: Do NOT paste file content or diffs into these prompts. Hand agents the ref and let them read what they need. If Step 3 fell back to the API path, paste content inline as the old flow did — that fallback is the only case where inline content is correct.
 
 **All five agents are pinned to sonnet (except under `--deep`, below) — keep the `model=` argument on every call.** Pinning matters independently of the value: without it, editing an agent's frontmatter silently retunes `/mr-review`, because these agents are shared with `/review`.
@@ -238,7 +240,9 @@ Each finding MUST have:
 - line: the exact line in the NEW version of the file (for a missing test, the untested method's line)
 - title: short one-line summary
 - description: detailed explanation with suggested fix
-Example: [{\"severity\":\"IMPORTANT\",\"file\":\"src/foo.ext\",\"line\":42,\"title\":\"Missing null check\",\"description\":\"...\"}]
+- evidence: the exact line(s) from the NEW version of the file that prove the claim, copied verbatim, at most 200 characters. No quotable line, no finding.
+- confidence: 1-10, how sure you are this is a real defect in how the code is actually used. 9-10 you traced it end to end; 7-8 clear in the code; 5-6 plausible but you did not rule out a mitigation; 4 or less you could not quote a proving line.
+Example: [{\"severity\":\"IMPORTANT\",\"file\":\"src/foo.ext\",\"line\":42,\"title\":\"Missing null check\",\"description\":\"...\",\"evidence\":\"$x = $y->z;\",\"confidence\":8}]
 ```
 
 **If the named reviewer agents don't exist in this environment** (`security-reviewer`,
@@ -342,13 +346,21 @@ more agent after the parallel set — same generalist brief, but handed:
 Ask it for new findings, plus a `CORRECTIONS:` line naming anything already reported that is wrong
 or mis-severitied.
 
+**Give it this checklist.** The first pass tends to skip the same five things, so tell the round-2 agent to go through every changed code path and say which apply, then either confirm a defect (quote the line, 200 characters at most) or state why it is safe:
+(a) concurrent or repeated execution of the same request: check-then-act with no lock or unique constraint;
+(b) a second occurrence of an action assumed to happen once: second subscription, retry, replay, re-upload after expiry;
+(c) state reached after a deadline, expiry or status change;
+(d) values that must be unique but are derived from fixed or reused inputs: references, keys;
+(e) limits and quotas enforced outside the transaction that writes.
+It returns only new defects, each with evidence and confidence 1-10, and marks them `round 2` in the report.
+
 This is the highest-yield agent in the whole command, because it is the only one not re-sampling
 ground already covered. On !3379 it cost ~219k and returned two findings nobody else had — including
 the most severe in the MR (a Cart whose auto-capture fails takes the customer's money and never
 creates an order, with no recovery path). It also re-verified five earlier findings and corrected
 none, which is itself worth knowing.
 
-Skip it on low-risk diffs; it is a real cost (~140-220k). A trigger beats diff size — a 4-file change to login still gets round 2. **Name the trigger in the report's
+Round 2 is required on every risky diff (see Step 4). Skip it on low-risk diffs; it is a real cost (~140-220k). A trigger beats diff size — a 4-file change to login still gets round 2. **Name the trigger in the report's
 Coverage** ("round 2: moves money — Cart capture path") — no nameable trigger, no round 2. Measured:
 a 4-file MR ran two full rounds for 1.17M tokens with no trigger recorded, more than several larger MRs.
 
@@ -366,9 +378,10 @@ a 4-file MR ran two full rounds for 1.17M tokens with no trigger recorded, more 
    but one claimed a lock was held indefinitely "because no timeout is set" when Laravel's HTTP
    client defaults to `timeout => 30` — real worst case ~90s, not unbounded. Posting the overstated
    version would have got it dismissed, and taken the credibility of the other six with it. Cost: a
-   handful of greps.
+   handful of greps. The agent's `evidence` quote makes this cheap: `git show refs/mr/<N>:<path> | sed -n '<line>p'` and check the quote is there. **A quote that is not at that line downgrades the finding to confidence 3.**
 
 4d. **Pre-existing findings** (`pre_existing: true`, or the code is unchanged since `<BASE>` — check with `git show <BASE>:<path>`) go in a short "Pre-existing (not introduced here)" note in the report, not in Findings, and are never posted as threads. Measured: "pre-existing, outside the diff" was the commonest reason a posted thread was dismissed.
+4e. **Route by confidence, to protect the reader's time.** After verification: every CRITICAL stays in the main list whatever its confidence. Otherwise confidence 7+ → **Findings**; 5-6 → **Worth a look**; 4 or less, or an evidence quote that did not check out → **not shown**, only counted in Coverage, with the full text saved to `.claude/tmp/mr-review/<N>/lower-confidence.md`. Show at most 10 items in Findings; the rest go to Worth a look. Never raise confidence because two agents agreed. **On a risky diff (Step 4), never hide an IMPORTANT or CRITICAL finding because of low confidence:** it goes in Worth a look, labelled with its confidence, so only MINOR items and unverifiable quotes can end up in `lower-confidence.md`. Hidden items are always counted in Coverage's Not shown line.
 
 5. Deduplicate — if 2+ agents found the same issue (same file + same/adjacent line), keep the most detailed one
 6. Cross-reference — if 2+ agents flagged the same thing, note it as corroborated but do NOT automatically upgrade severity. Multiple agents agreeing on a theoretical issue doesn't make it more real.
@@ -385,7 +398,10 @@ saying what it means; users repeatedly asked "explain this" when it leaked throu
 **<C> critical · <I> important · <M> minor** across <files> files — reviewers: <which ran>
 
 ### Findings
-<One list, ordered CRITICAL → IMPORTANT → MINOR. Each: `**[SEVERITY] title**` — `path:line` — category tag(s) (several if corroborated) — description with fix. One list because a deduplicated finding has no single reviewer to file it under, and the reader acts by severity, not by who found it.>
+<Terse: each is `**[SEVERITY c<confidence>] title** — path:line — what is wrong in one or two sentences. Fix: one sentence.` Longer reasoning lives in `findings.json`, not here. One list, ordered CRITICAL → IMPORTANT → MINOR, then by confidence. Add the category tag(s) (several if corroborated). One list because a deduplicated finding has no single reviewer to file it under, and the reader acts by severity, not by who found it.>
+
+### Worth a look (medium confidence)
+<Same one-line form, confidence 5-6. Omit if none. Not counted in the verdict, never posted as threads.>
 
 ### Pre-existing (not introduced here)
 <One line each, `path:line` — title. Omit if none. Not counted, not posted.>
@@ -399,6 +415,7 @@ saying what it means; users repeatedly asked "explain this" when it leaked throu
 - **Round 2**: <"ran — <trigger>: <what>" or "skipped — no money/auth/tenancy trigger">
 - **Not examined**: <union of the agents' COVERAGE-GAPS>
 - **Estimated remaining**: <estimate, or `n/a — single pass`>
+- **Not shown**: <N findings below confidence 5 or with an unverifiable quote — see `lower-confidence.md`>
 
 ### Verdict
 **APPROVED** / **APPROVED WITH SUGGESTIONS** / **CHANGES REQUESTED**
@@ -434,7 +451,7 @@ another round rather than implying completeness.
 
 ### Step 7: Post to the provider (if --comment)
 
-If `--comment` was passed, ask the user first, then post each **defect** as a resolvable thread on
+If `--comment` was passed, ask the user first, then post each **defect from the Findings list** (not Worth a look, not the lower-confidence file) as a resolvable thread on
 its line, and one summary comment. Open Questions go in the summary, phrased as questions — not as threads.
 
 **GitLab — run the script; never hand-write the posting loop.** Write the findings with a real
