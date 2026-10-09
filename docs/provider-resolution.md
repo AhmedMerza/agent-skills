@@ -1,4 +1,4 @@
-<!-- Shared convention embedded at the top of each dual-provider command. Keep identical across commands. -->
+<!-- Shared convention embedded at the top of each dual-provider command. Items 1–3 stay identical across commands. The cheat-sheet below is the FULL table — each command embeds only the rows it actually uses, so it loads smaller; add a row back to a command when that command starts needing it. -->
 
 ## Provider resolution (GitHub or GitLab)
 
