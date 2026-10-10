@@ -20,6 +20,7 @@
 #   droid.sh network NAME       emulator network: full|lte|edge|gsm (slow/flaky); real devices: use airplane mode instead
 # Env: SERIAL (adb -s), OUT (screenshot dir, default $TMPDIR/persona-shots)
 set -euo pipefail
+command -v adb >/dev/null || PATH="${ANDROID_HOME:-$HOME/Android/Sdk}/platform-tools:$PATH"
 ADB=(adb ${SERIAL:+-s "$SERIAL"})
 OUT=${OUT:-${TMPDIR:-/tmp}/persona-shots}; mkdir -p "$OUT"   # never default into the cwd: it is usually the project repo
 SCALE_FILE="$OUT/.scale"
