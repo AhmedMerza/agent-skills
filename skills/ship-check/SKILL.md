@@ -1,6 +1,6 @@
 ---
 name: ship-check
-description: "The final gate before merging — adversarially check a FINISHED change against the problem it claims to solve. Re-anchor to the original ask, then hunt for what's MISSING (a sibling caller left unpatched, one enum branch unhandled, no backfill for already-broken rows, another tenant), where it BREAKS on edge cases, and whether the approach is even right (weighing rework cost, since it's built). Invoke with /ship-check right before opening/merging an MR, or when the user says \"is this actually done / safe to ship / did we miss anything\". Returns a merge / fix-first / reconsider verdict. This is validate-plan's bookend — that runs on the PLAN before coding; this runs on the DIFF before merging. Restraint-gated: \"✅ ship it\" is a first-class verdict — don't manufacture gaps to look thorough."
+description: "The final gate before merging — adversarially check a FINISHED change against the problem it claims to solve. Re-anchor to the original ask, then hunt for what's MISSING (a sibling caller left unpatched, one enum branch unhandled, no backfill for already-broken rows, another tenant), where it BREAKS on edge cases, and whether the approach is even right (weighing rework cost, since it's built). Invoke with /ship-check right before opening/merging an MR, or when the user says \"is this actually done / safe to ship / did we miss anything\". On a diff that touches UI it also runs /persona-walkthrough on the changed screens before the verdict. Returns a merge / fix-first / reconsider verdict. This is validate-plan's bookend — that runs on the PLAN before coding; this runs on the DIFF before merging. Restraint-gated: \"✅ ship it\" is a first-class verdict — don't manufacture gaps to look thorough."
 ---
 
 # /ship-check — Is this finished change actually safe to merge?
@@ -55,6 +55,15 @@ Name the *specific* input and the *specific* line it breaks at — not "consider
 ### 3. Correctness of approach — is this even the right fix?
 Step back from "does it work" to "should it be done this way." Would a *materially different* approach be better — a different layer, reusing something already in the codebase, a simpler mechanism that covers the real requirement, a native feature it reinvents? **But it's already built** — so weigh the *rework cost* honestly (like `second-opinion`): "better in theory but not worth redoing" is a valid, useful call. Only raise this if a genuinely different approach exists with a real trade-off; otherwise one line: "approach is right because …" and move on.
 
+### 3½. Persona step — UI diffs only
+
+Static passes can't tell you a screen is confusing. If the diff touches what a user sees, a blind persona has to see it before the verdict.
+
+- **Detect:** `~/.claude/skills/ship-check/scripts/ui-touched.sh [-C repo] <base>...HEAD`. Exit 0 = UI touched (prints the files); exit 1 = not. UI means a non-test file that is a view/style/template (`.vue .blade.php .jsx .tsx .svelte .html .css .scss .arb`), sits under a strings or view folder (`lang/ locales/ l10n/ i18n/ Pages/ Components/ screens/ widgets/ views/`…), or is a `.dart` file defining a widget. The script is the rule; don't re-decide it by eye.
+- **Not UI →** one line in the output, `Persona: skipped — backend-only (ui-touched: no UI files)`, and move on.
+- **UI →** run `/persona-walkthrough diff` on the screens those files render, before the verdict. If you are a subagent, don't run it nested (it spawns its own personas): return `Persona: pending — UI touched (<files>)` and let the lead run it; the verdict waits for it. A **blocker** from it makes the verdict 🔧 fix first. A **major** goes in the fix-first list unless the user accepts it in so many words. Minors are listed, not gating.
+- **Evidence table — when the change *came from* persona findings** (the MR, commits or task cite a persona finding): the MR description must carry, per finding, one row: `finding ID · persona (name + one-line who) · persona's words (verbatim FRICTION/FEEL line, quoted) · BEFORE screenshot (the persona's step-NNN.png) · AFTER screenshot (same screen, fixed build)`. Check it's there and the images render; a missing row or a missing AFTER shot is 🔧 fix first. It is what lets a reviewer judge the UX reason, not just the diff.
+
 ### 4. Verdict — a merge decision, no hedging
 
 **A regression test does not cover a finding until you have watched it fail.** Before any verdict that
@@ -104,6 +113,8 @@ Skimmable — this is a merge decision, not an essay.
 
 **Approach**
 - <materially-better alternative + rework-cost call>  (or: "Right approach because …")
+
+**Persona** — <skipped: backend-only | pending: lead runs it | N personas: blockers/majors with IDs | evidence table present/missing>
 
 **Verdict: ✅ ship / 🔧 fix first / 🛑 reconsider** — <the decisive reason + the one thing to watch>
 ```
