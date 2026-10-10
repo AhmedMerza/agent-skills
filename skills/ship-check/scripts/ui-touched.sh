@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Does this diff touch something a user sees? Prints the UI files and exits 0 if so; exits 1 (prints nothing) if not.
 #   ui-touched.sh [-C repo] <range>        e.g. ui-touched.sh master...HEAD
+# Generated API docs (Scribe: .scribe/, resources/views/scribe/, public/docs/; plus any openapi/swagger file) are
+# not screens a person uses, so they never count.
 # A file counts as UI when it is not a test and any of these hold:
 #   1. extension: .vue .blade.php .jsx .tsx .svelte .html .css .scss .sass .less .arb
 #   2. a path segment: lang/ locales/ l10n/ i18n/ translations/ Pages/ Components/ Layouts/ screens/ widgets/ views/
@@ -10,7 +12,7 @@ set -euo pipefail
 G=(git); [ "${1:-}" = -C ] && { G=(git -C "$2"); shift 2; }
 range=${1:?usage: ui-touched.sh [-C repo] <range>}
 tip=${range##*.}; tip=${tip:-HEAD}
-hits=$("${G[@]}" diff --name-only "$range" | grep -vE '(^|/)(tests?|__tests__|spec)/|_test\.dart$|\.(spec|test)\.[jt]sx?$' | while read -r f; do
+hits=$("${G[@]}" diff --name-only "$range" | grep -vE '(^|/)(tests?|__tests__|spec)/|_test\.dart$|\.(spec|test)\.[jt]sx?$|(^|/)\.scribe/|(^|/)views/scribe/|^public/docs/|(^|/)(openapi|swagger)\.(ya?ml|json)$' | while read -r f; do
   if grep -qE '\.(vue|blade\.php|jsx|tsx|svelte|html|css|scss|sass|less|arb)$|(^|/)(lang|locales|l10n|i18n|translations|Pages|Components|Layouts|screens|widgets|views)/' <<<"$f"; then
     echo "$f"
   elif [[ $f == *.dart ]] && "${G[@]}" show "$tip:$f" 2>/dev/null | grep -qE 'extends +(StatelessWidget|StatefulWidget|ConsumerWidget|ConsumerStatefulWidget|HookWidget|State<)'; then
