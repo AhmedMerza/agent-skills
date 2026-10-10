@@ -39,7 +39,7 @@ Sample sizes in the history are usually tiny (most skills appear one to three ti
 
 For each claim to test, build at least three scenarios:
 
-- **Replay**: a real task prompt from the history. Check out the repo as it was then: `git worktree add --detach <dir> $(git rev-list -1 --before=<ts> HEAD)`. Skip tasks that need live services, secrets, a device, or user answers.
+- **Replay**: a real task prompt from the history. Check out the repo as it was then: `git worktree add --detach <dir> $(git rev-list -1 --before=<ts> HEAD)`. Skip tasks that need live services, secrets, or user answers; a task that needs a phone or emulator runs as a **device scenario** (below).
 - **Synthetic**: a task written to exercise the claim, for gaps the history cannot fill.
 
 Write the **rubric before running anything** and save it next to the scenario: 3 to 5 yes/no checks that can be verified from the outputs (tests pass, diff under N lines, named flaw found, files left untouched) plus one 1–5 quality score. A rubric written after seeing outputs is not a rubric.
@@ -58,6 +58,17 @@ Use the bundled runner, one call per arm:
 - **Known leak:** the blocked skill's name and description stay visible, so the `without` arm can still *describe* the skill from its listing. The baseline is "skill blocked", not "skill unknown". Say this when it matters.
 - **Screen, then confirm.** One run per arm for every claim first. Only claims that look different get 3+ runs per arm. This is what keeps a sweep affordable.
 - Run at most three at a time. Track the budget; stop at the cap and report what was covered.
+
+### Device scenarios (phone or emulator)
+
+A task that drives an app on a device (a `/persona-walkthrough` persona, a manual-QA script) is runnable if every arm starts from the same screen and no two arms touch the device at once.
+
+- **One setup script per scenario**, written with the rubric, run before **each** arm: `run_arm.py ... --device <serial> --setup setup.sh`. It gets `SERIAL`, `OUT` (`<arm>/setup`) and `ARM_OUT`, drives the device with persona-walkthrough's driver (`~/.claude/skills/persona-walkthrough/scripts/droid.sh`; never a copy), puts the app in the start state (optional `droid.sh reset <pkg>`, app-specific taps such as picking an environment or demo mode, logging in) and **verifies** it with `droid.sh texts`, exiting non-zero if the expected text is absent. A failed setup aborts the arm; never run an arm from an unverified start. On a real person's phone, check the foreground app (`adb shell dumpsys window | grep mCurrentFocus`) before every key press and exit if it is not the app under test.
+- **Device lock.** `--device` holds `~/.cache/reflect/locks/<serial>.lock` (flock) for setup + run, so arms on one device run one after another, including across concurrent reflect sessions. Anything else that drives the same device by hand takes the same lock: `flock ~/.cache/reflect/locks/<serial>.lock <cmd>`. Parallelism comes from more devices, never from sharing one.
+- **Screenshots stay in the arm's out dir.** Point the persona brief's outdir at the arm's `--out` (`brief.py persona.md --outdir <arm out>`, with `start: as-is` in the persona file so the brief doesn't tell it to reset the app the setup just prepared). `summary.json` lists them; `blind.py` copies them to `X/`, `Y/` and rewrites the arm paths in the text.
+- **Blinding.** When the arms differ in output format (a brief that adds a `SCREEN:` line, a new log tag), the format alone tells the grader which arm is which. `blind.py` lists markers that appear on only one side; strip them with `--strip REGEX` when that leaves the graded content intact, and otherwise say in the report that the grading was not fully blind and lean on the countable rubric checks.
+- **Permissions.** Arms run in `--permission-mode default` whatever the user's default is (in auto mode the classifier refused the persona's very first `droid shot` as "code from external", and it would make arms differ anyway). On a device, narrow Bash to the wrapper, `--allow 'Read,Bash(<arm out>/droid:*)'`, tell the prompt to call the wrapper by its full path (a `D=` variable won't match the rule), and use the arm's out dir as `--workdir` so the sandbox lets it write screenshots.
+- **Prompt and model.** The arm prompt is "Read <brief file> and follow it exactly"; run personas on the strong model (`--model opus`, a higher `--max-usd`), per persona-walkthrough's measurements. To compare two brief versions rather than skill vs no skill, label the arms (`--arm old` / `--arm new`); only `--arm without` blocks the skill.
 
 ## Phase 4 — Grade blind
 

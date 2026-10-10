@@ -8,6 +8,8 @@ ${VAR} in the persona file is expanded from the environment (e.g. ${SMS_INBOX});
 Persona file = header lines `key: value`, then `## section` blocks.
   header: name, outdir, platform (android, the default, or web), budget (default 40),
           sms (optional command that prints the latest SMS code, e.g. "/path/sms-inbox.sh 36000111"),
+          start (optional: `as-is` = the app is already open in the start state a setup script put it in,
+                 so the brief drops the `reset` line; never reset a logged-in real phone)
           device_note (optional)
           android: serial, package
           web: url (where the persona starts), profile (optional: mobile|tablet|laptop|desktop|ultrawide|WxH,
@@ -106,6 +108,9 @@ def main():
         wrapper.write_text(f'#!/usr/bin/env bash\nexport SERIAL="{meta["serial"]}" OUT="{outdir}"\nexec "{droid}" "$@"\n')
         driver_block = ANDROID_DRIVER.format(driver=wrapper, package=meta["package"], sms_line=sms_line,
                                              device_note=meta.get("device_note", ""))
+        if meta.get("start") == "as-is":
+            driver_block = re.sub(r"^\$D reset .*\n", "", driver_block, flags=re.M) + (
+                " The app is already open where you start. Do NOT reset, clear or relaunch it.")
     wrapper.chmod(0o755)
     values = {
         "name": meta["name"],
