@@ -110,6 +110,7 @@ Creates a merge/pull request for the current branch using the resolved provider'
 6. **Resolve target**: On GitLab, the source/target project IDs (fork → upstream) via `glab`; on GitHub, `gh pr create` resolves remotes/base/head itself
 7. **Get target branch**: Use argument or default to `dev`
 8. **🎯 Run pre-MR quality checks**: detect the repo's toolchain and run whatever exists (unless --skip-checks)
+8b. **🎯 Persona evidence** (unless --skip-persona): run `~/.claude/skills/ship-check/scripts/ui-touched.sh <target>...HEAD`. If it prints UI files and no `/persona-walkthrough` result exists for this branch, stop and say so — the persona step runs before the MR, not after. If the branch's commits or task cite persona findings, the description MUST carry the "Persona findings addressed" block (see Templates); refuse to create the MR without it. A UI diff not driven by findings gets one line: `Persona: N personas, no blockers/majors (report: <path>)`. A non-UI diff gets `Persona: skipped — backend-only`.
 9. **Analyze commits**: `git log target..HEAD` for title/description
 10. **🎯 Analyze changed files**: Get file patterns for smart suggestions (unless --skip-suggestions)
 11. **🎯 Suggest reviewers**: Based on code ownership rules (unless reviewers specified or --skip-suggestions)
@@ -130,6 +131,7 @@ Creates a merge/pull request for the current branch using the resolved provider'
 - `--template <type>` - Use a template (feature, bugfix, hotfix, refactor, documentation)
 - `--guide` - Generate a reviewer's guide (see `/mr-guide`) from the branch diff and open the MR with it in the description
 - `--skip-checks` - Skip pre-MR quality checks
+- `--skip-persona` - Create without the persona evidence check (the MR states it was skipped and why)
 - `--skip-suggestions` - Skip smart reviewer suggestions
 - `--skip-labels` - Skip auto-label detection
 
@@ -230,6 +232,15 @@ Based on file changes:
 ### 3. MR/PR Templates
 
 **What it does**: Uses pre-defined templates for different change types with structured checklists.
+
+**Persona evidence block** (added to any template when the change came from `/persona-walkthrough` findings):
+```
+## Persona findings addressed
+| Finding | Persona | What they said | Before | After |
+|---|---|---|---|---|
+| H1 major | Hassan, 41, restaurant owner, EN | "I pressed Save three times and don't know whether I now have zero dishes or three duplicates" | ![before](step-038.png) | ![after](H1-after.png) |
+```
+Before = the persona's own `step-NNN.png`; After = the same screen on the fixed build. Upload images per the attach-screenshots convention (curl multipart with the glab token; `glab upload` 400s).
 
 **Available Templates**:
 - `feature` - New features (default for feat: commits)
