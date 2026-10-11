@@ -1,7 +1,6 @@
 ---
-disable-model-invocation: true
 name: ui-audit
-description: Run technical UI quality checks across accessibility, performance, theming, responsive design, interaction states, and anti-patterns. Generates a scored report with severity ratings and actionable fixes. Covers Vue 3 + Vuetify + Inertia.js and Flutter.
+description: Run technical UI quality checks across accessibility, performance, theming, responsive design, interaction states, and anti-patterns. Generates a scored report with severity ratings and actionable fixes. Covers Vue 3 + Vuetify + Inertia.js and Flutter. Invoke only when the user types /ui-audit or asks for a UI/design audit, or when /ship-check's UI step calls it on a UI diff — never on your own initiative mid-task.
 ---
 
 # UI Audit
