@@ -41,6 +41,7 @@ Adapt to the app's actual roles; drop any not built. Goals are stated as the per
 - **New admin**: given a login and told "approve the new artists and handle problems." Hasn't seen the tool. (goal: finds and approves an artist, understands consequences)
 - **Support handler**: a ticket/refund request arrives. (goal: resolves it, knows what each button will do before pressing it)
 - **Cautious operator**: afraid of irreversible actions. (goal: tests whether destructive actions warn and explain)
+- **Working shift** (mandatory for any role with 5+ areas): a returning user doing a normal day — 5–6 short unrelated errands that hop between areas and come back (check today's orders → approve a product → look up the seller of an order → back to orders → change one setting → check a report). One errand never pays the cost of moving between areas; a day of them does. (goal: all errands done; judges how often they had to retrace steps to get anywhere)
 
 ### Explorer (goal-less)
 No errand. "You just installed this app and have 10 minutes to see what it is. Look at everything: every tab, every setting, every button that looks tappable; open lists and details; go back and forth." One per role (a customer explorer, an artist explorer with a login, an admin explorer with a login). Budget 80-100 actions. The point is coverage and unplanned discoveries, so tell them to keep a running list of screens they have seen. Feed their run dir to `scripts/coverage.py`.
