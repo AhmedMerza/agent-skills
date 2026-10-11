@@ -62,6 +62,7 @@ Static passes can't tell you a screen is confusing. If the diff touches what a u
 - **Detect:** `~/.claude/skills/ship-check/scripts/ui-touched.sh [-C repo] <base>...HEAD`. Exit 0 = UI touched (prints the files); exit 1 = not. UI means a non-test file that is a view/style/template (`.vue .blade.php .jsx .tsx .svelte .html .css .scss .arb`), sits under a strings or view folder (`lang/ locales/ l10n/ i18n/ Pages/ Components/ screens/ widgets/ views/`…), or is a `.dart` file defining a widget. The script is the rule; don't re-decide it by eye.
 - **Not UI →** one line in the output, `Persona: skipped — backend-only (ui-touched: no UI files)`, and move on.
 - **UI →** run `/persona-walkthrough diff` on the screens those files render, before the verdict. If you are a subagent, don't run it nested (it spawns its own personas): return `Persona: pending — UI touched (<files>)` and let the lead run it; the verdict waits for it. A **blocker** from it makes the verdict 🔧 fix first. A **major** goes in the fix-first list unless the user accepts it in so many words. Minors are listed, not gating.
+- **UI → also the design audits.** Personas are lay users on an errand: they reliably miss what only a designer voices — tiles of uneven height, a two-item nav bar that leads nowhere, contrast, screen-reader semantics, motion settings. So on the same changed screens run `/ui-audit` (technical: accessibility, responsive, theming, states) and `/ux-audit` (does the screen serve its one goal: hierarchy, friction, wasted affordances). A subagent may run these (they don't spawn agents). Their P1/High findings go in the fix-first list unless the user accepts them; P2/Med are listed; the rest are noted. *Calibrated 2026-10-11 on the Esoq vendor app home screen: personas (6 runs) missed both the ragged tile rows and the 2-tab bottom nav; ui-audit flagged the first and ux-audit the second, unprompted.*
 - **Evidence table — when the change *came from* persona findings** (the MR, commits or task cite a persona finding): the MR description must carry, per finding, one row: `finding ID · persona (name + one-line who) · persona's words (verbatim FRICTION/FEEL line, quoted) · BEFORE screenshot (the persona's step-NNN.png) · AFTER screenshot (same screen, fixed build)`. Check it's there and the images render; a missing row or a missing AFTER shot is 🔧 fix first. It is what lets a reviewer judge the UX reason, not just the diff.
 
 ### 4. Verdict — a merge decision, no hedging
@@ -115,6 +116,8 @@ Skimmable — this is a merge decision, not an essay.
 - <materially-better alternative + rework-cost call>  (or: "Right approach because …")
 
 **Persona** — <skipped: backend-only | pending: lead runs it | N personas: blockers/majors with IDs | evidence table present/missing>
+
+**Design audit** — <skipped: backend-only | ui-audit: score + P1s | ux-audit: High findings>  (UI diffs only)
 
 **Verdict: ✅ ship / 🔧 fix first / 🛑 reconsider** — <the decisive reason + the one thing to watch>
 ```
