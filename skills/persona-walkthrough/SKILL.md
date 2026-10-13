@@ -42,6 +42,7 @@ The orchestrator uses code knowledge **afterwards** (Triage), never before or du
 2. **Task success** — did I get what I came for, in how many actions, with which stalls?
 3. **Feeling** — a word per beat in the persona's own voice, the exact **trigger** on screen, and the **why**: what in their background, habits or expectations made it land that way. The why separates universal problems from ones that only bite one kind of user. A flow that "works" but leaves people suspicious or anxious is a finding.
 4. **Design as a lay person sees it** — 5-second first-glance reaction; professional / trustworthy / for someone like me; can I tell what's tappable; readable for *this* person (age, large font, dark mode); what do I look at first; anything unfinished or test-like; does Arabic/RTL feel native. **Per screen, not just the first:** each persona states what it thinks the screen is for and rates its clarity (`clear | unsure | lost`), and complains — tagged `crowded` or `unclear` — when a screen has too much competing for attention, when they can't tell what a screen, section or button is for, or when it's simply hard to understand. They also compare siblings in every menu, list, grid, sheet, tab bar or button group — one row taller, an icon out of line, mixed text sizes, one button styled unlike its equals — and tag each mismatch `polish`. A screen two personas mark `unsure`/`lost` is a finding even if both finished the task. Under every friction the persona adds `I WISH I could see / know / be told / do …` — the **need**, in their words, never a widget or layout; turning a need into a design is triage's and `ux-audit`'s job, not the persona's. They describe what they see and feel, never jargon or pixels. Precise token/spacing checks stay with `ui-audit` / `design-drift`; a persona's "that grey text is too faint for me" is evidence you can hand to `ui-polish`. On a web target this judgment is formed once at `desktop`, then spot-checked across the viewport sweep (above) for breakage the persona's own screen never showed them.
+5. **Discoverability and getting there** — before the errand, each persona checks how they'd reach the app on the device they'd really use (phone, a second computer, after logging out), login included; afterwards they unprompted try rename / delete / edit / undo / move on what they saw. Brief wording is in `references/persona-brief.md`. Misses to look for: editable text with no cue, actions only a shortcut reaches, labels that read as something else. Tasks handed to a persona on a surface they're already on never surface these.
 
 ## Procedure
 
@@ -73,7 +74,7 @@ Generate each brief with `python3 scripts/brief.py persona.md --outdir <run dir>
 ### 6. Triage (orchestrator, now with code knowledge)
 - **Verify every claim against the code or API before it goes in the report.** Personas misperceive specifics (a "six-day strip" was five; a "dropped digit" is a tool artefact) and they guess causes. Find the real `file:line` and root cause; if you can't confirm, say "not confirmed".
 - **Merge duplicates.** A friction point hit by 2+ different personas is a *pattern*; one hit by every persona is a blocker however small it looks.
-- **Classify:** `bug` · `unclear` (works, but people don't understand it) · `missing` · `trust` (hesitated to give a number, pay, upload) · `language` (untranslated, RTL, tone) · `polish` (siblings that should match don't: uneven row heights, misaligned icons/text, one button styled unlike its equals) · `layout` (clipped, overlapping, or wrongly-scrolling content at a specific viewport or device shape — from the sweep, not something the persona necessarily hit directly) · `data` (dev/test content visible to users) · `persona-error` (ignored plainly visible text; discard unless the skimmer is representative, then it's `unclear`) · `env` (not the product).
+- **Classify:** `hidden` (looked for a manage action and couldn't find it) · `cant-get-in` (couldn't reach or log into the app on their real device; always **Blocker**) · `bug` · `unclear` (works, but people don't understand it) · `missing` · `trust` (hesitated to give a number, pay, upload) · `language` (untranslated, RTL, tone) · `polish` (siblings that should match don't: uneven row heights, misaligned icons/text, one button styled unlike its equals) · `layout` (clipped, overlapping, or wrongly-scrolling content at a specific viewport or device shape — from the sweep, not something the persona necessarily hit directly) · `data` (dev/test content visible to users) · `persona-error` (ignored plainly visible text; discard unless the skimmer is representative, then it's `unclear`) · `env` (not the product).
 - **Check the premise.** Did a persona succeed *only because* dev papered over a gap (seeded data, OTP readable in a log)? Say so.
 - **Attach a fix to each finding** (the minimal change and where). A report of problems without next steps gets shelved.
 
@@ -98,6 +99,8 @@ Generate each brief with `python3 scripts/brief.py persona.md --outdir <run dir>
 ### Blockers / Major / Minor
 <ID> <title> — hit by <personas> · felt <word>, because <why> · cause <file:line> · fix <change>
 ### What worked  (keep these)
+### Wishes  (max 3, outside findings and severity)
+"<persona's think-aloud at the moment>" — persona, step · the feature · why, one line
 ### Not tested / not in this build   (and workarounds used)
 ### Environment notes, data left behind
 ```
@@ -109,6 +112,8 @@ When the user wants trackable work, turn blockers into issues (one per blocker: 
 ## Restraint
 
 - A persona who sailed through is a result. "Three customers booked in 12 actions with no confusion" is a valid report — don't hunt after they stop finding problems.
+- Wishes: at most 3, each quoting the moment a persona tried something the app doesn't offer. Never generic (dark mode, AI, an onboarding tour) unless a persona hit that exact wall. Zero is a valid result.
+- `hidden` and `cant-get-in` count only if the persona actually looked and failed, same gate as all confusion.
 - Pixel-level taste is `ui-audit`'s. Do report design that cost understanding, progress or trust, or that made someone feel something strongly (good or bad).
 - Don't fix anything. Hand blockers to `root-cause` or a fix branch.
 - Dev artefacts (debug banner, seeded OTP in logs, LAN slowness, test data you can clean) go under `env`/`data`, not product findings — except test data customers can *see*, which really does cost trust.
@@ -120,4 +125,6 @@ When the user wants trackable work, turn blockers into issues (one per blocker: 
 - Push notifications, payment-gateway web views and deep links need the real device flow; out of scope unless asked.
 - The web driver is smoke-tested (start, shot, tap, scroll, back, profile switch, throttling) but has had no full persona run yet: treat the first web run as a pilot and note driver problems as `env`. Role coverage is only as good as the role seeds.
 - Web: the screenshot is the page only. There is no address bar, tabs or browser chrome in it (personas read the address with `url`), browser-native popups (print, file picker, permission prompts) don't show, and a new tab opened by the site isn't followed.
+- **Web: `scroll` scrolls the page, not an inner scroll box** (a dialog with `overflow:auto`). A persona reporting "the pop-up won't scroll / Close is unreachable" needs checking in a real browser before it counts (Agent Worlds run, 2026-10-13: it scrolled fine).
+- **Personas sharing one server see each other's edits.** On an app with shared live state (dashboards, mocks), parallel personas rename and delete under each other and report it as "the app changed things by itself". Give each persona its own server instance (e.g. its own port), or run them one after another.
 - **The sweep is a static-screenshot check, not a re-run.** It catches breakage visible in a single frame at each width (clipping, overlap, forced scroll) but not viewport-dependent *behavior* — a mobile nav that collapses into a hamburger menu with different reachable actions needs its own persona pass at `mobile`, called out explicitly when the app's layout is known to branch that way, not assumed covered by the sweep.
