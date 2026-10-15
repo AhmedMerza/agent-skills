@@ -43,7 +43,7 @@ $D start '{url}' {profile}   # once, at the very start: opens the browser as a f
 $D shot                      # screenshot of the window -> prints a PNG path; READ that image with the Read tool to see it
 $D texts                     # what a screen reader hears (use it only if the image is unclear)
 $D tap X Y                   # click
-$D scroll down|up   $D type "text"   $D key back|enter|tab|del|esc
+$D scroll down|up   $D type "text"   $D key back|enter|tab|del|esc (or any key/combo: t, ctrl+v)   $D drag X1 Y1 X2 Y2 [shift]
 $D url                       # read the address bar   ·   $D goto URL   # type an address into it
 {sms_line}$D stop                       # once, when you finish or give up
 ```
