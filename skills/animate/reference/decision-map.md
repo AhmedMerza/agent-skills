@@ -14,7 +14,7 @@ Infer what you can from the code; **ask the user only what you genuinely can't t
 
 | # | Fact | Options | Why it changes the motion |
 |---|---|---|---|
-| 1 | **Change class** | page/route · overlay/layer · in-place element · list/collection · feedback message · value/number · **continuous/scrubbed** | Picks the row in the map below. **Continuous is the odd one out** — there is no A and no B, just a value being tracked, so most of Step B doesn't bind. It has its own laws (Step B2) and its own restraint gate. |
+| 1 | **Change class** | page/route · overlay/layer · in-place element · list/collection · feedback message · value/number · **continuous/scrubbed** · **ambient/persisting** | Picks the row in the map below. **Continuous is the odd one out** — there is no A and no B, just a value being tracked, so most of Step B doesn't bind. It has its own laws (Step B2) and its own restraint gate. |
 | 2 | **Relationship** | replace (siblings, same level) · drill-in (parent→child) · overlay (layer *above*, base persists) · dismiss/remove · reveal-beneath (a cover is removed) | The single most decisive fact. Determines direction and whether anything travels. |
 | 3 | **Origin** | has an on-screen anchor (a tapped card/button) · no anchor (comes from an edge) | An anchored change should **emanate from the anchor** (keeps the eye locked). No anchor → enter from the nearest logical edge. |
 | 4 | **Tone** | neutral · success/positive · error/critical · destructive | **Gates overshoot.** Bounce reads as *light/positive/transient*; errors must feel *firm*. See the tone rule. |
@@ -99,6 +99,10 @@ Find your **change class** (fact 1) + **relationship** (fact 2). The pattern is 
 | **Brand / loading moment** | splash / launch screen | `brandReveal` → new — **mode depends on intent** (show-off vs. cover-a-wait); see Step D | it's not a state transition, it's a brand+loading beat — different rules | non-blocking; time-boxed to data-load |
 | **Continuous / scrubbed** | scroll drives a reveal, stack, or mask | `scrollScrub` → new — damped scroll progress drives clip/transform/blur | position is the clock, and the user scrubs it *both* ways | damping 0.08–0.15; **no bezier on the scrub** (law 11) |
 | **Continuous / scrubbed** | pointer drives depth / tilt | `pointerParallax` → new — pointer offset from centre × a per-layer depth multiplier, **clamped** | fakes depth-of-field from one signal; the clamp is what stops it breaking at screen edges | spring follow + hard `maxTravel` cap |
+| **Page / skin** | whole-page theme switch (light↔dark) | `themeReveal` → new — new theme expands as a circle from the toggle (View Transitions API) | a page-wide change still has an origin: the control you pressed | `--ease-in-out`, ~400ms, **occasional**; plain swap under reduced motion |
+| **Value / number** | a ratio/percentage changes (capacity, SLA, completion) | `gaugeSweep` — arc and number driven by **one** tween (variant of `count-up`) | two tweens drift apart mid-flight; one source keeps the arc and the digits agreeing | `--ease-out`, ≤ 600ms, start when in view |
+| **Ambient / persisting** | a state is *live right now* | `livePulse` → new — dot + looping fading ring, only while live | the loop *is* the information: "this is happening now" | ~1.6–2s period, `--ease-out`, one per view |
+| **Ambient / persisting** | one element needs a first look | `attentionSheen` → new — 2–3 sweeps, then still | draws the eye once without becoming wallpaper | ~1.2s per sweep, bounded |
 | **Continuous / scrubbed** | drag drives position | `dragInertia` → new — pointer delta drives position; velocity decays after release; resistance near bounds | matches the physical expectation of *throwing* something | decay ~0.92/frame; nonlinear damping at bounds |
 
 > All three are gated by **Step B2's continuous restraint gate** first. On an operational surface the correct output is "none" — don't route into these rows just because the target happens to scroll.
@@ -149,6 +153,22 @@ Compose the actual sequence from the frequency + brand personality; don't reprod
 - `sharedAxis` — sibling replace: outgoing slides `-24px`+fades, incoming slides `+24px`→0+fades, on `--ease-inOut`. Direction mirrors under RTL (SKILL principle 8).
 - `containerTransform` — drill-in: the destination grows from the tapped element's rect (FLIP from `getBoundingClientRect()`; RTL-safe, don't flip real-coordinate travel).
 - `fadeThrough` — unrelated in-place swap: `out-in` cross-fade with a tiny `scale(0.99)`/blur bridge (see `skeleton-to-content` in `web.md` for the mechanics), no positional travel.
+
+### `themeReveal` — the theme switch that comes from the toggle
+- **Choreography:** snapshot the old page, apply the new theme, then grow a `circle()` clip on the *new* snapshot from the toggle's centre to the farthest viewport corner. The browser does the snapshotting (`document.startViewTransition`); you only animate one `clip-path`. Recipe in `web.md`.
+- **When NOT:** reduced motion, or a browser without `startViewTransition` — swap instantly, no fake fallback. Don't reuse this for routine navigation; it's a once-in-a-while skin change, and a circle wiping across a data screen on every route change is exactly the noise this skill avoids.
+- **Bonus:** the same API turns `containerTransform` and `sharedAxis` into a few lines (`view-transition-name` on the source and destination), with the browser handling the FLIP. Reach for it before hand-rolling those, where the browser support you need allows.
+
+### The ambient patterns — loops that explain a state that *persists*
+
+Everything else in this map explains a change, then goes still. Ambient motion never goes still on its own, which is why it is the easiest class to abuse — the shimmering-button / pulsing-CTA look of marketing component libraries is this class used as decoration. Four rules bind it:
+
+1. **The loop must mean "this is happening now".** Live tracking, a driver online, a recording, a sync in progress. When the state ends, the loop ends — in the same frame. A loop on a static thing ("click me!") is noise; use `attentionSheen`, which stops.
+2. **Bounded, or tied to a live state — nothing else.** `attentionSheen` runs 2–3 times (`animation-iteration-count: 3`) and is never re-armed on that view. `livePulse` runs exactly as long as the state.
+3. **One per view.** Two pulsing things split attention; ten are wallpaper. In a list of live items, give each row a **static** dot and pulse only the one summary indicator ("12 drivers online ●").
+4. **Reduced motion → the static state.** The dot stays, coloured; the ring and sheen go. The information was never in the movement.
+
+**When NOT:** continuous loops on anything the user reads, on a hot path, or on a page that already has one. Infinite CTA shimmer, pulsing buy buttons, border beams running round cards — all fail rule 1.
 
 ### The three continuous patterns
 

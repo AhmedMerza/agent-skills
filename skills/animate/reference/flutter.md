@@ -191,7 +191,8 @@ Built-in `SnackBar` already animates; override `animation`/`behavior: SnackBarBe
 TweenAnimationBuilder<double>(
   tween: Tween(begin: prev.toDouble(), end: value.toDouble()),
   duration: const Duration(milliseconds: 500), curve: easeOut,
-  builder: (_, v, __) => Text(v.round().toString()),
+  builder: (_, v, __) => Text(v.round().toString(),
+      style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()])),  // stops width jitter while rolling
 )
 // punch the badge whenever value changes (key off value):
 Badge(...).animate(key: ValueKey(value)).scale(
@@ -217,6 +218,26 @@ GestureDetector(
 // _Ring(): Container(decoration: BoxDecoration(border: ...)).animate()
 //   .scaleXY(begin: 0.4, end: 1.8, curve: easeOut, duration: 420.ms).fadeOut();
 ```
+
+---
+
+## live-pulse  *(loops only while live)*
+
+Ambient class — read the ambient rules in `decision-map.md` first.
+```dart
+Stack(alignment: Alignment.center, children: [
+  if (isLive && !MediaQuery.disableAnimationsOf(context))
+    Container(width: 8, height: 8, decoration: BoxDecoration(color: Colors.green, shape: BoxShape.circle))
+        .animate(onPlay: (c) => c.repeat())
+        .scaleXY(begin: 1, end: 2.6, curve: easeOut, duration: 1800.ms)
+        .fadeOut(begin: 0.5, curve: easeOut, duration: 1800.ms),
+  Container(width: 8, height: 8, decoration: BoxDecoration(
+      color: isLive ? Colors.green : Colors.grey, shape: BoxShape.circle)),   // the real cue
+])
+```
+The `if (isLive ...)` removes the ring widget, which disposes its controller — the loop can't outlive the state.
+
+`attention-sheen` and `theme-reveal` are web-first: on Flutter, a bounded sheen is a `ShaderMask` + `.animate().shimmer()` with `onPlay: (c) => c.repeat(count: 3)`; a circular theme reveal needs a screenshot + `ClipPath` layer and isn't worth hand-rolling for most apps.
 
 ---
 
