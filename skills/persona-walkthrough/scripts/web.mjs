@@ -16,6 +16,8 @@
 //   web scroll down|up        scroll most of one screen
 //   web type "text"           type into the focused field (any language)
 //   web key back|enter|tab|del|esc     back = the browser's Back button
+//   web key ctrl+v | ctrl+] | t          any key or combo (ctrl/shift/alt/cmd + key)
+//   web drag X1 Y1 X2 Y2 [shift]       press, drag and release the mouse (select text); shift = hold Shift
 //   web goto URL              type an address into the address bar
 //   web url                   the address bar as a person sees it
 //   web texts                 what a screen reader hears (accessibility tree)
@@ -103,6 +105,7 @@ async function serve(startProfile) {
   async function open(url, storageState) {
     if (ctx) await ctx.close()
     ctx = await browser.newContext({ ...profile, locale: process.env.LOCALE || 'en-US', colorScheme: scheme, storageState })
+    await ctx.grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => {}) // copy/paste works like a real browser
     page = await ctx.newPage()
     page.on('console', m => m.type() === 'error' && log(`console.error ${m.text()}`))
     page.on('pageerror', e => log(`pageerror ${e.message}`))
@@ -159,6 +162,13 @@ async function serve(startProfile) {
     hold: async ([x, y]) => {
       await page.mouse.move(px(x), px(y)); await page.mouse.down(); await page.waitForTimeout(900); await page.mouse.up(); return ''
     },
+    drag: async ([x1, y1, x2, y2, mod]) => {
+      if (mod === 'shift') await page.keyboard.down('Shift')
+      await page.mouse.move(px(x1), px(y1)); await page.mouse.down()
+      await page.mouse.move(px(x2), px(y2), { steps: 10 }); await page.mouse.up()
+      if (mod === 'shift') await page.keyboard.up('Shift')
+      await settle(); return ''
+    },
     swipe: async ([x1, y1, x2, y2]) => {
       await page.mouse.move(px(x1), px(y1)); await page.mouse.wheel(px(x1) - px(x2), px(y1) - px(y2)); await page.waitForTimeout(400); return ''
     },
@@ -175,8 +185,11 @@ async function serve(startProfile) {
         return ''
       }
       const map = { enter: 'Enter', tab: 'Tab', del: 'Backspace', esc: 'Escape' }
-      if (!map[k]) throw new Error(`unknown key '${k}' (back|enter|tab|del|esc)`)
-      await page.keyboard.press(map[k]); await settle(); return ''
+      const mods = { ctrl: 'Control', shift: 'Shift', alt: 'Alt', cmd: 'Meta' }
+      const parts = String(k).split(/\+(?=.)/)
+      const key = map[k] ?? (parts.length > 1 || k.length === 1 ? parts.map((p) => mods[p.toLowerCase()] ?? (map[p] || p)).join('+') : null)
+      if (!key) throw new Error(`unknown key '${k}' (back|enter|tab|del|esc, a single character, or a combo like ctrl+v)`)
+      await page.keyboard.press(key); await settle(); return ''
     },
     texts,
     profile: async ([name]) => {
