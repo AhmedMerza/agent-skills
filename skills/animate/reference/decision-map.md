@@ -105,7 +105,7 @@ Find your **change class** (fact 1) + **relationship** (fact 2). The pattern is 
 | **Ambient / persisting** | one element needs a first look | `attentionSheen` → new — 2–3 sweeps, then still | draws the eye once without becoming wallpaper | ~1.2s per sweep, bounded |
 | **Continuous / scrubbed** | drag drives position | `dragInertia` → new — pointer delta drives position; velocity decays after release; resistance near bounds | matches the physical expectation of *throwing* something | decay ~0.92/frame; nonlinear damping at bounds |
 
-> All three are gated by **Step B2's continuous restraint gate** first. On an operational surface the correct output is "none" — don't route into these rows just because the target happens to scroll.
+> The **Continuous / scrubbed** rows (`scrollScrub`, `pointerParallax`, `dragInertia`) are all gated by **Step B2's continuous restraint gate** first, and the **Ambient** rows by the ambient rules in Step D. On an operational surface the correct output is "none" — don't route into these rows just because the target happens to scroll.
 
 **If two rows both fit, `Frequency` breaks the tie** — the higher-frequency reading picks the cheaper pattern (drop overshoot, drop stagger, shorten). When in doubt, propose the expressive one *and* the calm one and let the user feel both.
 
