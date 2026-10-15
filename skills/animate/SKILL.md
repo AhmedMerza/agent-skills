@@ -105,6 +105,11 @@ Each combo has a full Vue and Flutter recipe in the references. Pick and adapt; 
 | **toast-snackbar** | transient feedback | enters and exits from the **same edge** with spring; stacks shift to make room |
 | **count-up + badge-pop** | numbers/totals changing | digits roll to the new value (ease-out) → **badge punches** scale on change |
 | **like-burst** | favorite / like / react | icon scales with overshoot + fills → one-shot **ring/particle burst** (rare action → can delight) |
+| **live-pulse** | a state that is *currently live* (online, tracking, recording, syncing) | static dot + an expanding, fading **ring** that loops only while the state holds; stops the moment it doesn't |
+| **attention-sheen** | one control that genuinely needs a first look (unfinished setup, new feature) | a light band sweeps across it **2–3 times, then stops for good** — never an infinite loop |
+| **theme-reveal** | light/dark (or any whole-page skin) switch | the new theme **expands as a circle from the toggle** via the View Transitions API — causality for a whole-page change |
+
+Ambient loops (`live-pulse`, `attention-sheen`) are a different class from everything above — they explain a *persisting* state, not a change. Their rules (one per view, bounded or tied to a live state, static under reduced motion) are in the decision map's ambient section; read it before proposing either.
 
 Default intensities: spring `{ stiffness: 300, damping: 20 }` (snappy) or Apple-style `{ duration: 0.45, bounce: 0.2 }`. Overshoot CSS: `cubic-bezier(0.34, 1.56, 0.64, 1)`. Strong ease-out: `cubic-bezier(0.23, 1, 0.32, 1)`. Flutter: `Curves.easeOutBack` (overshoot), `Curves.elasticOut` (bouncy, use sparingly), `Curves.fastOutSlowIn` (movement).
 
@@ -124,5 +129,6 @@ Default intensities: spring `{ stiffness: 300, damping: 20 }` (snappy) or Apple-
 - [ ] Only `transform`/`opacity` (web) / cheap implicit widgets (Flutter).
 - [ ] `prefers-reduced-motion` / `disableAnimations` handled — and for **continuous** motion that means the driver is *unbound* and the property snapped to its settled value, not just a shorter scrub.
 - [ ] If driven by scroll/pointer/drag: passed the **continuous restraint gate**; routed through a damped follower (no 1:1 binding, no bezier on the scrub); scrubs correctly **backwards** and at speed.
+- [ ] If it loops: it's tied to a **live state** (stops when the state ends) or **bounded** (2–3 runs, then still); one looping thing per view; reduced-motion shows the static state.
 - [ ] Interruptible where it must be: state toggles / retargetable travel use transitions/WAAPI/springs (no restart-from-zero keyframes); one-shot bursts may use remounted keyframes.
 - [ ] Wiring verified from frames/code (fires, origin, RTL, secondary reaction, reduced-motion); **feel** handed to the user to confirm live — not claimed from screenshots. On a feature branch.

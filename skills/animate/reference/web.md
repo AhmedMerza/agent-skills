@@ -304,6 +304,31 @@ watch(target, () => badge.value?.animate(
   <span class="sr-only" aria-live="polite">{{ target }}</span>
 </template>
 ```
+**Two details that separate a ticker from a jittering number:**
+- **`font-variant-numeric: tabular-nums`** on the animated span. Proportional digits have different widths, so a rolling `1→8` makes the whole line twitch sideways every frame. Tabular figures hold the width still.
+- **Start when it's seen, not when it mounts.** A dashboard KPI below the fold rolls up unseen and is already at rest when the user scrolls to it. Gate the first roll with `useIntersectionObserver` (as in *One-shot scroll reveal* below): keep `target` at `0` until it intersects, then set it.
+
+### `gaugeSweep` — the same tween drives an arc
+For a ratio (capacity, SLA %, completion), drive the arc **and** the number off the single `display` ref above. Two separate tweens drift apart mid-flight and the arc disagrees with its own label.
+
+```vue
+<svg viewBox="0 0 36 36" class="gauge" aria-hidden="true">
+  <circle cx="18" cy="18" r="16" pathLength="100" class="track" />
+  <circle cx="18" cy="18" r="16" pathLength="100" class="arc"
+          :style="{ strokeDashoffset: 100 - display }" />   <!-- display is 0–100 -->
+</svg>
+<span class="pct" aria-hidden="true">{{ Math.round(display) }}%</span>
+<span class="sr-only" aria-live="polite">{{ target }}%</span>
+```
+```css
+.gauge { transform: rotate(-90deg); }                 /* start at 12 o'clock */
+.track, .arc { fill: none; stroke-width: 3; }
+.track { stroke: rgba(var(--v-theme-on-surface), 0.12); }
+.arc   { stroke: rgb(var(--v-theme-primary)); stroke-dasharray: 100; stroke-linecap: round; }
+.pct   { font-variant-numeric: tabular-nums; }
+```
+> `pathLength="100"` makes the dash maths a plain percentage regardless of radius. `stroke-dashoffset` isn't a compositor property, but it's one small SVG repaint per frame for ≤600ms — acceptable; dozens of gauges rolling at once are not (stagger them, or roll only the one that changed). Reduced motion: `useTransition`'s `duration` → `0`, so the arc and number jump to the value.
+
 > The rolling digits are decoration; a screen reader narrating "1, 4, 17, 31, 42…" is noise. Mark the animated span `aria-hidden` and expose the **settled** value via a visually-hidden `aria-live="polite"` node so assistive tech hears one clean update. Same idea for any count/total whose change matters.
 
 ---
@@ -653,6 +678,93 @@ const cancel = () => { held.value = false; clearTimeout(timer) }
 
 ---
 
+## `livePulse` *(a loop that means "live right now")*
+
+Ambient class — read the four ambient rules in `decision-map.md` first. The loop is bound to the state with `v-if`, so it stops the moment the state does.
+
+```vue
+<template>
+  <span class="live" :class="{ on: isLive }">
+    <span class="dot" />
+    <span v-if="isLive" class="ring" />
+  </span>
+</template>
+<style scoped>
+.live { position: relative; display: inline-grid; place-items: center; width: 10px; height: 10px; }
+.dot  { width: 8px; height: 8px; border-radius: 50%; background: rgba(var(--v-theme-on-surface), 0.38); }
+.live.on .dot { background: rgb(var(--v-theme-success)); }
+.ring { position: absolute; inset: 0; border-radius: 50%; background: rgb(var(--v-theme-success));
+        animation: live-ring 1.8s var(--ease-out) infinite; pointer-events: none; }
+@keyframes live-ring { from { transform: scale(1); opacity: 0.5; } to { transform: scale(2.6); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ring { display: none; } }   /* the green dot still says "live" */
+</style>
+```
+> The ring is a *separate* element that scales — never pulse the dot's own `box-shadow` (paints every frame) or `width` (layout). The colour change on `.dot` is the real cue; the ring only adds "now".
+
+---
+
+## `attentionSheen` *(a bounded first-look sweep)*
+
+A light band crosses the control a few times and then the control is still for good. This is the useful core of the "shimmer button" — with the infinite loop removed.
+
+```vue
+<template>
+  <v-btn class="sheen" :class="{ armed }" @click="armed = false">Finish setup</v-btn>
+</template>
+<style scoped>
+.sheen { position: relative; overflow: hidden; }
+.sheen.armed::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.35) 50%, transparent 65%);
+  transform: translateX(-100%);
+  animation: sheen 1.2s var(--ease-in-out) 600ms 3 forwards; }   /* 3 runs, then rests off-screen */
+@keyframes sheen { to { transform: translateX(100%); } }
+:dir(rtl) .sheen.armed::after { animation-direction: reverse; }    /* sweep with the reading direction */
+@media (prefers-reduced-motion: reduce) { .sheen.armed::after { display: none; } }
+</style>
+```
+> Where `armed` comes from is the actual design decision: it should be a real "not done yet" state (setup incomplete, feature unseen), persisted so the sheen doesn't re-arm on every visit. A sheen that greets the user every time is a nag.
+
+---
+
+## `themeReveal` *(View Transitions API — circle from the toggle)*
+
+The browser snapshots old and new pages; you animate one `clip-path` on the new snapshot. Zero-dep.
+
+```ts
+import { nextTick } from 'vue'
+import { useTheme } from 'vuetify'
+import { EASE } from '@/composables/useMotionTokens'
+
+// composable — useTheme() needs a component setup context, so call this from setup
+export function useThemeReveal() {
+  const theme = useTheme()
+  return async function toggleTheme(e: MouseEvent) {
+  const next = theme.global.current.value.dark ? 'light' : 'dark'
+  const apply = async () => { theme.global.name.value = next; await nextTick() }   // Vuetify ≥3.8: theme.change(next)
+
+  if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    return apply()                                    // instant swap — no fake fallback
+  }
+  const { left, top, width, height } = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  const x = left + width / 2, y = top + height / 2
+  const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y))   // farthest corner
+
+  const vt = document.startViewTransition(apply)
+  await vt.ready
+  document.documentElement.animate(
+    { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] },
+    { duration: 420, easing: EASE.inOut, pseudoElement: '::view-transition-new(root)' })
+  }
+}
+```
+```css
+/* global, not scoped — turn off the default cross-fade so only the circle shows */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+```
+> Coordinates come from `getBoundingClientRect`, so they're already right under RTL — don't flip them. The callback **must** await `nextTick()`: the browser takes the "new" snapshot when the callback's promise resolves, and Vue hasn't flushed the theme class until then. If the theme is also persisted (cookie / storage), do that inside `apply` too, so a reload mid-transition can't disagree.
+
+---
+
 ## Vuetify specifics worth knowing
 
 **Menus and dialogs should grow from their activator, not the viewport centre.** Vuetify supports this directly — set `origin` and use a scale transition, and the overlay reads as *coming from the thing you clicked* (law 1, causality) instead of appearing from nowhere:
@@ -683,7 +795,7 @@ node ~/.claude/skills/animate/scripts/verify-motion.mjs \
   --pw <dir containing a playwright install>     # e.g. this project: storage/playwright
 ```
 
-It asserts: the combo fires at all · starts within ~100ms (law 5) · animates only compositor properties (principle 9 — it will name any layout-triggering property you animated) · settles rather than spinning forever · survives a mid-flight retrigger without restarting from zero (principle 6) · and under `prefers-reduced-motion`, that positional travel is **dropped** while a colour/opacity **cue survives** (principle 7). Checks that don't apply are reported as SKIP rather than a hollow pass.
+It asserts: the combo fires at all · starts within ~100ms (law 5) · animates only compositor properties (principle 9 — it will name any layout-triggering property you animated) · settles rather than spinning forever · survives a mid-flight retrigger without restarting from zero (principle 6) · and under `prefers-reduced-motion`, that positional travel is **dropped** while a colour/opacity **cue survives** (principle 7). Checks that don't apply are reported as SKIP rather than a hollow pass. **Ambient loops (`livePulse`) fail "settles" by design** — run the harness with the live state switched *off* and confirm the ring is gone, which is the property that actually matters.
 
 > Two gotchas it already handles, both of which cost real time to rediscover: `waitUntil: 'networkidle'` **never fires against a Vite dev server** (the HMR websocket holds the connection open — use `domcontentloaded`), and `waitForSelector` defaults to `state: 'visible'`, so a zero-size marker element times out (use `state: 'attached'`).
 
