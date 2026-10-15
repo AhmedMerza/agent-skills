@@ -156,6 +156,7 @@ const { stop } = useIntersectionObserver(el, ([e]) => { if (e.isIntersecting) { 
 </style>
 ```
 Host it in a positioned wrapper next to the element, e.g. `<span class="d-inline-block position-relative rounded-lg"><VBtn …/><MagicBorderBeam /></span>`.
+- **Wrapping breaks sibling selectors.** Once the button sits inside the new span, any existing `.btn:hover + .x` / `~ .x` rule in the page silently stops matching (the span is the sibling now). Grep the page's styles for `+`/`~` rules on the host before wrapping, and rewrite them on the shared parent: `.parent:has(.btn:hover) .x`.
 - **Why outside the edge (`offset`):** drawn *on* a filled primary button, a primary-coloured beam is invisible. Sitting 3px outside, it reads against the page.
 - **Cost:** animating a registered custom property repaints the ring every frame — fine for ~9s on one element, not for many or forever. That's a second reason it's bounded.
 - **Verify:** `getComputedStyle(beam).opacity` should be ~1 mid-run and ~0 after `duration × laps`.

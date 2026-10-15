@@ -53,6 +53,8 @@ Motion is not the default-good answer; **the most professional outcome is someti
 
 If you're gating to "do nothing," **say so plainly and briefly explain why** (cite what's already there). Offer the smallest possible alternative if one exists ("the only thing I'd consider is X, and even that is optional") — but don't manufacture 2–4 ideas just to fill the menu. A confident "this doesn't need it, and here's the one-line reason" is a valid, valued result. Only proceed to step 4 once the target genuinely clears this gate.
 
+**A vague mandate doesn't override the gate.** "Make it feel more alive / premium" is a goal, not an instruction to add motion. On a working surface the answer can be "leave it" or a tidy-up; on an already-busy page the best answer is often **subtract first, then add one accent**. When your recommendation goes *against* the literal wording (they said "more alive", you're removing loops), say so in the first line of the proposal so it reads as a decision, not a misunderstanding — and keep the literal "add only" version on the menu as a non-recommended option.
+
 ### 3.5. Choose the pattern with judgment, not vibes — [decision-map.md](reference/decision-map.md)
 Once the target clears the gate, don't jump to a favourite effect. Run the **[motion decision map](reference/decision-map.md)**: name the state change in one sentence (*"X went from A to B"*), collect its 7 context facts (change class, relationship, origin, tone, frequency, initiator, constraints — infer from code, ask only the unknowns, usually just tone + frequency), then look up the ranked pattern(s). This is the layer that makes proposals *reasoned* — it enforces the duration-by-frequency budget, the tone rule (never bounce an error), enter-slow-exit-fast, opacity-leads-position, and picks fade-vs-push-up-vs-morph from the relationship rather than taste. The combo table below is the vocabulary; the decision map is the grammar that selects from it.
 
@@ -67,6 +69,8 @@ Present a short menu. For each: a name, one-line description of the choreography
 Let the user choose (and remix). They explicitly want to try one, react, try another — so make swapping cheap.
 
 ### 5. Implement the chosen combo
+**Scope of the next two rules.** The motion-tokens module and the *secondary reaction* (principle 3) bind **interaction combos** — things a user action triggers (press, submit, add, toggle). A self-contained **ambient or showcase accent** (border beam, marquee, live pulse) has no trigger to react to, so it has no secondary reaction; and its component props *are* its tokens — don't create a tokens file that nothing else consumes. Say "N/A: ambient accent" rather than inventing one.
+
 **First, the tokens — this is what makes step 6 cheap.** Iteration only stays seconds-cheap if every duration and curve is swappable in *one* place. So before hand-coding any bezier inline, create or extend a single source of truth: a motion-tokens module (e.g. a `useMotionTokens` composable exporting `EASE` / `DUR` objects) on web, or the curve `const`s on Flutter. Reference those tokens from the combo; never paste a raw `cubic-bezier(...)` / `150ms` you'll later have to hunt for across files.
 
 Then use the recipe from the platform reference, adapted to the real element. Keep it self-contained and easy to revert. Wire `prefers-reduced-motion`. Match the existing code style of the file.
