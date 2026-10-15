@@ -107,7 +107,12 @@ Each combo has a full Vue and Flutter recipe in the references. Pick and adapt; 
 | **like-burst** | favorite / like / react | icon scales with overshoot + fills → one-shot **ring/particle burst** (rare action → can delight) |
 | **live-pulse** | a state that is *currently live* (online, tracking, recording, syncing) | static dot + an expanding, fading **ring** that loops only while the state holds; stops the moment it doesn't |
 | **attention-sheen** | one control that genuinely needs a first look (unfinished setup, new feature) | a light band sweeps across it **2–3 times, then stops for good** — never an infinite loop |
+| **marquee** *(showcase)* | logo / partner / integration strip on a presentational page | two copies of a track loop sideways, soft masked edges, pause on hover; still wrapped row under reduced motion |
+| **spotlight-card** *(showcase)* | feature cards on a presentational page | a soft glow and a 1px lit border follow the mouse; mouse-only, gone under reduced motion |
+| **border-beam** *(showcase)* | the one primary CTA on a presentational page | a light runs round the edge a few laps when scrolled into view, then fades out for good |
 | **theme-reveal** | light/dark (or any whole-page skin) switch | the new theme **expands as a circle from the toggle** via the View Transitions API — causality for a whole-page change |
+
+Rows marked *(showcase)* live in [showcase.md](reference/showcase.md) and are for **presentational surfaces only** (hero, welcome/landing page, marketing section) — read that file only when the target is one. Before building any combo, **grep the project for an existing component** that already implements it (e.g. `MagicMarquee`, `MagicCard`, a `components/magic/` dir) and reuse it.
 
 Ambient loops (`live-pulse`, `attention-sheen`) are a different class from everything above — they explain a *persisting* state, not a change. Their rules (one per view, bounded or tied to a live state, static under reduced motion) are in the decision map's ambient section; read it before proposing either.
 
@@ -116,6 +121,7 @@ Default intensities: spring `{ stiffness: 300, damping: 20 }` (snappy) or Apple-
 ## References
 - [Motion decision map](reference/decision-map.md) — **the judgment layer**: 7 context facts + 12 laws (8 for discrete changes, 4 for continuous drivers) + change→pattern table that picks *which* motion and *why*. Consult in step 3.5, before proposing.
 - [Motion modifiers](reference/techniques.md) — **orthogonal knobs** that layer onto a combo you've already picked (stagger order, velocity-derived distortion, two-config springs, second-beat decoupling, proximity falloff). Consult *after* the combo is chosen, never instead of choosing one. Zero modifiers is the right answer for most targets.
+- [Showcase effects](reference/showcase.md) — Marquee, spotlight card, border beam (ported from Magic UI). **Presentational surfaces only**; read when the target is a hero/landing/welcome page, never for working UI.
 - [Vue / Vuetify recipes](reference/web.md) — WAAPI/FLIP, `<Transition>`, springs, the damped follower, every combo as copy-adaptable code.
 - [Flutter recipes](reference/flutter.md) — `flutter_animate`, `AnimationController`, `Hero`, the damped follower, every combo.
 - Deep web motion theory → the `ui-polish` skill.
