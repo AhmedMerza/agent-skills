@@ -57,7 +57,7 @@ python3.11 -m venv ~/.cache/youtube-capture-venv
   gated and returns nothing, while this one works unauthenticated.
 
 Bundled: `scripts/capture_youtube_walkthroughs.py` with `list` / `transcript` / `frames`.
-`frames` also takes a full URL (Instagram, TikTok, …) in place of a YouTube id — `reel-to-site`
+`frames` also takes a full URL (Instagram, TikTok, …) in place of a YouTube id — `story-site`
 reuses it that way.
 
 ## The passes
