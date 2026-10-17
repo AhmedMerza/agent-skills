@@ -20,6 +20,7 @@ My personal collection of agent skills, synced across machines — works with [C
 | `design-drift` | Whole-repo design-system health: token adoption, missing scales, duplicate kits. |
 | `explain` | Maps an unfamiliar feature end-to-end into a navigable `file:line` map. |
 | `video-teardown` | Reverse-engineers a product from its video walkthroughs; diffs against your codebase. |
+| `reel-to-site` | Turns a short video of a website into a visuals prompt (outside video tool) + a Fable build prompt. |
 | `scout` | No plan yet — names what "done" looks like, settles open questions breadth-first. |
 | `grill-me` | Interviews you about a plan until shared understanding. |
 | `root-cause` | Diagnoses a bug against ground truth before any fix. Output: a diagnosis, not a patch. |

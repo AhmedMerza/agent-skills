@@ -4,7 +4,7 @@
 Subcommands:
   list <channel_or_playlist_url>   dump video index as JSON
   transcript <video_id> [...]      write timestamped transcript(s)
-  frames <video_id> [...]          download video, extract scene-change frames
+  frames <video_id|url> [...]      download video, extract scene-change frames
 """
 import argparse
 import json
@@ -123,7 +123,10 @@ def duration_of(src):
 
 def cmd_frames(args):
     os.makedirs(VIDEO_CACHE, exist_ok=True)
-    for vid in args.video_ids:
+    for arg in args.video_ids:
+        # a bare id is YouTube; a full URL (Instagram, TikTok, ...) goes to yt-dlp as-is
+        url = arg if "://" in arg else "https://www.youtube.com/watch?v=" + arg
+        vid = re.sub(r"[^\w-]", "_", arg.rstrip("/").rsplit("/", 1)[-1].split("?")[0]) if "://" in arg else arg
         outdir = os.path.join(OUT, "frames", vid)
         os.makedirs(outdir, exist_ok=True)
         for stale in os.listdir(outdir):
@@ -133,9 +136,8 @@ def cmd_frames(args):
         if not os.path.exists(src):
             print("downloading {} ...".format(vid))
             r = run([sys.executable, "-m", "yt_dlp",
-                     "-f", "bestvideo[height<={h}][ext=mp4]/bestvideo[height<={h}]/best[height<={h}]".format(h=args.height),
-                     "--no-playlist", "-o", src,
-                     "https://www.youtube.com/watch?v=" + vid])
+                     "-f", "bestvideo[height<={h}][ext=mp4]/bestvideo[height<={h}]/best[height<={h}]/best".format(h=args.height),
+                     "--no-playlist", "-o", src, url])
             if not os.path.exists(src):
                 print("ERR download failed for {}:".format(vid))
                 print(r.stderr[-1500:])
