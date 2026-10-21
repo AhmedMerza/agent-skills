@@ -1,12 +1,13 @@
 # agent-skills
 
-My personal collection of agent skills, synced across machines — works with [Claude Code](https://docs.claude.com/en/docs/claude-code) and Kimi Code CLI.
+My personal collection of agent skills, synced across machines — works with [Claude Code](https://docs.claude.com/en/docs/claude-code), Kimi Code CLI, and Codex.
 
 **Full descriptions, per-flow traps, provenance and authoring conventions live in [docs/handbook.md](docs/handbook.md).** This page is the index.
 
 ## Layout
 
-- `skills/` — portable skills, loaded by both tools as-is
+- `skills/` — shared skills, loaded by Claude and Kimi directly; Codex uses these unless an override exists
+- `codex-skills/` — Codex-specific versions of shared skills and Codex ports of command workflows
 - `commands/` — Claude Code slash commands (invoked as `/<name>`)
 - `kimi-skills/` — Kimi Code CLI ports of the commands (invoked as `/skill:<name>`)
 - `docs/handbook.md` — the detailed companion
@@ -140,6 +141,18 @@ default_model = "kimi-code/kimi-for-coding"
 ```
 
 Kimi parses skill frontmatter strictly: keep it to `name` + `description` (+ optional `type`), and **double-quote any description containing `: `** (escaping inner quotes as `\"`) — an unquoted one fails parsing and the skill is silently skipped.
+
+### Codex
+
+Clone this repository on each PC, then link its skills into Codex:
+
+```sh
+~/agent-skills/scripts/install-codex.sh
+```
+
+The installer links each `skills/` entry, using its `codex-skills/` version when one exists. It also installs Codex-only workflows such as `mr-review`. It leaves existing skill directories untouched and reports conflicts. On a machine with older local copies that you want to replace, run `~/agent-skills/scripts/install-codex.sh --replace-local`; it backs up those directories under `~/.codex/skill-backups/` before linking them. Codex's bundled `.system` skills are left alone. Restart Codex if new skills do not appear immediately.
+
+Edit the shared source in `skills/` or a Codex-specific version in `codex-skills/`, then commit and push from this repository. Linked installs pick up changes after `git pull` on another PC. Some shared skills still contain Claude-specific commands or history paths; their workflows must be adapted when run in Codex, especially `reflect` and `persona-walkthrough`.
 
 ## Updating
 

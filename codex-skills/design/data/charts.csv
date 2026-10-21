@@ -1,0 +1,21 @@
+data_type,best_chart,colors,accessibility,library
+Time series trends,Line chart with area fill,Use brand primary for main line + 30% opacity fill + gray gridlines,Add data point markers for screen readers + alt text description,Chart.js or Recharts or ApexCharts
+Category comparison,Horizontal bar chart,Sequential single-hue palette from light to dark + accent for highlight,Include data labels on bars + sortable by value,Chart.js or Recharts or D3
+Part-to-whole ratio,Donut chart (not pie),5-7 distinct colors from palette + gray for minor segments,Legend with percentages + avoid thin slices under 5%,Chart.js or Recharts
+Distribution/spread,Histogram or box plot,Single color with opacity variations + median line accent,Clear axis labels + bin size annotation,D3 or Plotly or Recharts
+Correlation/scatter,Scatter plot,Different shapes + colors per category + trend line in accent,Shape encoding + color not sole differentiator,D3 or Recharts or Chart.js
+Geographic data,Choropleth map,Sequential palette light-to-dark single hue + hover tooltip,Pattern fills for colorblind + keyboard navigable tooltips,D3 or Mapbox or Leaflet
+Hierarchical data,Treemap,Color families per category + size encoding value,Clear labels on segments + breadcrumb navigation,D3 or Recharts
+Flow/process,Sankey diagram,Source category colors flowing to destination + opacity 0.3,High contrast edges + interactive hover highlighting,D3 or Plotly
+Ranked data,Horizontal bar sorted,Primary color for top items + gray for others + value labels,Clear rank numbers + data labels on bars,Chart.js or Recharts
+Progress/KPI,Gauge or radial progress,Green/amber/red zones + current value prominent,Numeric value alongside visual + ARIA labels,Custom SVG or Chart.js
+Real-time data,Sparkline or live line chart,Minimal - single color + red/green for change direction,Text summary alongside chart + rate of change label,D3 or custom SVG or Recharts
+Comparison over time,Grouped bar chart,2-3 distinct colors + consistent per category,Pattern fills + data labels + legend,Chart.js or Recharts
+Percentage stacked,Stacked bar 100%,Sequential colors per segment + consistent across bars,Segment labels + tooltip with absolute values,Chart.js or Recharts or D3
+Funnel conversion,Funnel chart,Primary darkening through stages + drop-off in red,Conversion rate labels + drop-off percentages,D3 or custom SVG
+Schedule/timeline,Gantt or timeline,Color per category/status + today marker accent,Zoom controls + keyboard navigation + text labels,D3 or vis.js or custom
+Multi-metric dashboard,Small multiples,Consistent color across all charts + highlight on interact,Consistent scales + clear titles per chart,Recharts or D3 grid
+Budget/financial,Waterfall chart,Green for positive + red for negative + gray for total,Clear +/- labels + running total line,D3 or Recharts or Plotly
+Survey/rating,Diverging bar or Likert scale,Red-to-green diverging palette centered on neutral,Numeric labels + neutral midpoint clear,D3 or custom SVG
+Network/relationships,Force-directed graph,Node color by type + edge weight by thickness,Zoom controls + search + accessible legend,D3 or vis.js or Cytoscape
+Before/after comparison,Dual axis or paired bar,Distinct colors per period + connecting trend line,Clear axis labels + period labels + annotations,Chart.js or Recharts

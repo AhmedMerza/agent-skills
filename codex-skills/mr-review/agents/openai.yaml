@@ -1,0 +1,4 @@
+interface:
+  display_name: "MR Review"
+  short_description: "Review GitLab merge requests for bugs and gaps"
+  default_prompt: "Use $mr-review to review an MR and report findings by severity with file references."
