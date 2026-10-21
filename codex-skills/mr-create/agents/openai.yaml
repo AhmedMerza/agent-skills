@@ -1,0 +1,4 @@
+interface:
+  display_name: "MR Create"
+  short_description: "Prepare branch and open GitLab merge request"
+  default_prompt: "Use $mr-create to push my branch and create an MR to the correct target branch."
