@@ -21,7 +21,9 @@
 //   web goto URL              type an address into the address bar
 //   web url                   the address bar as a person sees it
 //   web texts                 what a screen reader hears (accessibility tree)
-//   web profile NAME|WxH      mobile 390x844 · tablet 820x1180 · laptop 1440x900 · desktop 1920x1080 ·
+//   web files                 the phone's Files/Gallery folder ($FILES, default $OUT/files); downloads land there
+//   web pick NAME [NAME...]   choose files in the picker a tap just opened (names from `web files`)
+//   web profile NAME|WxH      mobile 390x844 · small-phone 360x780 · tablet 820x1180 · laptop 1440x900 · desktop 1920x1080 ·
 //                             ultrawide 3440x1440 · or any WxH (desktop-type). Switching between touch and
 //                             desktop profiles reopens the page (login kept, unsaved form input lost)
 //   web scheme dark|light     the visitor's OS colour scheme
@@ -44,6 +46,7 @@ const [cmd, ...args] = process.argv.slice(2)
 
 const PROFILES = {
   mobile: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 3 },
+  'small-phone': { viewport: { width: 360, height: 780 }, isMobile: true, hasTouch: true, deviceScaleFactor: 3 },
   tablet: { viewport: { width: 820, height: 1180 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 },
   laptop: { viewport: { width: 1440, height: 900 } },
   desktop: { viewport: { width: 1920, height: 1080 } },
@@ -73,7 +76,7 @@ async function alive() {
 
 async function client() {
   if (!cmd || cmd === 'help') {
-    console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 30).join('\n'))
+    console.log(readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 32).join('\n'))
     process.exit(cmd ? 0 : 1)
   }
   mkdirSync(OUT, { recursive: true })
@@ -100,7 +103,8 @@ async function serve(startProfile) {
 
   const log = (line) => appendFileSync(join(OUT, 'console.log'), `${new Date().toISOString()} ${line}\n`)
   const browser = await chromium.launch({ headless: process.env.HEADED !== '1' })
-  let profile = profileOf(startProfile), scheme = 'light', network = 'full', ctx, page, cdp
+  let profile = profileOf(startProfile), scheme = 'light', network = 'full', ctx, page, cdp, chooser
+  const FILES = process.env.FILES || join(OUT, 'files')
 
   async function open(url, storageState) {
     if (ctx) await ctx.close()
@@ -111,6 +115,8 @@ async function serve(startProfile) {
     page.on('pageerror', e => log(`pageerror ${e.message}`))
     page.on('requestfailed', r => log(`requestfailed ${r.method()} ${r.url()} ${r.failure()?.errorText}`))
     page.on('response', r => r.status() >= 500 && log(`http ${r.status()} ${r.request().method()} ${r.url()}`))
+    page.on('filechooser', fc => { chooser = fc; log(`filechooser multiple=${fc.isMultiple()}`) })
+    page.on('download', async d => { mkdirSync(FILES, { recursive: true }); await d.saveAs(join(FILES, d.suggestedFilename())).catch(e => log(`download: ${e.message}`)) })
     cdp = await ctx.newCDPSession(page)
     await setNetwork(network)
     if (url) await page.goto(url, { waitUntil: 'domcontentloaded' }).catch(e => log(`goto ${url}: ${e.message}`))
@@ -192,6 +198,12 @@ async function serve(startProfile) {
       await page.keyboard.press(key); await settle(); return ''
     },
     texts,
+    files: async () => { mkdirSync(FILES, { recursive: true }); return readdirSync(FILES).join('\n') || '(no files)' },
+    pick: async (names) => {
+      if (!chooser) throw new Error('no file picker is open: tap the button that picks a file first')
+      const fc = chooser; chooser = null
+      await fc.setFiles(fc.isMultiple() ? names.map(n => join(FILES, n)) : join(FILES, names[0])); await settle(); return `picked ${names.length}`
+    },
     profile: async ([name]) => {
       const next = profileOf(name)
       if (!!next.hasTouch === !!profile.hasTouch) { profile = next; await page.setViewportSize(next.viewport); return `viewport ${name}` }
