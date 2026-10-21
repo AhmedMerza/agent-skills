@@ -1,88 +1,24 @@
 ---
 name: mr-review
-description: "Review GitLab merge requests using parallel reviewer lenses: general correctness, security, architecture, tests, and performance. Use when Codex needs to inspect MR diffs, run multi-pass review, and produce one severity-ordered report with file references and actionable fixes."
+description: Review a GitHub pull request or GitLab merge request for correctness, security, architecture, tests, and performance. Use for PR/MR review requests on either forge; report actionable findings before any optional comments.
 ---
 
-# MR Review
+# PR/MR review
 
-## Default Mode
-Run review as parallel lenses, then merge findings:
-1. General correctness/regressions
-2. Security risks
-3. Architecture/design
-4. Test quality and coverage
-5. Performance/resource impact
+Review the proposed change against its target branch and the problem it claims to solve. The skill name is historical; it covers both GitHub PRs and GitLab MRs.
 
-If user does not specify lenses, run all five by default.
+## Resolve the change
 
-## Review Standard
-Prioritize findings over summary:
-- correctness bugs
-- regressions
-- security/data-loss risks
-- performance/resource risks
-- missing tests for changed behavior
+- A full URL determines the forge and repository. Otherwise inspect `git remote -v`: GitHub uses `gh`, GitLab uses `glab`. If both remotes exist, use the remote for the **target** repository, not merely the push fork. Never hardcode a project or host.
+- For GitHub, read metadata and changed paths with `gh pr view <number> -R <owner/repo> --json number,title,body,state,baseRefName,baseRefOid,headRefOid,files,url`; read the patch with `gh pr diff <number> -R <owner/repo>`. For GitLab, use `glab mr view`/`glab mr diff` or the project-scoped API. Confirm the returned URL matches the requested repository.
+- A check status is evidence about the tests it ran, not proof that the diff is safe. Read the changed code and relevant callers. If the local checkout is on another branch, fetch the PR/MR head into `refs/pr/<number>` or `refs/mr/<number>` and inspect with `git show`/`git diff`; do not switch the user's branch. Use API content if fetching is unavailable.
 
-## Comment Posting Policy
-Default flow:
-1. Run review and show findings first.
-2. Ask user for approval before posting any MR comment.
-3. After approval, post comments.
+## Review
 
-Default posting style (enforced):
-- Post one MR discussion per finding (separate threads).
-- Discussions must be resolvable (line-anchored diff threads), not general MR notes.
-- Use emoji severity headers and clean structure.
-- Do not post compressed one-line notes.
-- If a finding cannot be anchored to a valid diff line, mention that in review output and ask before posting a non-resolvable general note.
+Apply five lenses: general correctness, security, architecture, test coverage, and performance. For a substantive diff, run independent lenses in parallel when subagents are available, then deduplicate their findings. Scale the depth to the diff; a docs-only change does not need a full security pass. For each suspected issue, confirm the exact new line, the affected behavior, and whether it was already present on the base branch. Check framework defaults and guards before reporting. Treat uncertain product intent as an open question, not a defect. Run relevant tests only when they can run safely in the available environment, and distinguish test failures from environment failures.
 
-Optional posting style:
-- One consolidated note only if the user explicitly asks.
+Report confirmed findings first, ordered by severity. Give each finding its lens, severity, file and line, impact, and a specific fix direction. Then state coverage, checks run, open questions, and residual risk. A clean review means “no findings in the passes run,” not a guarantee.
 
-If there are no findings, do not post comments unless user asks.
+## Comments
 
-## Steps
-1. Open MR details and diff.
-2. Execute all five review lenses in parallel.
-3. Merge and deduplicate findings.
-4. Sort by severity (`high`, `medium`, `low`).
-5. Report findings with exact file references.
-6. Ask user whether to post comments to MR.
-7. Post comments only after approval.
-
-## Commands
-```bash
-glab mr view <mr-id> -R oreem/oreem
-glab mr diff <mr-id> -R oreem/oreem
-glab api projects/oreem%2Foreem/merge_requests/<mr-id>/versions
-glab api projects/oreem%2Foreem/merge_requests/<mr-id>/discussions --method POST -H "Content-Type: application/json" --input <payload.json>
-```
-
-## Output Format
-For each finding include:
-- lens (`general` | `security` | `architecture` | `tests` | `performance`)
-- severity
-- file path (and line when available)
-- issue
-- expected fix direction
-
-After findings, include:
-- open questions/assumptions
-- short residual risk note if coverage is incomplete
-
-## MR Note Template (default)
-Use this format for each posted finding:
-
-```md
-🔴 HIGH — <short title>
-
-**Lens:** <general|security|architecture|tests|performance>
-**File:** `<path:line>`
-**Issue:** <what is wrong and impact>
-**Fix direction:** <specific change expected>
-```
-
-Severity emoji mapping:
-- `🔴 HIGH`
-- `🟡 MEDIUM`
-- `💡 LOW`
+Show the findings to the user before posting. Post only with explicit approval. Use one line-anchored discussion or review comment per finding when the forge supports it. If a finding cannot be anchored, say so before posting a general comment. Do not post a clean-review comment unless asked.
