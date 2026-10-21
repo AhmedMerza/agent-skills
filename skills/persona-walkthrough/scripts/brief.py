@@ -45,6 +45,8 @@ $D texts                     # what a screen reader hears (use it only if the im
 $D tap X Y                   # click
 $D scroll down|up   $D type "text"   $D key back|enter|tab|del|esc (or any key/combo: t, ctrl+v)   $D drag X1 Y1 X2 Y2 [shift]
 $D url                       # read the address bar   ·   $D goto URL   # type an address into it
+$D files                     # your phone's Files/Gallery (downloads land here too)
+$D pick NAME [NAME...]       # after a tap opens the file/photo picker: choose these files from it
 {sms_line}$D stop                       # once, when you finish or give up
 ```
 Coordinates are in the screenshot's own pixels. Take a screenshot after every action; never act blind. `back` is the browser's Back button. {device_note}"""
