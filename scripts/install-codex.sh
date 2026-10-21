@@ -18,6 +18,14 @@ install_skill() {
   if [[ -L "$destination" && "$(readlink -f "$destination")" == "$(readlink -f "$source")" ]]; then
     return
   fi
+  if [[ -L "$destination" ]]; then
+    old_source="$(readlink -f "$destination")"
+    if [[ "$old_source" == "$repo/skills/$name" || "$old_source" == "$repo/codex-skills/$name" ]]; then
+      ln -sfn "$source" "$destination"
+      echo "Relinked $name"
+      return
+    fi
+  fi
   if [[ -e "$destination" || -L "$destination" ]]; then
     if [[ "$replace_local" == true && -d "$destination" && ! -L "$destination" ]]; then
       mkdir -p "$backup"

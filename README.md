@@ -65,11 +65,13 @@ a new idea:
    destination) the plan)
 ```
 
-**This map is the single source of truth for the chain.** Steps not in the skills table
-(`mr-create`, `mr-review`, `fix-review`, …) are **commands**, not skills — Claude Code finds
-them in `commands/`, Kimi Code CLI in `kimi-skills/`. The MR is opened **first**, then the
+**This map is the single source of truth for the chain.** Claude Code exposes the PR/MR steps as commands in `commands/`; Kimi uses flows in `kimi-skills/`; Codex has skill ports in `codex-skills/`. The MR is opened **first**, then the
 gates run against it; the tail can loop (structural fixes go back to `mr-review`).
 Commonly-confused pairs, per-flow traps, and the reasoning behind the order: [docs/handbook.md](docs/handbook.md).
+
+## Proactive routing on every machine
+
+The pipeline above is documentation, so it does not by itself make an agent choose a skill. Run `python3 ~/agent-skills/scripts/install-guidance.py` after cloning or pulling. It installs the short routing policy from `guidance/AGENT_WORKFLOW.md` into the global Claude, Kimi, and Codex instruction files using a replaceable managed block, preserving other instructions. Re-run it after the policy changes; restart each agent or start a new session to load it. The policy asks agents to name and actually apply the relevant skill at each stage, while skipping gates that do not fit the task. An explicit skill invocation still wins.
 
 ## Commands
 
@@ -152,7 +154,7 @@ Clone this repository on each PC, then link its skills into Codex:
 
 The installer links each `skills/` entry, using its `codex-skills/` version when one exists. It also installs Codex-only workflows such as `mr-review`. It leaves existing skill directories untouched and reports conflicts. On a machine with older local copies that you want to replace, run `~/agent-skills/scripts/install-codex.sh --replace-local`; it backs up those directories under `~/.codex/skill-backups/` before linking them. Codex's bundled `.system` skills are left alone. Restart Codex if new skills do not appear immediately.
 
-Edit the shared source in `skills/` or a Codex-specific version in `codex-skills/`, then commit and push from this repository. Linked installs pick up changes after `git pull` on another PC. Some shared skills still contain Claude-specific commands or history paths; their workflows must be adapted when run in Codex, especially `reflect` and `persona-walkthrough`.
+Edit the shared source in `skills/` or a Codex-specific version in `codex-skills/`, then commit and push from this repository. Linked installs pick up changes after `git pull` on another PC. Codex-specific ports for `reflect`, `persona-walkthrough`, and `fix-review` live in `codex-skills/`; `mr-review` supports GitHub PRs and GitLab MRs. Other shared skills may still contain agent-specific references, so check those instructions when first using them in Codex.
 
 ## Updating
 
