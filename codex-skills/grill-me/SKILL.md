@@ -1,7 +1,7 @@
 ---
 name: grill-me
 description: >-
-  Interview the user relentlessly about a plan or design until reaching shared understanding, resolving each branch of the decision tree. Use ONLY when the user explicitly invokes /grill-me or says "grill me" — never auto-trigger. Adapted from Matt Pocock's grill-me skill (github.com/mattpocock/skills).
+  Interview the user relentlessly about a plan or design until reaching shared understanding, resolving each branch of the decision tree. Use when the user explicitly invokes /grill-me or says "grill me", or when scout or lead (world mode) reaches its roadmap gate with the user present. Never auto-trigger otherwise. Adapted from Matt Pocock's grill-me skill (github.com/mattpocock/skills).
 ---
 
 Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer.

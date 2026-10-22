@@ -12,6 +12,7 @@ The job is to **survey the terrain, then pick the route** — not to charge at t
 
 **What this is NOT — so you invoke the right thing:**
 - Not `grill-me` — that interviews you about a **plan you already have**, walking one decision tree **depth-first**. This runs *before* a plan exists and deliberately goes **breadth-first**. When scout ends, `grill-me` is a reasonable next step.
+- Not `expand` — that widens a product target with competitor research and new ideas. Scout calls it in pass 1b for product work, then narrows.
 - Not `explain` — that maps code that **already exists**. This maps work that doesn't.
 - Not `root-cause` — that's for a broken thing with a known symptom. Reach for that first if something is failing; scout the *response* to it afterwards, if the fix isn't obvious.
 - Not `validate-plan` / `ship-check` — those judge a plan and a diff. Scout runs upstream of both and produces the thing they judge.
@@ -25,6 +26,10 @@ The job is to **survey the terrain, then pick the route** — not to charge at t
 Ask what **done** looks like, and get it to one or two lines. It might be a decision locked, a spec to hand off, a migration completed in place, a feature working end to end. Different destinations produce completely different routes, so this is settled first and never assumed.
 
 The destination **fixes the scope** — every question below is measured against it. If the user can't name it yet, that *is* the first thing to work on, and nothing else starts until it's named.
+
+### 1b. Widen before you narrow — product work only
+
+If the destination is something **end users touch** (a product, a feature, a screen), run `expand` before the fan-out: **full** mode for a new product or a milestone, **light** mode for a single feature. Scout's later passes cut scope hard; this is the one point where the target is deliberately widened — parity gaps the user didn't mention, friction killers, little touches, a level-changer. Approved ideas join the destination (re-state it); the rest go to Out of scope with a reason. Skip it for refactors, bug fixes, migrations and internal tooling.
 
 ### 2. Fan out — breadth-first, and resist answering
 

@@ -1,22 +1,17 @@
 ---
 name: mr-guide
-version: 1.0.0
-description: Generate a reviewer's guide for an MR/PR or branch — what changed in product terms, before/after, data model, UI states — not a code review
+version: 2.0.0
+description: Generate a skimmable pre-merge guide for an MR/PR or branch — what to know before merging, decisions made and alternatives, before/after screenshots, data model, UI states — as an HTML page, not a code review
 ---
 
 # /mr-guide
 
-Writes the document a reviewer wants **before** they open the diff: what this change does,
-what it looked like before and after, what moved in the data model, which UI states exist now.
+The page the merger reads **right before merging**, so they can understand the change without
+reading the diff. It must be skimmable in under a minute: the things to be aware of are stated
+and shown, not buried in prose.
 
-**This is not a code review.** It finds no bugs and makes no judgements about quality.
-Use `/mr-review` (findings), `/mr-review --deep` (opus on security + architecture), or `/ship-check` (pre-merge gate) for that.
-
-**Publishes by default.** The guide is written to the MR as soon as it is generated — that is
-the point of it. Use `--no-publish` (alias `--dry-run`) to print to the terminal and touch nothing.
-
-One exception, which is not overridable by the default: if you are **not** the MR author, the guide
-posts a comment on someone else's MR under your name. That always confirms first.
+**This is not a code review.** It finds no bugs and grades nothing. Use `/mr-review`
+(findings), `/mr-review --deep`, or `/ship-check` (pre-merge gate) for that.
 
 ## Provider resolution (GitHub or GitLab)
 
@@ -32,242 +27,163 @@ Same rules as `/mr-create`:
 
 ```
 /mr-guide                  # current branch — its open MR, or the branch diff if none exists yet
-                           # generates AND publishes to the MR description
 /mr-guide 1877             # a specific MR/PR number (incl. one you did not write)
-/mr-guide --no-publish     # print only, write nothing  (alias: --dry-run)
-/mr-guide --no-screens     # skip before/after screenshots even if frontend changed
+/mr-guide --no-screens     # skip screenshots even if frontend changed (the guide says so)
 /mr-guide --screens        # force screenshots even if the diff looks backend-only
+/mr-guide --comment        # ALSO post a short markdown version on the MR/PR (see Delivery)
 ```
 
 ## Target resolution
 
-Resolve in this order — **the no-MR case is normal, not an error**:
+The no-MR case is normal, not an error. In order:
 
 1. **Explicit number** → that MR/PR. Diff = its changes; target branch = its target.
 2. **No argument, open MR for the current branch** → that MR.
 3. **No argument, no MR yet** → the **branch diff** against its target branch
    (`upstream/dev` if `upstream` exists, else `origin/dev`, else the repo default branch).
-   Say plainly which one you used: `No MR yet — guiding the branch diff vs upstream/dev.`
-   This is the path `/mr-create --guide` uses.
+   Say plainly which: `No MR yet — guiding the branch diff vs upstream/dev.`
 
 Get the diff with `git diff --stat <target>...HEAD` and `git diff <target>...HEAD`, not
-`glab mr diff`, so the same code path serves all three cases.
+`glab mr diff`, so one code path serves all three cases.
 
-## What it produces
+## Output contract — top to bottom
 
-Sections, in this order. **Omit any section that has nothing in it** — do not write
-"N/A", "None", or "No changes". A guide with three sections is a good guide.
+The reader skims. Order is fixed; a section with nothing in it is **omitted** (never "N/A").
+Use headings, tables and callout boxes. **No paragraph longer than 3 lines.**
 
-### What this changes
-Two to five sentences, in the language of the product, not of files. A reader who has
-never opened this repo should understand what is now possible that was not before.
-Name the user who benefits (merchant, driver, consignee, admin, API consumer).
+### 1. Before you merge  (callout box, always present)
+0–5 items the merger MUST know, **one line each**, each with a severity marker:
+`BLOCKER` (do not merge until resolved) · `RISK` · `CHANGE` (user-visible behaviour change) ·
+`DATA` (migration, backfill, irreversible) · `DECIDE` (needs the merger's call).
+Sources: risky spots in the diff, migrations, behaviour changes, config/env/permission changes,
+spec divergences (issue asks X, branch does Y — state flatly, do not adjudicate), unhandled UI states,
+anything not reversible by a revert.
+If none: write **"Nothing needs your attention."** explicitly. Never leave the box blank.
+More than 5 survive → keep the highest severity and end with `N more cut to stay inside the cap`.
 
-### Before / after
-Behaviour, not files. What happened when someone did this thing yesterday; what happens now.
-Use a two-column table when there is more than one behaviour pair.
-If `--screens` ran, place the image pairs here.
+### 2. Summary  (3 bullets max + verdict line)
+- What changed, **in product terms**, naming the user who benefits (merchant, driver, cashier,
+  admin, API consumer). A reader who has never opened the repo should follow it.
+- **Verdict line:** one chip per gate with its result or `not run`:
+  `ship-check: merge` · `mr-review: 2 minor` · `persona: not run` · `ui-audit: not run` · `ux-audit: not run`.
+  Read results from the MR (comments, description) or this session; **never run a gate to fill the line**
+  and never claim one ran that did not.
 
-### Data model
-Only real schema/shape movement: new or dropped columns, migrations, new enum cases,
-nullable→not-null, new tables, changed casts, new relationships, altered API response shape.
-State the backfill story for anything that changes existing rows — or say there isn't one.
-Flag it if a consumer outside this repo reads the changed shape.
+### 3. Decisions made  (table)
+Each **non-obvious choice** in the change. Skip choices a reader would assume.
 
-### UI states
-Every state the changed screens can now be in: **empty, loading, error, success,
-permission-denied**, plus popovers/drawers/dialogs/detail views. Say which are newly handled
-and which were already there. Note any state the change introduces but does not handle —
-that is the single most useful line in the whole guide.
+| Decision | Alternatives considered | Picked | Why (one line) |
+|---|---|---|---|
 
-### Surfaces touched
-Compact list: routes, API endpoints, jobs, queued listeners, console commands, events,
-config keys, permissions, translation namespaces. One line each. This is the blast-radius map.
+Mine them from the MR description, commit messages, linked issue (and its comments), and the
+diff itself (a different mechanism than the issue named, a new table instead of a column, polling
+instead of an event). Apply `~/.claude/skills/best-option/SKILL.md` to each row:
+- Name every real alternative, including ones nobody wrote down but the diff implies.
+- Say **why each rejected option loses**, concretely ("needs a backfill of 40k rows"), not "less clean".
+- **Check for a better unlisted option.** If one exists, add a row marker `BETTER OPTION?` and name it.
+  If the pick is right, say so; do not manufacture a better one.
+- Where the rationale is undocumented, write `rationale inferred from diff` — never invent intent.
+No non-obvious decisions → omit the section.
 
-### Against the spec
-**Only when the branch or MR references an issue, and only when something diverges.**
+### 4. Before / after screenshots  (UI-touching diffs only)
+Side by side (two-column table, "Before" left, "After" right), **one pair per changed screen**,
+with a one-line caption saying what to look at. Desktop **and** mobile width for web.
+Details under **Screenshots** below. Non-UI diff → omit the section.
 
-Pull the issue's acceptance criteria / requirements and check each one against what the diff
-actually does. Report **only the mismatches** — an AC that is met needs no line, and a checklist
-of green ticks is noise.
+### 5. Detail  (each ≤ ~6 lines; fold anything longer in `<details>`)
+Include only what the change actually has:
+- **Before / after behaviour** — table of behaviour pairs (what happened yesterday / what happens now).
+- **Data model** — new/dropped columns, migrations, enum cases, nullability, casts, relationships,
+  changed API response shape. State the backfill story or say there is none. Flag consumers outside this repo.
+- **UI states** — empty, loading, error, success, permission-denied, plus dialogs/drawers: which are newly
+  handled, which were already there. **A state the change introduces but does not handle goes in
+  "Before you merge", not here.**
+- **Surfaces touched** — routes, endpoints, jobs, listeners, commands, events, config keys, permissions,
+  translation namespaces. One line each, folded: `<summary>Surfaces touched (3 routes, 1 command)</summary>`.
+- **Look hard at** — only genuinely risky spots (invariant, ordering, untested path, third-party
+  contract, money/rounding). Under ~20 changed files max 3, otherwise max 5. Anything risky enough to
+  matter before merging is also lifted into box 1.
 
-What counts as a divergence worth reporting:
-- an AC with no corresponding code at all
-- an AC met by a **different mechanism** than the issue specified (polling where the issue said
-  webhooks, a scheduled job where it said an event) — this is the highest-value case, because
-  it is a deliberate design decision that no line of the diff announces
-- a constraint the issue called out as mandatory that the code does not enforce
-- scope in the diff that the issue never asked for
+### Restraint
+- **A tiny MR gets a tiny guide**: box + summary, nothing else. Three files with no decision, no UI and
+  no data change is a ten-line page. Do not pad to look thorough.
+- Describe only what the diff does; code added but unreachable is called unreachable.
+- No code snippets unless one line is the entire point. No file-by-file walkthrough.
+- Do not grade ("clean", "well structured"). Report facts and choices.
 
-State the divergence flatly and **do not adjudicate it**. "The issue asks for X; the branch does
-Y instead" is the whole line. Whether Y is the better call is the reviewer's decision, not the
-guide's — often the divergence is correct and the issue is stale.
+## Screenshots
 
-If every AC is met as written, omit this section entirely. Say nothing.
+**Trigger.** Run automatically when the diff has at least one `.vue`, `.blade.php`, `.dart` UI file,
+or `resources/js|css|ts/**`/`.scss`/tailwind change that alters markup or styles. A locale-JSON-only
+or config-only diff alters no layout and does not trigger it. `--no-screens` skips (the guide states
+"screenshots skipped by flag"); `--screens` forces.
 
-### Look hard at
-Only genuinely risky spots — a tricky invariant, an ordering assumption, a place the tests do
-not reach, a third-party contract, money or rounding. If nothing qualifies, write one line
-saying the change is mechanical and skip the section. Padding this section is worse than
-omitting it: it trains reviewers to ignore it.
+**Never skip silently.** If a pass cannot run, the page shows a callout stating **exactly why**
+(app will not serve, no credentials, no emulator, route unreachable) and a list of **which screens
+would need before/after shots**. A missing screenshot never blocks the guide.
 
-**Cap by diff size** — the limit is there to force ranking, not to hide findings:
-- under ~20 changed files → **max 3**
-- ~20 files or more → **max 5**
+1. Announce: `Frontend changes detected (4 .vue) — capturing before/after.` Identify the changed
+   screens from components, router entries and Inertia page names.
+2. **Check the data exists first.** A new column/chip/action only renders with rows in the triggering
+   state. Query the page's own data; if there are none, label the shot honestly ("no rows in this state
+   yet — this is launch day"), or say the state could not be shown. Seed fixtures **only with the
+   user's explicit consent**, record original values, revert afterwards. Forms and dialogs need no data
+   and are always shot.
+3. **Never disturb the working tree** (no stash). Use throwaway worktrees: `git worktree add <tmp>/after <branch>`
+   for the MR branch and `git worktree add <tmp>/before <target>` for the base (`main` or the MR target).
+   Serve each **on its own port**: a shared dev server serves the main checkout, so shooting it
+   photographs the wrong branch and reports success. Check project memory/docs for the repo's serving
+   recipe. Tear both down afterwards and confirm the main checkout's own server is still alive.
+4. **Isolate the older side's cache.** The base checkout cannot rehydrate cache entries written by newer
+   code (new enum case, changed DTO) and dies on `unserialize`, which reads as "target branch broken".
+   Give the *before* server a throwaway cache (Laravel: `CACHE_STORE=array`). Never clear the shared cache.
+5. **Capture with the tool that fits:**
+   - **Web (Laravel/Inertia/Vue):** `/browse` (`~/.claude/commands/browse.md`, helper
+     `node ~/.claude/scripts/browse.mjs <path>`; add `--mobile` for the mobile width), run from each
+     worktree's root so it uses that worktree's config and port. Needs `PW_PASS` — ask the user, never
+     store it. Or Playwright directly when `/browse` cannot reach a state (open dialog, filled form).
+   - **Flutter web build:** `web.mjs` from the persona-walkthrough skill.
+   - **Flutter / native Android:** `scripts/droid.sh shot` from `~/.claude/skills/persona-walkthrough/`
+     (adb; emulator or real phone). Build and install the *base* APK, shoot, then the *branch* APK,
+     shoot, same device and same screen. Reset the app between builds for a fresh state.
+6. Save as `before-<screen>.png` / `after-<screen>.png` in a scratch dir; Read each to confirm it shows
+   the intended screen (not a login page or spinner — re-run with `--wait 30000` if so).
 
-If more than the cap survive scrutiny, keep the highest-severity ones and add a final line:
-`N further items were cut to stay inside the cap.` Never silently drop a real finding.
+## Delivery
 
-## Screenshots — auto-detected
+The guide is an **HTML page** (it holds images and tables; terminal text cannot).
 
-Run the before/after screenshot pass **automatically** when the diff touches frontend.
-Frontend signal — any changed path matching:
-
-```
-*.vue  ·  *.blade.php  ·  resources/js/**  ·  resources/css/**  ·  resources/ts/**
-resources/**/locales/**.json  ·  *.scss  ·  tailwind.config.*  ·  vite.config.*
-```
-
-Translation-only or config-only hits do **not** trigger it on their own — a locale JSON
-change with no template change alters no layout. Require at least one `.vue` or `.blade.php`.
-
-When it triggers:
-1. Say so before starting: `Frontend changes detected (4 .vue, 1 .blade.php) — capturing before/after.`
-2. Identify the affected routes from the changed components (imports, router entries, Inertia page names).
-2a. **Check the data exists before shooting.** A new column, chip, badge or action row only renders
-   when there are rows in the state that triggers it. Query for them first — if the count is zero,
-   the "after" shot is visually identical to "before" plus an empty column, which reads as *the
-   feature does nothing*. This is the same misleading-screenshot failure as photographing the wrong
-   branch, and it is not visible in the image.
-   When the data is absent, do **not** silently ship the pair. Pick one:
-   - shoot it anyway and **label it honestly** — "no rows in this state yet, so the new column is
-     empty; this is what every org sees on launch day". This is genuinely informative, and it is
-     often the shot that exposes an unhandled empty state.
-   - say in the guide that the state could not be shown, and why.
-   - seed a fixture row **only with the user's explicit consent** — never unprompted on a shared
-     database. Pick the row by running the page's own query, record its original values, and revert
-     afterwards.
-   Form and drawer changes need no data and should always be shot — prefer them when the
-   data-dependent screens cannot be demonstrated.
-3. Capture **after** on the current branch, then **before** on the target branch, via `/browse`.
-4. Desktop **and** mobile widths — the standing rule for frontend MRs.
-5. **Never write to the user's working tree.** If it has uncommitted changes — which mid-branch
-   it usually does — do **not** stash, and do not decline either. Build a throwaway worktree at
-   the branch and screenshot from there:
-   - `git worktree add <tmp>/<branch> <branch>` for the "after" shots, and a second worktree at
-     the target branch for "before"
-   - serve each worktree **on its own ports** — a shared dev server serves the main checkout, so
-     shooting it silently photographs the wrong branch and reports success
-   - tear both down afterwards, and confirm the main checkout's own dev server is still alive
-   Check the project's memory/docs first — a repo that has done this before usually has the exact
-   serving recipe recorded (worker counts, host binding, hot-file handling), and those details are
-   where this fails silently rather than loudly.
-   **Isolate the older side's cache.** The two checkouts are different ages but share one cache
-   store, and the newer app will have written entries whose shape the older code cannot rehydrate —
-   a new enum case, a changed DTO, an added property. The old server then dies on `unserialize`,
-   `Undefined constant` or `__PHP_Incomplete_Class` while the new one is fine, which reads as
-   "the target branch is broken". Point the *before* server at a throwaway cache (Laravel:
-   `CACHE_STORE=array`). Never clear the shared cache to fix it — other checkouts and sessions
-   are using it.
-   Only decline if a worktree cannot be created, and then say which step failed.
-
-`--no-screens` skips the pass. `--screens` forces it. If the app will not serve or a route
-cannot be reached, say which route and why, and carry on with the rest of the guide —
-a missing screenshot never blocks the guide.
-
-## Rendering
-
-The guide is read in a browser, not a terminal. Use the rich vocabulary — **verified to render on
-both GitHub and self-hosted GitLab** (tested against GitLab 18.8-ee via `POST /api/v4/markdown`):
-
-| element | use it for |
-|---|---|
-| tables | *Before / after*, and the data-model column list. Two to four columns; never more |
-| `<details><summary>` | the long tail — *Surfaces touched*, the full *UI states* enumeration |
-| `> [!WARNING]` / `> [!NOTE]` | each *Look hard at* item, and each *Against the spec* divergence |
-| ` ```mermaid ` | a state machine — **only** when the branch actually adds or changes one |
-
-**Collapsing is the load-bearing one.** An MR description that runs 400 lines is worse than no
-guide: reviewers scroll past it to reach the diff. Put the scannable shape up top and fold the
-enumerations away, so the whole guide is under roughly one screen when collapsed.
-
-Rules that keep it honest:
-
-- **Never collapse *Look hard at* or *Against the spec*.** Those exist to be seen. Folding them
-  away defeats the entire guide.
-- **Collapse only what exceeds ~10 lines.** A three-item list in a `<details>` is a click that
-  buys nothing.
-- Put the count in the summary so a reader can judge without opening —
-  `<summary>Surfaces touched (3 routes, 1 scheduled command, 2 permissions)</summary>`.
-- **A blank line after `<summary>` and before `</details>`**, or the markdown inside will not
-  render — this is the single most common way these come out broken.
-- **No task lists.** Unchecked boxes in a description read as unfinished work, and the guide is
-  not a checklist.
-- One mermaid diagram at most, and only if it shows something the prose cannot. A diagram of a
-  two-state flow is decoration.
-
-Do not use colour chips, footnotes, or nested collapsibles. If a section needs a scrollbar to
-read, it is too long — cut it rather than folding it twice.
-
-## Restraint
-
-- **Describe only what the diff does.** Never infer a feature from a filename or a
-  half-implemented path. If code is added but unreachable, say it is unreachable.
-- **No code snippets** unless one specific line is the entire point of the change.
-- **No file-by-file walkthrough.** That is what the diff is for.
-- **Do not grade the change.** No "clean implementation", no "well structured", no score.
-- A small change gets a short guide. Three sentences and a data-model note is a complete
-  guide for a three-file change.
-
-## Publishing
-
-**Default: publish.** Resolve the destination by authorship:
-
-- **You are the MR author** → write the guide into the **MR description**, wrapped in
-  `<!-- mr-guide -->` … `<!-- /mr-guide -->`. A re-run **replaces** that block in place; it never
-  stacks duplicates. Preserve everything outside the marker verbatim — checklists, `Closes #N`
-  lines, anything a human typed. **No confirmation needed** — it is your own MR and the write is
-  idempotent.
-- **You are not the author** → post a **single top-level comment** (never inline threads), and
-  **ask the user first**. This writes to a colleague's MR under the user's name. If a previous
-  `mr-guide` comment from the same user exists, offer to edit it rather than add a second.
-- **No MR exists** → there is nothing to publish. Print the guide and say
-  `No MR yet — run /mr-create --guide to open one with this guide in the description.`
-  This is not a failure.
-
-`--no-publish` / `--dry-run` → print only, write nothing, in every case above.
-
-**Always print the guide to the terminal too**, whether or not it published, so the user sees what
-went out without opening the browser. After publishing, print the MR URL.
-
-**Do not publish a guide built on a failed analysis.** If the diff could not be read, or the
-analysis produced nothing for the main sections, print what you have and skip the write.
-
-Screenshots: upload via the provider's upload endpoint and reference the returned markdown —
-never link a local file path.
-
-Screenshots: upload via the provider's upload endpoint and reference the returned markdown —
-never link a local file path.
+1. Build one self-contained HTML file: headings, tables, callout boxes (`BLOCKER`/`RISK`/`DATA`
+   red-amber, `CHANGE`/`DECIDE` blue), `<details>` for folded detail, screenshots in a two-column
+   table. Light/dark safe, readable at phone width, no horizontal scroll.
+2. **If the Artifact tool is available, publish with it** (follow its design-skill contract) and upload
+   screenshots as files/assets; print the URL. Otherwise write the `.html` (images as relative files or
+   base64) to the scratchpad or `./mr-guide-<n>.html` and **print its absolute path**. Never link a
+   local path from a posted comment.
+3. Print to the terminal a 5-line recap: the "Before you merge" items, the verdict line, the page URL/path.
+4. **Post to the MR/PR only on request (`--comment` or the user asks):** a short markdown version —
+   box, summary, decisions table, link to the page — as one top-level comment. If you are **not** the
+   author, confirm first (it posts under the user's name); if a prior `mr-guide` comment by the user
+   exists, offer to edit it rather than add a second. Wrap in `<!-- mr-guide -->` … `<!-- /mr-guide -->`
+   so a re-run replaces it in place. Screenshots in a comment go through the provider's upload endpoint.
+   Never overwrite the MR description. A blank line after `<summary>` and before `</details>`; no task lists.
+5. **Do not publish a guide built on a failed analysis** (diff unreadable, nothing for the main sections).
+   Print what you have and say what failed.
 
 ## Workflow
 
-1. Resolve provider and target (see above). State which of the three target cases applies.
-2. Pull the diff and the commit messages. **Resolve the linked issue** — from the branch name,
-   a commit trailer, or the MR description — and read it in full. It carries the intent the diff
-   cannot. Extract its acceptance criteria verbatim before analysing the code, so the comparison
-   in *Against the spec* is against what was actually asked for rather than a memory of it.
-3. **Delegate the analysis.** For a diff over ~10 files, spawn parallel subagents
-   (`model: "sonnet"`) — one for backend/data-model, one for frontend/UI-states, one for
-   surfaces (routes, jobs, commands, API). Ask each for conclusions with `file:line` anchors,
-   not file dumps. Cap them: tell each not to spawn its own subagents.
-4. Run the screenshot pass if auto-detection fires.
-5. Assemble the guide. Drop empty sections.
-6. Print it to the terminal, then publish per the rules above — straight to the description on
-   your own MR, after a confirm on someone else's, not at all with `--no-publish`.
+1. Resolve provider and target; state which of the three target cases applies.
+2. Pull the diff and commit messages. **Resolve the linked issue** (branch name, commit trailer, MR
+   description), read it in full, and extract its acceptance criteria verbatim before analysing code.
+   Read the MR's existing review/gate results for the verdict line.
+3. For a diff over ~10 files, delegate analysis to parallel `sonnet` subagents (backend/data model,
+   frontend/UI states, surfaces), each told to return conclusions with `file:line` anchors and **not to
+   spawn their own subagents**. Smaller diffs: do it inline.
+4. Extract decisions (table 3) and apply best-option to each.
+5. Run the screenshot pass if it triggers; otherwise state why not.
+6. Assemble the page in the contract order, drop empty sections, size it to the change, deliver.
 
 ## Hooks
 
-- `/mr-create --guide` — generate the guide from the branch diff and open the MR with it in
-  the description.
-- `/mr-review` — if the MR description contains a `<!-- mr-guide -->` block, read it for
-  context before reviewing. Do not regenerate it.
+- `/mr-create --guide` — generate the guide from the branch diff and link it from the MR it opens.
+- `/mr-review` — if the MR carries a `<!-- mr-guide -->` comment, read it for context first. Do not regenerate it.
