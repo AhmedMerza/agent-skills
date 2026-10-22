@@ -29,7 +29,7 @@ Examples of the kind of thing this skill exists to find (from the POS product):
 
 ### 1. Frame — two minutes, no questions you could answer yourself
 
-Write down: the product, the market (country/region, segment — e.g. "cafés and small restaurants in Bahrain"), the **personas** (e.g. owner, cashier, kitchen, end customer) and the **moments** in their day the product touches (opening, rush hour, closing, month end, onboarding). Read the repo, the roadmap, and the decision log first so you know what already exists and what was already rejected — don't re-propose a rejected idea unless something changed, and say what.
+Write down what the product **already has** first — from its README, docs and screens, not memory — or the parity matrix will list your own features as gaps. Then the product, the market (country/region, segment — e.g. "cafés and small restaurants in Bahrain"), the **personas** (e.g. owner, cashier, kitchen, end customer) and the **moments** in their day the product touches (opening, rush hour, closing, month end, onboarding). Mine the user's own pain history too (past transcripts, issues, handovers): their repeated complaints are the highest-signal input you have. Read the repo, the roadmap, and the decision log first so you know what already exists and what was already rejected — don't re-propose a rejected idea unless something changed, and say what.
 
 ### 2. Parity baseline — research it yourself
 
@@ -40,9 +40,9 @@ The user's screenshots are welcome input, never a prerequisite. You can usually 
   1. **Help centre / knowledge base / docs** — the most complete and least inflated feature list there is.
   2. **Changelogs and release notes** — what they're investing in now.
   3. **Pricing pages** — what's paywalled tells you what customers value.
-  4. **Reviews and complaints** — app-store reviews, G2/Capterra, Reddit, local forums. Complaints are the best gap list in the world: every "I wish it could…" is an idea with evidence attached.
+  4. **Reviews and complaints** — app-store reviews, G2/Capterra, Reddit, local forums, and for developer tools the **GitHub issues sorted by reactions**. Complaints are the best gap list in the world: every "I wish it could…" is an idea with evidence attached. Web search surfaces forum threads poorly; fetch them directly (a site's own search, `hn.algolia.com/api/v1/search?query=…`, the issue tracker) instead of trusting search snippets.
   5. **Demo videos** — show the actual flow and how many taps it takes.
-- **Fan out**: one research subagent per competitor (cheap model, told not to spawn its own subagents), each returning a feature list grouped by persona and moment, plus the top 5 complaints, with source URLs. Don't pull pages into your own context.
+- **Fan out**: one research subagent per competitor (cheap model, told not to spawn its own subagents), each returning a feature list grouped by persona and moment, plus the top 5 complaints, with source URLs — and each claim marked **verified** (page opened) or **snippet** (search summary only). Weigh snippets accordingly. Don't pull pages into your own context.
 
 Merge into a **parity matrix**: rows are capabilities grouped by persona/moment; columns are each competitor and **us** (✅ have / 🟡 partial / ❌ missing / 🗺️ on roadmap). Every ❌ that ≥2 competitors have is a **parity gap** — losing a deal over a missing basic is the most expensive failure, so these come first regardless of how boring they are.
 

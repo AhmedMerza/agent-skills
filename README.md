@@ -72,7 +72,7 @@ Commonly-confused pairs, per-flow traps, and the reasoning behind the order: [do
 
 ## Proactive routing on every machine
 
-The pipeline above is documentation, so it does not by itself make an agent choose a skill. Run `python3 ~/agent-skills/scripts/install-guidance.py` after cloning or pulling. It installs the short routing policy from `guidance/AGENT_WORKFLOW.md` into the global Claude, Kimi, and Codex instruction files using a replaceable managed block, preserving other instructions. Re-run it after the policy changes; restart each agent or start a new session to load it. The policy asks agents to name and actually apply the relevant skill at each stage, while skipping gates that do not fit the task. An explicit skill invocation still wins.
+The pipeline above is documentation, so it does not by itself make an agent choose a skill. Run `python3 ~/agent-skills/scripts/install-guidance.py` after cloning or pulling. It installs the short routing policy from `guidance/AGENT_WORKFLOW.md` into the global instruction file of every installed agent CLI (see Install) using a replaceable managed block, preserving other instructions. Re-run it after the policy changes; restart each agent or start a new session to load it. The policy asks agents to name and actually apply the relevant skill at each stage, while skipping gates that do not fit the task. An explicit skill invocation still wins.
 
 ## Commands
 
@@ -93,24 +93,31 @@ The MR/PR commands auto-detect GitHub (`gh`) vs GitLab (`glab`) from the git rem
 
 ## Install
 
-Clone anywhere, then point your tool's config at the repo so edits stay in sync.
-
-### Claude Code
+One command per machine covers every agent CLI that is installed (Claude Code, Codex, Kimi, Gemini CLI, Antigravity `agy`, Qwen Code; others are skipped):
 
 ```sh
 git clone https://github.com/AhmedMerza/agent-skills.git ~/agent-skills
+~/agent-skills/scripts/install-skills.sh && python3 ~/agent-skills/scripts/install-guidance.py
+```
 
-# back up existing dirs if you have them, then link:
+`install-skills.sh` links `skills/*` into each CLI's skills dir (Codex gets its `codex-skills/` port where one exists), links `commands/` and the helper scripts for Claude, and never overwrites a local skill (`--replace-local` backs it up first). `install-guidance.py` writes the routing policy into each CLI's global instructions file. Both are idempotent; re-run after `git pull`, then start a new session. To support another CLI, add one line to `TARGETS` in each script. `scripts/install-codex.sh` remains as an alias.
+
+| Agent | Routing file | Skills dir |
+| --- | --- | --- |
+| Claude Code | `~/.claude/CLAUDE.md` | `~/.claude/skills` (+ `~/.claude/commands`) |
+| Codex | `~/.codex/AGENTS.md` | `~/.codex/skills` |
+| Kimi | `~/.kimi-code/AGENTS.md` | `~/.claude/skills` via `extra_skill_dirs` (below) |
+| Gemini CLI, `agy` | `~/.gemini/GEMINI.md` | `~/.gemini/skills`, `~/.gemini/config/skills` |
+| Qwen Code | `~/.qwen/QWEN.md` | `~/.qwen/skills` |
+
+`mr-create`, `mr-review`, `fix-review` and `mr-guide` live in `skills/` so every agent gets them; `commands/<name>.md` is a symlink to the same file for Claude. Some of their steps use Claude-specific helpers (`~/.claude/scripts`, parallel subagents); the installer places the scripts, and agents without subagents run those steps sequentially.
+
+Manual alternative (Claude Code only):
+
+```sh
 ln -s ~/agent-skills/skills ~/.claude/skills
-
-# commands: link the individual files (your ~/.claude/commands may hold other, local-only commands)
-for f in mr-create mr-guide mr-review fix-review commit issue browse handover-save handover-resume handover-list checkpoint; do ln -sf ~/agent-skills/commands/$f.md ~/.claude/commands/$f.md; done
-
-# the /browse command needs its helper script on the standard path:
-mkdir -p ~/.claude/scripts && ln -sf ~/agent-skills/scripts/browse.mjs ~/.claude/scripts/browse.mjs
-# /mr-review and /fix-review post, list and resolve GitLab threads with these:
-ln -sf ~/agent-skills/scripts/diff-anchor.py ~/.claude/scripts/diff-anchor.py
-ln -sf ~/agent-skills/scripts/mr-note.py ~/.claude/scripts/mr-note.py
+for f in ~/agent-skills/commands/*.md; do ln -sf $f ~/.claude/commands/; done
+mkdir -p ~/.claude/scripts && for f in browse.mjs diff-anchor.py mr-note.py; do ln -sf ~/agent-skills/scripts/$f ~/.claude/scripts/$f; done
 ```
 
 Or copy them if you'd rather not symlink:
@@ -150,10 +157,10 @@ Kimi parses skill frontmatter strictly: keep it to `name` + `description` (+ opt
 Clone this repository on each PC, then link its skills into Codex:
 
 ```sh
-~/agent-skills/scripts/install-codex.sh
+~/agent-skills/scripts/install-skills.sh
 ```
 
-The installer links each `skills/` entry, using its `codex-skills/` version when one exists. It also installs Codex-only workflows such as `mr-review`. It leaves existing skill directories untouched and reports conflicts. On a machine with older local copies that you want to replace, run `~/agent-skills/scripts/install-codex.sh --replace-local`; it backs up those directories under `~/.codex/skill-backups/` before linking them. Codex's bundled `.system` skills are left alone. Restart Codex if new skills do not appear immediately.
+The installer links each `skills/` entry, using its `codex-skills/` version when one exists. It also installs Codex-only workflows such as `mr-review`. It leaves existing skill directories untouched and reports conflicts. On a machine with older local copies that you want to replace, run `~/agent-skills/scripts/install-skills.sh --replace-local`; it backs up those directories under `~/.codex/skill-backups/` before linking them. Codex's bundled `.system` skills are left alone. Restart Codex if new skills do not appear immediately.
 
 Edit the shared source in `skills/` or a Codex-specific version in `codex-skills/`, then commit and push from this repository. Linked installs pick up changes after `git pull` on another PC. Codex-specific ports for `reflect`, `persona-walkthrough`, and `fix-review` live in `codex-skills/`; `mr-review` supports GitHub PRs and GitLab MRs. Other shared skills may still contain agent-specific references, so check those instructions when first using them in Codex.
 
