@@ -23,6 +23,7 @@ My personal collection of agent skills, synced across machines — works with [C
 | `video-teardown` | Reverse-engineers a product from its video walkthroughs; diffs against your codebase. |
 | `story-site` | Scroll-story landing + product page for a brand (from a brief or a reference reel): concept, stages, configurator, asset costs, visuals prompt + Fable build prompt. |
 | `scout` | No plan yet — names what "done" looks like, settles open questions breadth-first. |
+| `expand` | Widens a product target past competitor parity: researches competitors itself (docs, changelogs, reviews), then ranks friction killers, little touches and level-changers for bulk approval. Light mode runs on its own initiative. |
 | `grill-me` | Interviews you about a plan until shared understanding. |
 | `root-cause` | Diagnoses a bug against ground truth before any fix. Output: a diagnosis, not a patch. |
 | `best-option` | Handed a menu of options? Explains each, checks for a better unlisted one, picks ONE. |
@@ -60,9 +61,9 @@ something's broken:
                                                       push, open)  diff)        code)       findings)     leftovers)
 
 a new idea:
-  scout → grill-me → validate-plan → …same tail…
-  (find the   (sharpen
-   destination) the plan)
+  scout → expand → grill-me → validate-plan → …same tail… → mr-guide
+  (find the   (widen past  (sharpen       (vet the plan)        (skim before
+   destination) parity)      the plan)                             you merge)
 ```
 
 **This map is the single source of truth for the chain.** Claude Code exposes the PR/MR steps as commands in `commands/`; Kimi uses flows in `kimi-skills/`; Codex has skill ports in `codex-skills/`. The MR is opened **first**, then the
@@ -81,7 +82,7 @@ The MR/PR commands auto-detect GitHub (`gh`) vs GitLab (`glab`) from the git rem
 | Command | What it does |
 | --- | --- |
 | `mr-create` | Open a PR/MR for the current branch — title/body, pre-flight checks, reviewer suggestions. |
-| `mr-guide` | Writes the reviewer's guide into the PR description (product-level, auto-screenshots). |
+| `mr-guide` | Skimmable pre-merge page: what you must know, decisions vs alternatives (best-option), before/after screenshots for UI. |
 | `mr-review` | Reviews a PR/MR — up to five parallel reviewers matched to the diff, inline + summary comments. |
 | `fix-review` | Fixes review findings in code, replies, resolves threads. |
 | `commit` | Smart commit — auto-branch, format/test, conventional message, push. |

@@ -1,6 +1,6 @@
 ---
 name: grill-me
-description: Interview the user relentlessly about a plan or design until shared understanding — working the design tree in rounds, asking every question whose prerequisites are already settled. Trigger ONLY on an explicit request to be grilled - /grill-me, "grill me", "poke holes in this", "stress-test this plan", "interrogate me about this". Never infer it from a plan that merely looks underspecified, and never start it mid-task on your own judgment; it interrupts the work by design. Adapted from Matt Pocock's grill-me / grilling skills (github.com/mattpocock/skills).
+description: Interview the user relentlessly about a plan or design until shared understanding — working the design tree in rounds, asking every question whose prerequisites are already settled. Trigger ONLY on an explicit request to be grilled - /grill-me, "grill me", "poke holes in this", "stress-test this plan", "interrogate me about this". Also runs when /scout or /lead (world mode) reaches its roadmap gate with the user present - that hand-off is the request. Otherwise never infer it from a plan that merely looks underspecified, and never start it mid-task on your own judgment; it interrupts the work by design. Adapted from Matt Pocock's grill-me / grilling skills (github.com/mattpocock/skills).
 ---
 
 Interview me relentlessly until we reach a shared understanding. Map the plan as a **design
