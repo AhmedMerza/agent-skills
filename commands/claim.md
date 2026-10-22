@@ -1,0 +1,1 @@
+../skills/claim/SKILL.md

@@ -1,0 +1,1 @@
+../skills/mr-approve/SKILL.md

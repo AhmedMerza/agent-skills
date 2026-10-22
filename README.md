@@ -9,7 +9,6 @@ My personal collection of agent skills, synced across machines — works with [C
 - `skills/` — shared skills, loaded by Claude and Kimi directly; Codex uses these unless an override exists
 - `codex-skills/` — Codex-specific versions of shared skills and Codex ports of command workflows
 - `commands/` — Claude Code slash commands (invoked as `/<name>`)
-- `kimi-skills/` — Kimi Code CLI ports of the commands (invoked as `/skill:<name>`)
 - `docs/handbook.md` — the detailed companion
 
 ## Skills
@@ -66,7 +65,7 @@ a new idea:
    destination) parity)      the plan)                             you merge)
 ```
 
-**This map is the single source of truth for the chain.** Claude Code exposes the PR/MR steps as commands in `commands/`; Kimi uses flows in `kimi-skills/`; Codex has skill ports in `codex-skills/`. The MR is opened **first**, then the
+**This map is the single source of truth for the chain.** Every step is a skill in `skills/` (Claude also gets them as `/` commands via `commands/` symlinks); `codex-skills/` holds Codex-specific wording where it differs. The MR is opened **first**, then the
 gates run against it; the tail can loop (structural fixes go back to `mr-review`).
 Commonly-confused pairs, per-flow traps, and the reasoning behind the order: [docs/handbook.md](docs/handbook.md).
 
@@ -76,7 +75,7 @@ The pipeline above is documentation, so it does not by itself make an agent choo
 
 ## Commands
 
-Claude Code slash commands (Kimi: same workflows as `/skill:<name>` from `kimi-skills/`).
+Claude Code slash commands (all of them are also skills in `skills/`; Kimi runs them as `/skill:<name>`).
 The MR/PR commands auto-detect GitHub (`gh`) vs GitLab (`glab`) from the git remote.
 
 | Command | What it does |
@@ -110,7 +109,7 @@ git clone https://github.com/AhmedMerza/agent-skills.git ~/agent-skills
 | Gemini CLI, `agy` | `~/.gemini/GEMINI.md` | `~/.gemini/skills`, `~/.gemini/config/skills` |
 | Qwen Code | `~/.qwen/QWEN.md` | `~/.qwen/skills` |
 
-`mr-create`, `mr-review`, `fix-review` and `mr-guide` live in `skills/` so every agent gets them; `commands/<name>.md` is a symlink to the same file for Claude. Some of their steps use Claude-specific helpers (`~/.claude/scripts`, parallel subagents); the installer places the scripts, and agents without subagents run those steps sequentially.
+Every command (`mr-create`, `mr-review`, `fix-review`, `mr-guide`, `commit`, `issue`, `claim`, `browse`, `checkpoint`, `handover-*`, `mr-approve/assign/list/merge/review-request/status`, `review`, `usage-week`) lives in `skills/` so every agent gets them; `commands/<name>.md` is a symlink to the same file for Claude. Some of their steps use Claude-specific helpers (`~/.claude/scripts`, parallel subagents); the installer places the scripts, and agents without subagents run those steps sequentially.
 
 Manual alternative (Claude Code only):
 
@@ -131,13 +130,13 @@ Restart Claude Code to pick up newly-added skills/commands. Invoke any of them w
 
 ### Kimi Code CLI
 
-Add both directories to `extra_skill_dirs` in `~/.kimi-code/config.toml`:
+Point `extra_skill_dirs` in `~/.kimi-code/config.toml` at the skills:
 
 ```toml
-extra_skill_dirs = [ "~/agent-skills/skills", "~/agent-skills/kimi-skills" ]
+extra_skill_dirs = [ "~/agent-skills/skills" ]
 ```
 
-Then run `/reload` or start a new session. The command ports are `type: flow`, so they only run when you invoke them — `/skill:mr-create`, `/skill:commit`, etc. (`kimi-skills/browse/browse.mjs` is a symlink into `scripts/`, so `/skill:browse` needs no extra install step.)
+Then run `/reload` or start a new session, and invoke any of them as `/skill:<name>` (`/skill:mr-create`, `/skill:commit`, …).
 
 **Recommended: configure a `[secondary_model]` pool** in the same `config.toml` — it enables the Agent tool's `model` parameter, and `mr-review` pins its five parallel reviewers to the pool's cheap/fast alias (measured: same verdicts at ~half the tokens and ~a quarter of the wall clock):
 
