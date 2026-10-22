@@ -79,6 +79,24 @@ before believing it. See `/prove-the-test`.
 - **🔧 Fix these first** — fundamentally right, but these specific gaps must land before merge. List them, most-important first, each with *where*.
 - **🛑 Reconsider** — it fixes the wrong thing, leaves the core problem unsolved, or a materially better approach is worth the rework. State the single most important reason and the next step.
 
+### 5. Does a human need to look? — decide it, so nobody reads a diff for nothing
+
+After the verdict, make one review call for the human who merges. 🔧 and 🛑 go back to the author first; make the call on the ✅ that follows.
+
+- **👀 Review** — a human should read the parts named, and only those. Required if **any** of these hold:
+  1. It touches money, tax, payments, auth, permissions, secrets, personal data, or tenant isolation.
+  2. It can't be undone cleanly: a destructive or rewriting migration, a backfill on real rows, deletions, or external side effects (messages sent, webhooks, a published API).
+  3. It changes a contract others consume: a public or cross-repo API, a shared schema, event shapes, config defaults.
+  4. The agent made a product or UX call the approved issue or plan didn't: new behaviour, changed copy, a new default, a new screen.
+  5. A gate didn't run or ran degraded, a finding was accepted instead of fixed, or a regression test couldn't be proven red.
+  6. Review took ≥2 rounds of structural fixes, or this check found a gap the author missed.
+  7. Project policy names a human reviewer for these paths (CODEOWNERS, contributing rules, recorded merge policy).
+  8. You wouldn't bet on it. Low confidence is a reason on its own; say what it is.
+- **👁 Glance** — none of the above, but end users will see a difference that matches the approved issue. The before/after screenshots in `/mr-guide` are enough; about a minute.
+- **✅ No review needed** — none of the above, nothing user-visible changed, the change matches the approved issue, and every gate ran clean.
+
+When unsure between two levels, pick the higher one. The call says what is worth a human's time; it **never** grants merge authority. Who may merge is unchanged.
+
 ## When this runs after review fixes
 
 Fixes written in response to a review are the highest-risk code on the branch: written fast, on the
@@ -120,6 +138,8 @@ Skimmable — this is a merge decision, not an essay.
 **Design audit** — <skipped: backend-only | ui-audit: score + P1s | ux-audit: High findings>  (UI diffs only)
 
 **Verdict: ✅ ship / 🔧 fix first / 🛑 reconsider** — <the decisive reason + the one thing to watch>
+
+**Human review: 👀 review <what, where> / 👁 glance at screenshots / ✅ not needed** — <the rule that triggered it, or why none did>
 ```
 
 ## Guardrails

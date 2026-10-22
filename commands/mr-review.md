@@ -1,6 +1,5 @@
 ---
 name: mr-review
-version: 2.1.0
 description: Perform comprehensive code review on a GitHub PR or GitLab MR
 ---
 
