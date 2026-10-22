@@ -75,6 +75,13 @@ code — one was satisfied by a *fallback row* the failure path wrote, which met
 only the field under test. When a test surprises you by passing, find out which line it actually pins
 before believing it. See `/prove-the-test`.
 
+**"Edges hold" needs an edge you saw.** When the change reads or parses something it doesn't produce —
+another program's files, logs, API payloads, real rows — and you never looked at a real one, the size
+and shape it assumes are unverified. Name the assumption (a byte limit, a field's presence, a format)
+and make it a fix-first item: check one real instance before merging. Measured 2026-10-22 on a replay:
+a ship-check said "✅ ship it, the edges hold" on a scan that read 8 KB of Codex rollouts whose first
+line runs ~22 KB; a fix had to follow 30 minutes later.
+
 - **✅ Ship it** — solves the real problem, complete, edges hold. Name the one thing to keep an eye on post-merge (there's always one).
 - **🔧 Fix these first** — fundamentally right, but these specific gaps must land before merge. List them, most-important first, each with *where*.
 - **🛑 Reconsider** — it fixes the wrong thing, leaves the core problem unsolved, or a materially better approach is worth the rework. State the single most important reason and the next step.
