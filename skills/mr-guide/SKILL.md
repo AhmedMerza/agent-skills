@@ -65,7 +65,7 @@ More than 5 survive → keep the highest severity and end with `N more cut to st
 ### 2. Summary  (3 bullets max + verdict line)
 - What changed, **in product terms**, naming the user who benefits (merchant, driver, cashier,
   admin, API consumer). A reader who has never opened the repo should follow it.
-- **Verdict line:** one chip per gate with its result or `not run`:
+- **Verdict line:** one chip per gate with its result, `not run` (you know it didn't run), or `not reported` (no record either way; never guess). Live or manual tests count as gates too:
   `ship-check: merge` · `mr-review: 2 minor` · `persona: not run` · `ui-audit: not run` · `ux-audit: not run`.
   Read results from the MR (comments, description) or this session; **never run a gate to fill the line**
   and never claim one ran that did not.
@@ -88,7 +88,7 @@ No non-obvious decisions → omit the section.
 
 ### 4. Before / after screenshots  (UI-touching diffs only)
 Side by side (two-column table, "Before" left, "After" right), **one pair per changed screen**,
-with a one-line caption saying what to look at. Desktop **and** mobile width for web.
+with a one-line caption saying what to look at. Desktop **and** mobile width for web, unless the changed element doesn't render at mobile width; then say so in one line instead of the mobile pair.
 Details under **Screenshots** below. Non-UI diff → omit the section.
 
 ### 5. Detail  (each ≤ ~6 lines; fold anything longer in `<details>`)
@@ -128,8 +128,9 @@ would need before/after shots**. A missing screenshot never blocks the guide.
 2. **Check the data exists first.** A new column/chip/action only renders with rows in the triggering
    state. Query the page's own data; if there are none, label the shot honestly ("no rows in this state
    yet — this is launch day"), or say the state could not be shown. Seed fixtures **only with the
-   user's explicit consent**, record original values, revert afterwards. Forms and dialogs need no data
-   and are always shot.
+   user's explicit consent**, record original values, revert afterwards. If the app ships a mock or demo
+   data mode, seed that inside the throwaway worktree instead (no consent needed: nothing real is touched),
+   and say on the page that the shots come from seeded mock data. Forms and dialogs need no data and are always shot.
 3. **Never disturb the working tree** (no stash). Use throwaway worktrees: `git worktree add <tmp>/after <branch>`
    for the MR branch and `git worktree add <tmp>/before <target>` for the base (`main` or the MR target).
    Serve each **on its own port**: a shared dev server serves the main checkout, so shooting it
@@ -143,6 +144,9 @@ would need before/after shots**. A missing screenshot never blocks the guide.
      `node ~/.claude/scripts/browse.mjs <path>`; add `--mobile` for the mobile width), run from each
      worktree's root so it uses that worktree's config and port. Needs `PW_PASS` — ask the user, never
      store it. Or Playwright directly when `/browse` cannot reach a state (open dialog, filled form).
+   - **Any other web app (plain Vue/React/Vite, no Laravel login):** `/browse` doesn't apply. Serve each
+     worktree on its own port and shoot with Playwright directly (`npx playwright screenshot` or a short
+     script), at 1280px and 390px.
    - **Flutter web build:** `web.mjs` from the persona-walkthrough skill.
    - **Flutter / native Android:** `scripts/droid.sh shot` from `~/.claude/skills/persona-walkthrough/`
      (adb; emulator or real phone). Build and install the *base* APK, shoot, then the *branch* APK,
