@@ -73,7 +73,7 @@ python3 .claude/checks/run.py "$BASE" refs/mr/<N>
 ```
 
 Seconds, no agents, and it **cannot miss its class** — the one thing agents cannot promise.
-Measured on oreem !3379: this layer found a cross-tenant IDOR in 3 seconds that a 303k-token
+Measured on a real production MR: this layer found a cross-tenant IDOR in 3 seconds that a 303k-token
 security agent took 11 minutes to reach and a sibling agent read the same file and missed
 entirely — plus a second unscoped admin endpoint that **seven agent runs never surfaced at all**.
 

@@ -15,7 +15,7 @@ Invoke any skill with `/<name>` in Claude Code or `/skill:<name>` in Kimi Code C
 ## Flows — which one do I reach for?
 
 Chains that actually get used, start to finish. `→` is "then". Items in `backticks-with-slash`
-(`/mr-create`) are commands in `~/.claude/commands/`, not skills. Steps in (parentheses) are
+(`/mr-create`) are skills in `skills/`, symlinked as Claude commands. Steps in (parentheses) are
 optional.
 
 **Something's broken**

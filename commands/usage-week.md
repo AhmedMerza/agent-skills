@@ -1,0 +1,1 @@
+../skills/usage-week/SKILL.md

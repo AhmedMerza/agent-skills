@@ -78,5 +78,5 @@ done
 if command -v claude >/dev/null; then
   mkdir -p "$HOME/.claude/commands" "$HOME/.claude/scripts"
   for f in "$repo"/commands/*.md; do ln -sf "$f" "$HOME/.claude/commands/${f##*/}"; done
-  for f in browse.mjs diff-anchor.py mr-note.py; do ln -sf "$repo/scripts/$f" "$HOME/.claude/scripts/$f"; done
+  for f in browse.mjs diff-anchor.py mr-note.py usage-report.py; do ln -sf "$repo/scripts/$f" "$HOME/.claude/scripts/$f"; done
 fi

@@ -1,0 +1,1 @@
+../skills/mr-merge/SKILL.md

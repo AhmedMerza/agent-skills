@@ -70,6 +70,16 @@ Cut anything that can't name **persona + moment + gain**. For the rest, give eac
 
 Ethics gate: honest value only. No dark patterns, no manufactured urgency, no lock-in tricks dressed as features.
 
+### 4b. Prove it — a claim isn't a finding until it survives a test
+
+Research says what *should* be good. Before anything is tagged `parity` or makes your top 3, put it to the cheapest real test you can run, here, on this product:
+
+- **"We're behind on X"** → measure whether X actually hurts *this* user: count the incidents, measure the disk, the minutes, the rejected findings, the support tickets. A competitor having it is not evidence we need it.
+- **"Idea Y would help"** → prototype the smallest version (a script, a throwaway screen, a run on real data) and look at what it produces. Does it change a decision someone would make?
+- **"Competitor Z does it well"** → check it against their complaints and issue tracker, not their marketing page.
+
+Give each tested item a verdict: **HELD** (real, and the fix pays), **WEAK** (real but small, so tag it `later`), or **FAILED** (not our problem, or the fix doesn't work, so cut it and say why). Anything you couldn't test is marked **untested** and can't be in the top 3. Use one subagent per test, run in parallel, told not to spawn its own.
+
 ### 5. Hand back — the user approves in bulk
 
 ```
@@ -79,7 +89,7 @@ Ethics gate: honest value only. No dark patterns, no manufactured urgency, no lo
 | Capability | Who has it | Us | Cost |
 
 **Ideas, ranked**
-| # | Idea | Who · moment · gain | Lens | Evidence | Cost | Tag |
+| # | Idea | Who · moment · gain | Lens | Evidence | Test → verdict | Cost | Tag |
 
 **My top 3:** <idea> — <why>; …
 **Cut:** <idea> — <why> (kept so it isn't re-proposed)
@@ -102,6 +112,7 @@ Then carry on. Nothing gets built without a yes. If nothing clears the bar, say 
 ## Guardrails
 
 - **Research is your job.** Never ask the user what competitors have; go find out, cite the URL.
+- **Test before you recommend.** Research proposes; a test on the real product decides. Untested ideas never make the top 3.
 - **Parity before delight.** A missing basic loses the deal; a missing delighter only loses the wow.
 - **Fresh eyes for ideation.** The context that wrote the plan can't see past it.
 - **Every idea names who, when, and what they gain.** Otherwise cut it.
