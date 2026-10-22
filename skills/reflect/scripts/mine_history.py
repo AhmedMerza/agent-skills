@@ -9,8 +9,8 @@ usage: mine_history.py [--since DAYS] [--skill NAME] [--projects-dir DIR] [--exa
 """
 import argparse, json, os, re, sys, glob, datetime, collections
 
-CORRECTION = re.compile(r"\b(no[,.! ]|nope|wrong|don'?t|do not|stop|that'?s not|not what|revert|undo|i said|again|why did you|instead)\b", re.I)
-NOISE = ("<system-reminder>", "<task-notification>", "<local-command", "<command-name>", "[Request interrupted", "<pasted_content")
+CORRECTION = re.compile(r"\b(no[,.! ]|nope|wrong|stop|that'?s not|not what|revert|undo|i said|why did you|are you sure)\b", re.I)
+NOISE = ("<system-reminder>", "<task-notification>", "<local-command", "<command-name>", "[Request interrupted", "<pasted_content", "This session is being continued")
 SLASH = re.compile(r"<command-name>/?([\w:.-]+)</command-name>")
 
 
@@ -47,7 +47,7 @@ def mine(path, cutoff):
                     name = (b.get("input") or {}).get("skill")
                     if name:
                         pending.append(dict(skill=name.split(":")[-1], via="tool", ts=ts, session=d.get("sessionId"), cwd=d.get("cwd"), branch=d.get("gitBranch"), task=last_task))
-        elif d.get("type") == "user":
+        elif d.get("type") == "user" and not d.get("isMeta"):  # isMeta = a skill's expanded body, not the user
             text = text_of(content)
             slash = SLASH.search(text)
             if slash and not any(b.get("type") == "tool_result" for b in content if isinstance(b, dict)) if isinstance(content, list) else slash:
