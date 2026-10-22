@@ -98,13 +98,24 @@ The user gives you a goal and leaves to lead something else. Your job is that th
 - **Detect stalls yourself.** Run a self-paced `/loop` (no interval, so it uses ScheduleWakeup and you pick the delay: short while work is in flight, long when everyone is busy). Each tick: `aw_agents` for idle or gone sessions, `aw_inbox`, open MRs with no movement, and whether any worker has an empty queue. Idle with a queue → send the next item. Silent mid-item for a long stretch → ask for a one-line state; still silent → tell the user in the digest and propose replacing it. Use CronCreate only if `/loop` is unavailable; it fires on a fixed clock whether or not anything changed.
 - **Batch the yeses.** Collect everything that needs the user into one pending list in STATE.md, each with your recommendation and one-line reason. Send it once, in the digest. Never block a worker on it: give the worker other queue items meanwhile.
 
+### Building the team yourself
+
+If the world has `leadSpawn` on, you start and stop workers yourself with `aw_spawn` and `aw_stop`; the user doesn't open sessions for you. If it's off, `aw_spawn` refuses. Put "turn on leadSpawn for <world>" on the pending-yes list, and meanwhile ask the user for the sessions you need.
+
+- **How many.** Start one worker per repo that has ready, unblocked items. Add a second worker in the same repo only when its items touch disjoint files. Stay under the world's `maxSpawned` (default 6), and fewer is better: every worker costs context and usage.
+- **Which agent.** Choose per item rather than by habit: a cheaper or different CLI for mechanical work, the strongest one for money, auth, sync or hard design. Give each worker its own worktree (the default).
+- **Start it with the brief.** The `task` you pass is the kickoff brief: the standing-authority policy, the first item and the report format. Record the worker in STATE.md as soon as it shows up in `aw_agents`.
+- **Hard single items** can go through run steps (`steps`: plan → review plan → build → review code) instead of one long-lived worker.
+- **Stop what's idle.** When a worker's queue is empty and its MRs are merged, `aw_stop` it and note that in STATE.md. An idle worker left open is waste, and it counts against the cap.
+- **After your own `/clear`** your session id changes and you lose the link to workers you started before. Re-adopt them from STATE.md by messaging them, or ask the user to end them.
+
 ### Shared resources and chores
 
 You own every shared thing that two workers can collide on: SDK installs (one Flutter/Node toolchain version, upgraded only by you), schema version numbers and migration sequence numbers (reserve them in STATE.md before a worker writes the migration), databases, emulators and devices, ports, test data, and temp paths (each worker gets its own scratch directory, never a shared `/tmp` path). Infra chores (installing packages, creating databases, restarting services) are yours to do, not the user's to paste output for. If one needs `sudo` or a credential you lack, put it on the pending-yes list with the exact command.
 
 ### The aw_send cap
 
-Agent Worlds refuses `aw_send` once two sessions have traded 12 messages, counted in both directions per pair, with no human prompt to either. The count for every pair you are in resets when the user types any prompt into your session (or the worker's); a mail notice does not reset it. The guard stops two agents looping on each other; keep it, and do not try to reset it with prompts you generate yourself.
+Agent Worlds refuses `aw_send` once two sessions have traded 40 messages (the server's `AW_PING_PONG`; older servers use 12), counted in both directions per pair, with no human prompt to either. The count for every pair you are in resets when the user types any prompt into your session (or the worker's); a mail notice does not reset it. The guard stops two agents looping on each other; keep it, and do not try to reset it with prompts you generate yourself.
 - **Spend messages on work, not chatter.** One message per assignment that carries the item and the next one or two in the queue; workers report in one message ending in the report format. Read state from the tracker, git and MRs instead of asking.
-- **Watch the count.** Track sends per worker since the user's last message in STATE.md. At 9 or more on any pair, put the remaining work in that worker's queue as a single message and flag it in the digest.
+- **Watch the count.** Track sends per worker since the user's last message in STATE.md. At 30 or more on any pair (9 on an older server with a cap of 12), put the remaining work in that worker's queue as a single message and flag it in the digest.
 - **When refused,** don't retry or route around it via another session. Add "sends paused for <worker>, one message from you resumes them" to the pending list; the user's next message to you resets all your pairs at once.
