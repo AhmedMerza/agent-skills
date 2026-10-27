@@ -27,6 +27,7 @@ My personal collection of agent skills, synced across machines — works with [C
 | `root-cause` | Diagnoses a bug against ground truth before any fix. Output: a diagnosis, not a patch. |
 | `best-option` | Handed a menu of options? Explains each, checks for a better unlisted one, picks ONE. |
 | `second-opinion` | Judges one decision head-to-head, merit only. |
+| `court` | Puts a product/business idea on trial: prosecution, defense, a blind jury of personas, a judge. Explicit request only. |
 | `wait-what` | Re-pitches a message that didn't land, in plain controlled English. |
 | `where-were-we` | Lost the thread of a long session? Reports state, not history — landed vs open. |
 | `lead` | Session becomes a coordinator over subagent teammates — never codes; worktree per writer, batched questions, one-branch-at-a-time integration with a merged-HEAD check. |
