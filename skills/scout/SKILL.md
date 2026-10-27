@@ -26,6 +26,8 @@ Ask what **done** looks like, and get it to one or two lines. It might be a deci
 
 The destination **fixes the scope** — every question below is measured against it. If the user can't name it yet, that *is* the first thing to work on, and nothing else starts until it's named.
 
+**Check it against the hard rules before the fan-out.** Read the project's non-negotiables (CLAUDE.md, a contract, a compliance constraint) and ask: if the work ends where those rules force it to end — including any fallback they prescribe — does that still count as done? If not, the destination is wrong. Say so and fix it with the user before anything else, rather than discovering it at the end. No conflict is the usual result; say it in one line and move on. *(Found by `/court` on Agent Worlds #46: "done" required Allow/Deny to reach OpenCode, but the CLAUDE.md fallback is an informational card with neither.)*
+
 ### 1b. Widen before you narrow — product work only
 
 If the destination is something **end users touch** (a product, a feature, a screen), run `expand` before the fan-out: **full** mode for a new product or a milestone, **light** mode for a single feature. Scout's later passes cut scope hard; this is the one point where the target is deliberately widened — parity gaps the user didn't mention, friction killers, little touches, a level-changer. Approved ideas join the destination (re-state it); the rest go to Out of scope with a reason. Skip it for refactors, bug fixes, migrations and internal tooling.
