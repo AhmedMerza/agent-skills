@@ -60,6 +60,9 @@ Don't judge from reading alone once a candidate has survived to here. Extract th
 Two rules that decide whether the test means anything:
 
 - **Run the unknown skill first.** Whichever you run second knows the answer already, and its result is contaminated. If the unfamiliar one wins going first, that's a strong signal; if yours wins going second, that's inconclusive and must be reported as such.
+- **Or remove the order effect: run each arm in its own fresh agent**, same model, same fixture, neither told about the other. Then neither is contaminated, and both can run in parallel.
+- **Score only what you verified.** Check each claim unique to one arm against the code, the data or the source before counting it; a confident wrong finding is a loss, not a point.
+- **Don't leak the answer into the brief.** When you write the input both arms read (a case file, a task prompt), leave out the decisive fact, or the test only measures whether they can read it.
 - **Prefer a fixture with checkable ground truth** — a bug whose cause you can verify in code or data — so "better output" is a fact rather than a preference.
 
 Where a candidate fills a genuine gap there's nothing to race it against; run it alone and judge the output on its own merits.
