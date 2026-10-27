@@ -24,6 +24,8 @@ You cannot judge whether a fix is complete without knowing *exactly* what it was
 
 Run in order. Each is skippable-with-a-sentence if it genuinely yields nothing — but you must have *looked*, against ground truth (code, schema, real data), not assumed.
 
+**First, the floor check (free, deterministic).** Run `node ~/agent-skills/scripts/floor-guard.mjs --base <merge target>` from the repo. It lists moves that lower the bar: `.skip`, a deleted test or assertion, a new suppression (`@ts-ignore`, `eslint-disable`, `istanbul ignore`), a stub that throws, an empty `catch`. Exit 1: each line is a finding unless the change justifies it; a reworded assertion shows as removed, so read the hunk first. Exit 2 means it could not run; never read it as clean. *(adapted from addyosmani/agent-skills `constraint-driven-development`, MIT)*
+
 ### 1. Completeness — what's MISSING? (the headline pass)
 The most dangerous bug in a finished fix is the part that isn't there. A missing branch throws no error and fails no test — it just silently doesn't happen. Hunt for it:
 - **Sibling callers / the shared source.** If the fix patched one call site of a shared function, grep **every** caller — are the others still broken? The right fix is usually at the source; a per-caller patch leaves siblings bleeding.

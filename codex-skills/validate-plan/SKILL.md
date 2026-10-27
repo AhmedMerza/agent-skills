@@ -12,6 +12,10 @@ This is self-critique on an existing plan. It runs **after** a plan exists (Code
 
 **The restraint gate — read this first.** The failure mode of this skill is manufacturing doubt: inventing alternatives nobody needs and objections that don't hold, turning a sound plan into noise. Don't. If the plan is the right shape, **say so plainly** and hand back the one risk worth watching. A confident "this is sound, proceed — just watch X" is a first-class outcome, not a failure to find enough. Only surface an alternative when a *genuinely different* approach exists with a real trade-off; only raise a risk you can *name concretely*. Depth over volume: three real findings beat ten filler ones.
 
+## Run it where the author's reasoning can't reach
+
+If the plan was written in this conversation, don't review it here: you will re-check what the author already believed. Spawn **one** reviewer with `collaboration.spawn_agent` and `fork_turns: "none"`, and give it only the plan text, the original ask (verbatim), and the repo path. Never pass the reasoning, rejected drafts, or why the author is confident. It runs the passes below and returns findings with file:line evidence; you drop findings that misread the ask, verify the rest, and give the verdict. If subagents are unavailable, say the review was self-review. Run inline when the plan came from elsewhere or is a few lines. *(Adapted from addyosmani/agent-skills `doubt-driven-development`, MIT; measured on Agent Worlds #62, where a fresh reviewer found a blocker self-review missed.)*
+
 ## The four passes
 
 Run these in order. Each is skippable-with-a-sentence if it genuinely yields nothing — but you must have actually *looked*, not assumed.
