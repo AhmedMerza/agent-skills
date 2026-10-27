@@ -30,6 +30,12 @@ Pin down *where* in the code the wrong thing happens — the actual line, query,
 
 A hint, not a verdict — confirm the category against the code before building on it.
 
+Two ways to get a reproduction you can point at:
+- **A regression with a known-good commit**: `git bisect start <bad> <good> && git bisect run <the focused failing test>` names the introducing commit mechanically.
+- **A timing bug that won't reproduce**: inject a delay at the suspected interleaving point; if it now fails every time, the race is confirmed. Remove the delay afterwards.
+
+*(adapted from addyosmani/agent-skills `debugging-and-error-recovery`, MIT)*
+
 ### 2. Quantify — how often, how bad, since when
 **A bug's severity is a fact, not a vibe — measure it.** Before treating something as *the* problem, check its actual prevalence against real data:
 - How many rows / orders / users are affected? Query it. "3 orders since April" and "18% of all orders" are different bugs with different urgency.
