@@ -11,6 +11,12 @@ This is self-critique on an existing plan. It runs **after** a plan exists (Clau
 
 **The restraint gate — read this first.** The failure mode of this skill is manufacturing doubt: inventing alternatives nobody needs and objections that don't hold, turning a sound plan into noise. Don't. If the plan is the right shape, **say so plainly** and hand back the one risk worth watching. A confident "this is sound, proceed — just watch X" is a first-class outcome, not a failure to find enough. Only surface an alternative when a *genuinely different* approach exists with a real trade-off; only raise a risk you can *name concretely*. Depth over volume: three real findings beat ten filler ones.
 
+## Run it where the author's reasoning can't reach
+
+If the plan was written in this conversation, don't review it here: you will re-check what the author already believed and skip what they never thought to doubt. Spawn **one** fresh subagent (`general-purpose`, `model: "sonnet"`, told not to spawn its own) and give it only three things: the plan text, the original ask (the issue or the user's request, verbatim), and the repo path. Never pass the reasoning, the rejected drafts, or why the author is confident. It runs the five passes below and returns findings with file:line evidence. You then reconcile: drop findings that misread the ask, verify the rest, and give the verdict. Run inline only when the plan came from elsewhere, or it is a few lines.
+
+*Measured 2026-10-27 on Agent Worlds #62: the author self-validated and fixed three real issues, but missed that Codex's wrapper and child process both match `agentOf`, so the plan would split every Codex session. A fresh reviewer given only the plan and the issue found it in one pass. Adapted from addyosmani/agent-skills `doubt-driven-development` (MIT).*
+
 ## The five passes
 
 Run these in order. Each is skippable-with-a-sentence if it genuinely yields nothing — but you must have actually *looked*, not assumed.
