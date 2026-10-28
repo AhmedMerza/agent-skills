@@ -32,7 +32,7 @@ Merges a GitLab merge request after performing comprehensive safety checks to en
 - `--squash` - Squash commits when merging
 - `--remove-source-branch` - Delete source branch after merge
 - `--skip-ci` - Skip running pipeline after merge
-- `--force` - Skip safety checks (NOT RECOMMENDED)
+- `--force` - Skip optional safety checks in emergencies; never skip the UI screenshot gate
 
 **Examples:**
 ```bash
@@ -52,6 +52,7 @@ Merges a GitLab merge request after performing comprehensive safety checks to en
    - ✅ All discussions resolved
    - ✅ Not a draft MR
    - ✅ CI jobs passed
+   - ✅ For every user-visible UI diff, before and after screenshots of affected screens/states render in the MR description or linked comment; missing or stale images block merge, including with `--force`
 3. **Displays pre-merge summary** with all checks
 4. **Asks user for permission to merge**
 5. **Merges the MR** via GitLab API (if approved)
@@ -298,7 +299,7 @@ glab api projects/2/merge_requests/1598 | jq '{
 - ❌ Want to verify merge result
 
 ### --force
-**What it does**: Skip safety checks (NOT RECOMMENDED)
+**What it does**: Skip optional safety checks (NOT RECOMMENDED). The UI screenshot gate still applies.
 **When to use**:
 - ⚠️ ONLY in emergencies
 - ⚠️ You understand the risks

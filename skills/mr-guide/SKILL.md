@@ -121,7 +121,7 @@ or config-only diff alters no layout and does not trigger it. `--no-screens` ski
 
 **Never skip silently.** If a pass cannot run, the page shows a callout stating **exactly why**
 (app will not serve, no credentials, no emulator, route unreachable) and a list of **which screens
-would need before/after shots**. A missing screenshot never blocks the guide.
+would need before/after shots**. A missing screenshot does not stop a diagnostic draft of the guide, but it blocks a ready UI PR/MR and a merge. The PR/MR itself must embed reviewer-accessible before/after images; a separate guide or private artifact link is insufficient. When images are missing, call out the blocker and do not give a ship-ready verdict.
 
 1. Announce: `Frontend changes detected (4 .vue) — capturing before/after.` Identify the changed
    screens from components, router entries and Inertia page names.
@@ -166,7 +166,7 @@ The guide is an **HTML page** (it holds images and tables; terminal text cannot)
    base64) to the scratchpad or `./mr-guide-<n>.html` and **print its absolute path**. Never link a
    local path from a posted comment.
 3. Print to the terminal a 5-line recap: the "Before you merge" items, the verdict line, the page URL/path.
-4. **Post to the MR/PR only on request (`--comment` or the user asks):** a short markdown version —
+4. **For a UI diff, ensure the before/after images are embedded in the PR/MR description or a linked comment and render for reviewers.** This is required even when the guide page is delivered separately. Post the guide summary to the MR/PR only on request (`--comment` or the user asks): a short markdown version —
    box, summary, decisions table, link to the page — as one top-level comment. If you are **not** the
    author, confirm first (it posts under the user's name); if a prior `mr-guide` comment by the user
    exists, offer to edit it rather than add a second. Wrap in `<!-- mr-guide -->` … `<!-- /mr-guide -->`

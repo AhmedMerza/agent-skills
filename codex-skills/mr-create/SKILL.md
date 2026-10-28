@@ -18,7 +18,8 @@ Collect:
 3. Run relevant checks (tests/lint/typecheck).
 4. Commit using Conventional Commit format.
 5. Push to fork (`origin`).
-6. Create MR to upstream with explicit repo/branch values.
+6. For any user-visible UI diff, capture before and after screenshots of each affected screen/state. For a new screen, label the previous entry point or absence as before. Upload or commit images, embed them in the MR description, and verify they render for reviewers. Local paths and private artifact links do not count. If blocked, create only a draft explaining which images are missing; never mark it ready or merge it without them. Refresh images after later UI changes.
+7. Create MR to upstream with explicit repo/branch values.
 
 ## Commands
 ```bash
@@ -31,4 +32,4 @@ glab mr create -R oreem/oreem --source-branch "$(git branch --show-current)" --t
 ```
 
 ## Validate MR
-Confirm source/target repos, branches, and pipeline status are correct.
+Confirm source/target repos, branches, pipeline status, and (for UI diffs) rendered before/after screenshots are correct.

@@ -110,6 +110,7 @@ Creates a merge/pull request for the current branch using the resolved provider'
 7. **Get target branch**: Use argument or default to `dev`
 8. **🎯 Run pre-MR quality checks**: detect the repo's toolchain and run whatever exists (unless --skip-checks)
 8b. **🎯 Persona evidence** (unless --skip-persona): run `~/.claude/skills/ship-check/scripts/ui-touched.sh <target>...HEAD`. If it prints UI files and no `/persona-walkthrough` result exists for this branch, stop and say so — the persona step runs before the MR, not after. If the branch's commits or task cite persona findings, the description MUST carry the "Persona findings addressed" block (see Templates); refuse to create the MR without it. A UI diff not driven by findings gets one line: `Persona: N personas, no blockers/majors (report: <path>)`. A non-UI diff gets `Persona: skipped — backend-only`.
+8c. **UI screenshot evidence:** For every user-visible UI diff, capture before and after images of each affected screen/state at a useful viewport. For a new screen, show and label the previous entry point or absence as the before image. Upload images to the PR/MR provider (or commit them to a stable repo path), embed both in the description, and verify the rendered images are accessible to reviewers. Local paths and private artifact links do not count. Refresh the images after later UI changes. If capture is blocked, create only a draft with the reason and missing screens listed; do not mark it ready or merge it. This applies whether or not persona findings drove the change.
 9. **Analyze commits**: `git log target..HEAD` for title/description
 10. **🎯 Analyze changed files**: Get file patterns for smart suggestions (unless --skip-suggestions)
 11. **🎯 Suggest reviewers**: Based on code ownership rules (unless reviewers specified or --skip-suggestions)
@@ -128,7 +129,7 @@ Creates a merge/pull request for the current branch using the resolved provider'
 - `--reviewer <username>` - Request review from user (can use shortcut)
 - `--assignee <username>` - Assign to user (can use shortcut)
 - `--template <type>` - Use a template (feature, bugfix, hotfix, refactor, documentation)
-- `--guide` - Generate a reviewer's guide (see `/mr-guide`) from the branch diff and open the MR with it in the description
+- `--guide` - Generate a reviewer's guide (see `/mr-guide`) from the branch diff and open the MR with it in the description; UI screenshots are required regardless of this option
 - `--skip-checks` - Skip pre-MR quality checks
 - `--skip-persona` - Create without the persona evidence check (the MR states it was skipped and why)
 - `--skip-suggestions` - Skip smart reviewer suggestions
