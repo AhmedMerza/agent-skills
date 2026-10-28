@@ -46,6 +46,9 @@ Name the *specific* input and the *specific* line it breaks at — not "consider
 ### 3. Correctness of approach — is this even the right fix?
 Step back from "does it work" to "should it be done this way." Would a *materially different* approach be better — a different layer, reusing something already in the codebase, a simpler mechanism that covers the real requirement, a native feature it reinvents? **But it's already built** — so weigh the *rework cost* honestly (like `second-opinion`): "better in theory but not worth redoing" is a valid, useful call. Only raise this if a genuinely different approach exists with a real trade-off; otherwise one line: "approach is right because …" and move on.
 
+### UI screenshot gate
+For every user-visible UI diff, inspect the PR/MR description or linked comment and verify that before and after screenshots of each affected screen/state render for reviewers. Local paths and private artifact links do not count. Refresh stale screenshots after later UI changes. A new screen may use a clearly labeled image of its prior entry point or absence as the before state. Missing, broken, or stale images require 🔧 fix first; keep the PR/MR draft and do not merge it.
+
 ### 4. Verdict — a merge decision, no hedging
 - **✅ Ship it** — solves the real problem, complete, edges hold. Name the one thing to keep an eye on post-merge (there's always one).
 - **🔧 Fix these first** — fundamentally right, but these specific gaps must land before merge. List them, most-important first, each with *where*.
