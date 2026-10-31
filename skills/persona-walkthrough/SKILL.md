@@ -133,6 +133,7 @@ When the user wants trackable work, turn blockers into issues (one per blocker: 
 ## Known limits — read before trusting a verdict
 
 - **Personas are models, not people.** They read screenshots flawlessly, don't get distracted and are more articulate than real users, so they under-report some failures (tiny tap targets, slow comprehension) and can over-report others. Treat this as a cheap, repeatable first pass that finds the obvious problems; it **does not replace** watching 5 real people use the app before a launch.
+- In forms, type with `droid.sh type X Y "text"`, never `tap` then `type`. Flutter moves focus late and a tap can land on the open keyboard, so the text lands in the previous field (seen 2026-10-31: the email typed three times into the email field, nothing in password). The X Y form waits for that field to have focus and refuses with exit 3 rather than mistype. Use the same command whenever an agent drives an Android form over adb, not only in persona runs.
 - `adb input text` types ASCII only and occasionally drops a character; Arabic needs the ADB keyboard (`droid.sh adbkb install`). A dropped character is a tool artefact, never a finding.
 - Push notifications, payment-gateway web views and deep links need the real device flow; out of scope unless asked.
 - The web driver is smoke-tested (start, shot, tap, scroll, back, profile switch, throttling) but has had no full persona run yet: treat the first web run as a pilot and note driver problems as `env`. Role coverage is only as good as the role seeds.
