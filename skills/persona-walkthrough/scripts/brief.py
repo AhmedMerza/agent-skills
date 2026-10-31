@@ -32,7 +32,7 @@ D={driver}
 $D reset {package}        # once, at the very start (fresh install); wait ~6s before the first shot
 $D shot                      # screenshot -> prints a PNG path; READ that image with the Read tool to see the screen
 $D texts                     # what a screen reader hears (use it only if the image is unclear)
-$D tap X Y   $D swipe X1 Y1 X2 Y2   $D type "text"   $D key back|enter|del
+$D tap X Y   $D swipe X1 Y1 X2 Y2   $D type X Y "text" (taps the field first; always use this in forms)   $D key back|enter|del
 {sms_line}```
 Coordinates are in the screenshot's own pixels (the image is ≤1000 tall). Take a screenshot after every action; never act blind. Wait ~1s after a tap before shooting if the screen is animating. {device_note}"""
 
