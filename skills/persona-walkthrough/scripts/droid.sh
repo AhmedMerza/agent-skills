@@ -6,7 +6,10 @@
 #   droid.sh tap X Y            tap
 #   droid.sh hold X Y           long press
 #   droid.sh swipe X1 Y1 X2 Y2  swipe (scroll down = swipe up: high Y -> low Y)
-#   droid.sh type "text"        type into focused field. ASCII uses the real soft keyboard (so keyboard-overlap
+#   droid.sh type X Y "text"    tap the field at X Y, wait until THAT field has focus, then type. Use this form for
+#                              forms: Flutter moves focus late and a tap can land on the keyboard, so a bare type
+#                              after a tap often lands in the previous field. Refuses (exit 3) instead of mistyping.
+#   droid.sh type "text"        type into the focused field (refuses if no text field has focus). ASCII uses the real soft keyboard (so keyboard-overlap
 #                              bugs still show); non-ASCII (Arabic...) switches to the ADB keyboard for that call
 #                              (needs: droid.sh adbkb install). TYPE_MODE=adbkb forces it, =input forbids it
 #   droid.sh key back|home|enter|tab|del
@@ -29,6 +32,15 @@ real_size() { "${ADB[@]}" shell wm size | tail -1 | sed 's/.*: //'; }
 scale() {  # real px per shot px (shots are downscaled so the longest side is 1000)
   [ -f "$SCALE_FILE" ] && { cat "$SCALE_FILE"; return; }
   real_size | awk -Fx '{m=($1>$2)?$1:$2; printf "%.6f", m/1000}'
+}
+# focused text field as "x1 y1 x2 y2 textlen" (real px); empty = none focused; returns 2 if the dump failed
+field() {
+  "${ADB[@]}" shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1 || return 2
+  "${ADB[@]}" exec-out cat /sdcard/ui.xml | python3 -c '
+import re, sys, xml.etree.ElementTree as E
+for n in E.parse(sys.stdin).iter("node"):
+    if n.get("focused") == "true" and "EditText" in n.get("class", ""):
+        print(*re.findall(r"\d+", n.get("bounds", "")), len(n.get("text", ""))); break'
 }
 to_real() { awk -v v="$1" -v s="$(scale)" 'BEGIN{printf "%d", v*s}'; }
 # shrink a PNG so its longest side is <=1000 and print "W H" — sips on macOS, Pillow elsewhere
@@ -56,6 +68,25 @@ case "${1:-}" in
   hold)  x=$(to_real "$2"); y=$(to_real "$3"); "${ADB[@]}" shell input swipe "$x" "$y" "$x" "$y" 900;;
   swipe) "${ADB[@]}" shell input swipe "$(to_real "$2")" "$(to_real "$3")" "$(to_real "$4")" "$(to_real "$5")" 350;;
   type)
+    if [ $# -ge 4 ]; then
+      x=$(to_real "$2"); y=$(to_real "$3"); text=$4; ok=
+      "${ADB[@]}" shell input tap "$x" "$y"
+      for _ in 1 2 3; do   # each check is a ~2-3s uiautomator dump
+        sleep 0.3
+        f=$(field) && rc=0 || rc=$?
+        [ $rc = 2 ] && { ok=unverified; break; }
+        read -r x1 y1 x2 y2 len <<<"$f" || true
+        [ -n "$f" ] && [ "$x" -ge "$x1" ] && [ "$x" -le "$x2" ] && [ "$y" -ge "$y1" ] && [ "$y" -le "$y2" ] && { ok=1; break; }
+      done
+      [ -z "$ok" ] && { echo "Not typed: the tap at $2 $3 did not focus a text field there${f:+ (another field has focus)}. It may be under the keyboard: key back, shot, and retry."; exit 3; }
+    else
+      text=$2
+      f=$(field) && rc=0 || rc=$?
+      [ $rc = 0 ] && [ -z "$f" ] && { echo "Not typed: no text field has focus. Use: type X Y \"text\""; exit 3; }
+      read -r x1 y1 x2 y2 len <<<"$f" || true
+    fi
+    [ "${rc:-0}" = 2 ] && echo "warning: could not verify focus (screen busy); check the next shot" >&2
+    set -- type "$text"
     mode=${TYPE_MODE:-auto}
     if [ "$mode" = auto ]; then LC_ALL=C grep -q '[^ -~]' <<<"$2" && mode=adbkb || mode=input; fi
     if [ "$mode" = adbkb ]; then
