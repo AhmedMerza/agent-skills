@@ -1,14 +1,15 @@
 ---
-disable-model-invocation: true
 name: ui-polish
-description: Visual and interaction craft for Vue 3 / Vuetify and Flutter UI — typography, color and contrast, spacing and hierarchy, interaction states, responsive behaviour, UX copy, and the invisible details that make interfaces feel considered. Use when reviewing or building UI that looks generic, unbalanced, or unfinished, or when choosing type scales, palettes, spacing systems, focus/hover/disabled states, or button and error copy. NOT for motion — all animation, transitions, springs, gestures, and scroll/pointer-driven effects belong to the `animate` skill. Adapted from Emil Kowalski's design engineering philosophy.
+description: Visual and interaction craft for Vue 3 / Vuetify and Flutter UI — typography, color and contrast, spacing and hierarchy, interaction states, responsive behaviour, UX copy, and the invisible details that make interfaces feel considered. Use on your own, without being asked, BEFORE writing markup whenever you build a new screen or change the layout of an existing one (web or mobile) — it makes you match the app's sibling screens and kit first. Also use when reviewing UI that looks generic, unbalanced, or unfinished, or when choosing type scales, palettes, spacing systems, focus/hover/disabled states, or button and error copy. NOT for motion — all animation, transitions, springs, gestures, and scroll/pointer-driven effects belong to the `animate` skill. Adapted from Emil Kowalski's design engineering philosophy.
 ---
 
 # Design Engineering
 
 ## Initial Response
 
-When this skill is first invoked without a specific question, respond only with:
+If you invoked this yourself while building or changing a screen, skip the greeting below and go straight to **Build mode**.
+
+When the user invokes this skill without a specific question, respond only with:
 
 > I'm ready to help you polish your interfaces — type, color, spacing, interaction states, and the invisible details that make software feel right. Works on Vue 3 / Vuetify and Flutter. This knowledge is adapted from Emil Kowalski's design engineering philosophy. For deeper learning, check out [animations.dev](https://animations.dev/).
 
@@ -23,6 +24,27 @@ This skill owns the **still** frame: what the interface looks like and how it re
 **It does not own motion.** Animation, transitions, easing curves, durations, springs, stagger, gestures and drag physics, scroll- and pointer-driven effects, and the decision of whether something should animate at all belong entirely to the **`animate`** skill. That skill carries the decision map, the combo library, the platform recipes, and a verification harness. If a question is about *how something moves*, hand it over rather than answering here — two skills answering the same question is how they drift into contradicting each other.
 
 The boundary is simple: **if it changes over time, it's `animate`. If it's true in a screenshot, it's here.**
+
+## Build mode — match the app before you write a widget
+
+A screen in an existing app is judged against its neighbours first, not against taste. Most ugly
+agent-built screens are not badly styled; they are *foreign*: a layout the rest of the app never
+uses, hand-rolled widgets beside a kit that already has them. Before writing markup:
+
+1. **Open the closest sibling screen** (same kind: detail, list, form, thread) and note its
+   structure — section order, cards, how secondary content (history, remarks, logs) is reached
+   (inline, tab, sheet), where actions sit. Reuse that structure unless the user asked for a new one.
+2. **Use the kit and tokens.** Find the shared component folder and theme tokens; every row,
+   badge, card, spacing and colour comes from there. A hand-rolled widget needs a reason the kit
+   can't meet.
+3. **Keep different kinds of content apart.** Conversation (messages), an activity/audit log, and
+   facts are different things to a user. Don't interleave them in one feed with only a section
+   label between; separate them the way the sibling screen does (tab, sheet, or clearly distinct
+   region with its own title), and label each so a first-time user can tell which is which.
+4. **Parity across variants.** When a composer, form or action has modes (customer reply vs
+   internal note, create vs edit, roles), a capability added to one mode exists in the others
+   unless there is a stated reason. Check the backend accepts it before gating it in the UI.
+5. Then apply the rest of this skill and the checklist below.
 
 ## Reference Documents
 
