@@ -30,12 +30,16 @@ For each reader and moment, write the chain they will walk. Go past what was ask
 | Which ones | Which records are behind it? | every count opens its list |
 | Why | What happened on each? | per-record detail: durations, timeline, the step that failed |
 | Compared to what | Bad against which bar? | every reference clock that exists (promise, estimate, SLA), previous period, peers |
-| Where it concentrates | Who / where / when? | breakdown and ranking by each real dimension in the data (person, place, type, time of day), sortable by count *and* rate |
+| Where it concentrates | Who / where / when? | breakdown and ranking by each real dimension in the data (person, place, type, time of day) |
 | What now | What can I do from here? | the role's own action, one tap from the record |
 
-Then the lenses readers always come back for — check each, keep only those that serve a chain:
-- **Time:** the ranges the role's cadence implies (today, yesterday, week, month, year, custom) and the previous period beside the current one.
-- **Empty and edge states:** the screen still teaches something when the number is zero, when a dimension has one big member, when the period is still open.
+**Whose clock.** For "compared to what", list every timestamp and target on the underlying record — promised or scheduled time, estimate/ETA from routing or dispatch, SLA threshold, created/started — and name whose bar each one is (the customer's promise, the company's SLA, the worker's estimate). Each is a separate comparison readers will ask for. Do not settle on the one the metric already uses: the customer judges by the promise, the manager judges the worker by the estimate.
+
+**Every ranked list.** Apply the same treatment to each list on the screen (people, places, accounts — not just the first one): sortable by count *and* by rate, a minimum-volume floor before a rate ranking means anything, and a check for any row cap or limit that silently drops members (a big, punctual account cut off a "top 500" list).
+
+Then the lenses readers always come back for. Check **every** lens against the screen as it stands and report one line per lens in the output (covered / proposed / not relevant and why) — none is skipped silently:
+- **Time:** the ranges the role's cadence implies (today, yesterday, week, month, year, custom), the previous period beside the current one, and for month- or year-end readers the same period last year.
+- **Empty and edge states:** when the headline is zero (nothing late, nothing failed) the breakdown and lists stay reachable — "zero" is itself the answer someone checks — and the screen still reads right when a dimension has one big member or the period is still open.
 - **Open vs closed:** does the metric count things still in progress (an overdue, unfinished record)? Decide explicitly; it is the most common silent undercount.
 - **Take it away:** export or share, if the reader reports upward.
 
@@ -69,6 +73,8 @@ Metrics: <names, linked to definitions; any clash flagged>
 Needs backend: <fields/breakdowns, or "none">
 Evidence: <role/permission, past rework, queued request, parity gap>
 ```
+
+Then one **Lens check** block for the whole screen: time · empty/edge · open vs closed · take it away · whose clock · every ranked list — one line each.
 
 The user approves in bulk. Write everything not approved under **Considered, not now** in `docs/stats.md` with the reason, so the next run does not re-propose it blind. Issue creation goes through the user.
 
