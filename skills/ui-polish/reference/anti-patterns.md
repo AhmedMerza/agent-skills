@@ -2,6 +2,8 @@
 
 Common patterns that make AI-generated interfaces look generic. Use this as a checklist when building or reviewing frontend code.
 
+In an existing app, its own kit, tokens and sibling screens win over any rule here (see Build mode in SKILL.md). These rules decide new choices; they are not a reason to restyle what the app already does consistently.
+
 ## Visual & Color
 
 - **Pure `#000000` black**: Use off-black, dark charcoal, or tinted dark (`#0a0a0a`, `#121212`, dark navy)
@@ -11,7 +13,7 @@ Common patterns that make AI-generated interfaces look generic. Use this as a ch
 - **Mixing warm and cool grays**: Stick to one gray family, tint all grays with a consistent hue
 - **Neon/outer glows**: No default `box-shadow` glows. Use inner borders or subtle tinted shadows
 - **Generic `box-shadow`**: Tint shadows to match the background hue instead of pure black at low opacity
-- **Flat design with zero texture**: Add subtle noise, grain, or micro-patterns to backgrounds
+- **Decoration spread across the chrome**: Keep chrome quiet (nav, cards, borders, backgrounds). Put richness in one or two moments of content. Don't swap one trend (glass, grain, bento) for another
 - **Random dark sections in a light page**: A sudden jump to `#111` in a cream page looks like copy-paste. Use subtle shade variation instead
 - **Excessive gradient text**: Don't use text-fill gradients on large headers
 - **Inconsistent lighting direction**: All shadows should suggest a single, consistent light source
@@ -61,10 +63,30 @@ Common patterns that make AI-generated interfaces look generic. Use this as a ch
 
 ## Icons
 
-- **Single icon library for everything**: Mix icon sets or use a custom set for differentiation
+- **Mixed icon sets or sizes**: One line-icon set, one size, one stroke weight across the app
 - **Cliche metaphors**: Rocketship for "Launch", shield for "Security" — use less obvious icons (bolt, fingerprint, spark)
 - **Inconsistent stroke widths**: Audit all icons and standardize to one stroke weight
 - **Emojis as icons in UI**: Use proper icon components instead
+
+## App and admin tells (sign -> fix)
+
+Adapted from [unslop](https://github.com/heydamir/unslop) by Damir Sokolovsky (@heydamir), CC BY 4.0.
+
+| Sign | Fix |
+| --- | --- |
+| Every element tinted or highlighted (each bubble, row or card has its own accent fill or border) | Neutral surface steps with 6-10% hairlines; the accent marks only the one thing that must stand out |
+| One colour means two things (amber = "internal note" and "warning") | One meaning per colour on a screen; give the other meaning a different signal |
+| Bold on every value, label and action | Hierarchy from size and colour; weights 400-500, 600 at most |
+| Uppercase, wide-tracked section labels | Sentence case, normal tracking (and caps do nothing in Arabic) |
+| Off-grid spacing (6, 10, 13, 18) | 4px grid; equal gaps for equal things |
+| Hard-coded radii | Theme radius tokens; nested radius = outer minus padding, minimum 4 |
+| Mixed number formats ($48,210 vs $124,860.40) | One format per column; tabular figures for numbers that line up |
+| Emoji in pills, counts or badges; "New", "PRO" or "Beta" badges with emoji | Plain text or one icon from the set |
+| Greeting headlines ("Welcome back!"), `!` in UI text, hype words | State the content; no exclamation marks |
+| Stat cards padded with sparklines or icons | Label, figure, and change with what it compares to |
+| Charts with a colour per series by default | One accent for the series that matters, neutral steps for the rest |
+
+**Template check:** swap the product name for another. If the screen still fits, it has no character of its own.
 
 ## Missing Elements (What AI Typically Forgets)
 
