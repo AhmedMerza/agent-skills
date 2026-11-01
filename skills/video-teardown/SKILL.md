@@ -1,7 +1,6 @@
 ---
-disable-model-invocation: true
 name: video-teardown
-description: "Reverse-engineer a product you can only see in videos — pull a YouTube channel's walkthroughs, extract narration and UI screenshots, map their flows/screens/fields, then diff that against your own codebase with file:line evidence and return a ranked build-or-skip call. Invoke with /video-teardown when handed a competitor's channel, a product demo, or a conference talk and asked \"what do they have that we don't / should we add this\". Restraint-gated: \"they built that for a market you're not in\" is a first-class verdict — but ONLY after you've asked where the product is heading. Not for videos you cannot get captions or frames for."
+description: "Reverse-engineer a product you can only see in videos — pull a YouTube channel's walkthroughs, extract narration and UI screenshots, map their flows/screens/fields, then diff that against your own codebase with file:line evidence and return a ranked build-or-skip call. Invoke with /video-teardown when handed a competitor's channel, a product demo, or a conference talk and asked \"what do they have that we don't / should we add this\". Restraint-gated: \"they built that for a market you're not in\" is a first-class verdict — but ONLY after you've asked where the product is heading. Also use it on your own whenever the user shares a video link (YouTube, Instagram reel, TikTok) and asks you to check, describe or judge what it shows — a UI design, an animation, a product demo — since you cannot watch video without its frame extraction. Not for videos you cannot get captions or frames for."
 ---
 
 # /video-teardown — What does their product actually do, and should we copy it?
@@ -41,6 +40,15 @@ vertical number two.
 Rule the thing out only when it's tied to something genuinely immovable — a regulator in a
 country you don't operate in, a payment method that doesn't exist in your currency — and say
 *which* immovable thing, so the user can tell you if it moves.
+
+## A single design or animation clip
+
+A short reel showing a UI design or motion (not a product to compete with) skips the
+channel index and the codebase diff. Download it, pull a contact sheet at 2-3 fps with the
+bundled static ffmpeg, then one full-resolution frame for any code or small text on screen.
+Report the screens, the visual system, the motion and how it is built, and which pieces are
+worth borrowing and where. A cover image can show something the video never does, so
+describe the frames, not the thumbnail.
 
 ## Setup
 
