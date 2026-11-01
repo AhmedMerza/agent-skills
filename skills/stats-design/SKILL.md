@@ -18,6 +18,7 @@ If the project already has a `docs/stats.md`, read it and only fill what is miss
 1. **Code.** Roles and permissions, route/menu guards, which screens and data each role can open, and which **actions** each role can take (reassign, call, block, refund, message). A role that can see a number but take no action on it reads it differently from one that can.
 2. **Paper trail.** Issues, handover docs, CHANGELOG, and `git log` of the existing stats screens. Past reworks are the best evidence of the questions readers actually ask — note each one as a step in a chain.
 3. **Ask the user only what the code cannot say**, at most five questions, once per project: what decision each role makes from the number, how often they look (live / daily / month end), what they do when it looks bad, who they report it to. Give your guess with each question.
+   Infer each role's cadence from what the role **does** (dispatch acts within the hour, a manager reviews each morning, finance closes the month), never from the screen's current default period — that default is the thing under review.
 4. **Save** to the app repo's `docs/stats.md`, section **Who reads what**: role → moment → decision → actions available.
 
 ## 2. The question chain — at least three steps past the headline
@@ -50,6 +51,8 @@ Before any number goes on a screen, it gets an entry in **Metric definitions** i
 - **Meaning** in one plain line, and whether it is **live** or **historical**
 - **Clock:** which timestamp it is measured from and against
 - **Computed in:** `file` / symbol — exactly one place
+
+The reader needs the meaning too: every number on screen carries its one-line meaning (a subtitle, info tap or footnote) in the reader's words — what it counts and over which window. A figure the server did not send, or declined to compute, shows as unavailable with the reason, never as 0.
 
 Then search client and server for the same name and near-synonyms. **Stop and raise it with the user** when the name already means something else, or when a client re-derives a number the server computes — do not add another meaning. This is how one word ends up counting three different things and screens disagree.
 
