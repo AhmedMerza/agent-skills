@@ -16,7 +16,7 @@ Examples of the kind of thing this skill exists to find (from the POS product):
 - **Little touch** — ring the customer's phone when the order is ready.
 - **Level-changer** — the owner's phone becomes the back office.
 
-**The restraint gate.** Skip this for internal tooling, refactors, migrations, bug fixes and anything with no end user. When you run it on your own initiative, use LIGHT mode and offer ideas at a natural boundary (plan time, end of a feature) — never interrupt implementation with them. Every idea must answer *who, at what moment, saves or gains what* — an idea that can't is generic slop ("AI insights dashboard") and gets cut.
+**The restraint gate.** Skip this for internal tooling, refactors, migrations, bug fixes and anything with no end user. An admin or ops app is not internal tooling: its staff are its end users. When you run it on your own initiative, use LIGHT mode and offer ideas at a natural boundary (plan time, end of a feature) — never interrupt implementation with them. Every idea must answer *who, at what moment, saves or gains what* — an idea that can't is generic slop ("AI insights dashboard") and gets cut.
 
 ## Modes
 
