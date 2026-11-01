@@ -23,6 +23,7 @@ My personal collection of agent skills, synced across machines — works with [C
 | `story-site` | Scroll-story landing + product page for a brand (from a brief or a reference reel): concept, stages, configurator, asset costs, visuals prompt + Fable build prompt. |
 | `scout` | No plan yet — names what "done" looks like, settles open questions breadth-first. |
 | `expand` | Widens a product target past competitor parity: researches competitors itself (docs, changelogs, reviews), then ranks friction killers, little touches and level-changers for bulk approval. Light mode runs on its own initiative. |
+| `stats-design` | Before any stats/report/KPI/dashboard screen: who reads each number, what they ask next (which ones → why → compared to what → where → what now), one definition per metric. Runs on its own initiative. |
 | `grill-me` | Interviews you about a plan until shared understanding. |
 | `root-cause` | Diagnoses a bug against ground truth before any fix. Output: a diagnosis, not a patch. |
 | `best-option` | Handed a menu of options? Explains each, checks for a better unlisted one, picks ONE. |
