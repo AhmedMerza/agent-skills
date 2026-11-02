@@ -63,7 +63,7 @@ Answer first, then the reasoning — the user should get the pick from the first
 - **A — <name>** ✅: <what it means in practice; its strength; its cost — and why it wins>
 - **B — <name>** ❌: <what it means; its genuine strength; the concrete reason it loses>
 - **C — <name>** ⛔: <… — use ⛔ for a disqualifier (security, data loss, doesn't solve the problem)>
-- **Off the menu** (only if one beats the listed options — otherwise one line: "none needed"): <the hybrid / missing alternative / reframe, and why it beats the best listed one>
+- **Off the menu** (only if one beats the listed options — otherwise leave this line out entirely): <the hybrid / missing alternative / reframe, and why it beats the best listed one>
 
 **Deciding factor:** <the one or two axes that actually separated the winner — skip axes where one option wins everything by default; for a close call, name the tie-breaker and what would flip the pick>
 **Doing it right:** <1-3 must-dos for the pick — omit if none>
@@ -72,7 +72,7 @@ Answer first, then the reasoning — the user should get the pick from the first
 
 **Say each point once.** Each option's verdict lives on its own line — don't restate it in a separate "why not" list or repeat an off-menu idea under "Doing it right".
 
-**Size the answer to the stakes — hard cap 250 words by default.** Most choices are small and reversible (a UI component, test structure, a naming call, an endpoint's timing, a label, a retention window): pick plus one line per option (aim for ~150 words when one option is plainly the existing/standard path), no "What's really being decided" or "Deciding factor" section unless it's close. The full shape (up to ~450 words) is allowed ONLY when the choice touches the data model, money, security, or infrastructure — and then say which in the Pick line. Count before sending; over the cap means cut, not justify. Past use drifted to 400-600 words on small calls — that is the failure this rule exists to stop. Length is a cost the user pays; thoroughness shows in the reasoning, not the word count.
+**Size the answer to the stakes — hard cap 250 words by default.** Most choices are small and reversible (a UI component, test structure, a naming call, an endpoint's timing, a label, a retention window): pick plus one line per option (aim for ~150 words when one option is plainly the existing/standard path), no "What's really being decided" or "Deciding factor" section unless it's close. The full shape (up to ~450 words) is allowed ONLY when the choice touches the data model, money, security, or infrastructure. Count before sending; over the cap means cut, not justify. Past use drifted to 400-600 words on small calls — that is the failure this rule exists to stop. Length is a cost the user pays; thoroughness shows in the reasoning, not the word count.
 
 **Plain language over shorthand.** The user often lacks the context you just built up — past picks drew "I don't understand why X is better" and "what is that query parameter even used for". Name what a thing *does*, not just its identifier; spell out any term, param, or code name the first time; if the reason depends on a scenario, give the concrete scenario ("if a customer has two subscriptions, …").
 
