@@ -112,7 +112,7 @@ Generate each brief with `python3 scripts/brief.py persona.md --outdir <run dir>
 <ID> <title> — hit by <personas> · felt <word>, because <why> · cause <file:line> · fix <change>
 ### What worked  (keep these)
 ### Wishes  (max 3, outside findings and severity)
-"<persona's think-aloud at the moment>" — persona, step · the feature · why, one line
+"<what the persona said at the moment>" — persona, step · the feature · why, one line
 ### Not tested / not in this build   (and workarounds used)
 ### Environment notes, data left behind
 ```
