@@ -43,8 +43,15 @@ Vuetify handles baseline a11y (ARIA roles on components, keyboard nav on `v-tabs
 - **Color-only indicators**: Status shown only by color (needs icon or text too)
 - **Focus management**: After route change or dialog close, is focus returned properly? Custom interactive elements without `:focus-visible` styles?
 - **Touch targets**: Custom clickable elements < 44x44px (Vuetify buttons handle this; check custom elements)
+- **Feedback never announced**: Toasts, snackbars, "added to cart", inline save/error messages rendered without `role="status"` / `aria-live="polite"` (errors: `role="alert"`). Check the shared toaster component once — if it lacks a live region, every action on every page is silent to screen readers. `v-snackbar` sets this; custom toasters usually don't.
+- **Toggle state hidden**: Favourite/heart, bookmark, follow, filter chips that flip state with a constant `aria-label` and no `aria-pressed` (or `aria-checked`) — the user can't tell saved from unsaved.
+- **Repeated controls with identical names**: Icon buttons inside list items or cards ("Add to cart" × 20) whose accessible name omits the item — include it (`` :aria-label="`${t('add')} ${name}`" ``). Compare sibling components; one card often does it and another doesn't.
+
+> Live-region, toggle-state and repeated-name checks grafted from [impeccable](https://github.com/pbakaus/impeccable) `harden.md` (Apache-2.0); worst-case **data** checks (long names, missing prices, counts) belong to `break-ui`.
 
 **Flutter — check for:**
+- **Feedback never announced**: async results shown only as a widget change — use `SemanticsService.announce` or `Semantics(liveRegion: true)` (`SnackBar` announces itself).
+- **Toggle state hidden**: custom toggles without `Semantics(toggled:)` / `checked:`.
 - **Missing `Semantics`**: Custom tappable widgets (`GestureDetector`, bare `InkWell`) with no
   `Semantics(label:, button: true)`. Unlike HTML there is no implicit role — a tappable
   `Container` is invisible to TalkBack/VoiceOver unless you say otherwise.
@@ -69,7 +76,7 @@ Consult the **`animate`** skill for principles — its [decision map](../animate
 To check the items below **mechanically** rather than by reading code, run the animate skill's harness against the page — it reports layout-triggering properties, missing reduced-motion cues, and non-interruptible motion directly:
 
 ```bash
-node ~/.claude/skills/animate/scripts/verify-motion.mjs --url <page> --selector <css> --trigger <css> --pw <playwright dir>
+node ~/agent-skills/skills/animate/scripts/verify-motion.mjs --url <page> --selector <css> --trigger <css> --pw <playwright dir>
 ```
 
 **Check for:**

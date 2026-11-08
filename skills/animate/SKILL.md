@@ -68,6 +68,8 @@ Present a short menu. For each: a name, one-line description of the choreography
 
 Let the user choose (and remix). They explicitly want to try one, react, try another — so make swapping cheap.
 
+**Name what you left still.** Close the menu with one line per element you considered and rejected, and why ("the price — it's compared, not celebrated; the nav — 100×/day"). It proves the restraint gate ran, and stops the next pass from animating them. When removing motion, also list what the removal could break (a `transitionend` / `animationend` listener, a test or script that waits on it, a focus move timed to it) and check each. *(Grafted from emilkowalski/skills `find-animation-opportunities` / `remove-animations`, MIT.)*
+
 ### 5. Implement the chosen combo
 **Scope of the next two rules.** The motion-tokens module and the *secondary reaction* (principle 3) bind **interaction combos** — things a user action triggers (press, submit, add, toggle). A self-contained **ambient or showcase accent** (border beam, marquee, live pulse) has no trigger to react to, so it has no secondary reaction; and its component props *are* its tokens — don't create a tokens file that nothing else consumes. Say "N/A: ambient accent" rather than inventing one.
 

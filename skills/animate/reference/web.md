@@ -781,6 +781,17 @@ export function useThemeReveal() {
 ```
 This is the single biggest perceived-speed win on an icon toolbar, and it costs one shared boolean.
 
+**An entrance keyframe with `fill-mode: both` (or `forwards`) silently kills later `transform` hovers.** The filled final keyframe keeps applying `transform` after the animation ends, and animation values beat normal declarations — so `.card:hover { transform: translateY(-4px) }` never shows on anything that entered with a `revUp … both` reveal. Animate only `opacity` in the fill, end with `animation-fill-mode: backwards`, animate a wrapper instead of the hovered element, or put the lift on the `translate` property while the keyframe uses `transform`.
+
+**Enter states without JS: `@starting-style`.** For an element that appears via `display`/`v-if`/popover, a CSS transition can start from a declared state instead of needing a keyframe or a `requestAnimationFrame` class toggle (Chrome 117+, Safari 17.5+, Firefox 129+; older browsers just skip the transition):
+
+```css
+.panel { transition: opacity .2s var(--ease-out), translate .2s var(--ease-out); }
+@starting-style { .panel { opacity: 0; translate: 0 8px; } }
+```
+
+Inside a Vuetify `<v-*-transition>` keep Vuetify's classes; this is for plain elements. *(From [emilkowalski/skills](https://github.com/emilkowalski/skills) `emil-design-eng`, MIT.)*
+
 ---
 
 ## Verifying web motion
@@ -788,7 +799,7 @@ This is the single biggest perceived-speed win on an icon toolbar, and it costs 
 **Run the bundled harness first** — it mechanically checks everything on the skill's checklist that doesn't require human judgement:
 
 ```bash
-node ~/.claude/skills/animate/scripts/verify-motion.mjs \
+node ~/agent-skills/skills/animate/scripts/verify-motion.mjs \
   --url http://localhost:8080/your-page \
   --selector ".the-animated-element" \
   --trigger ".the-button-that-starts-it" \

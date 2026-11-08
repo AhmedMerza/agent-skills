@@ -67,6 +67,23 @@ These apps target phone and tablet both — don't skip the tablet breakpoint bec
 
 **Flutter**: no `hover`/`pointer` media-query equivalent — `MouseRegion` hover callbacks simply never fire on touch, so hover-only code is naturally inert rather than needing a feature query. For platform branching, use `Platform.isIOS`/`Platform.isAndroid`/`kIsWeb` instead of guessing from pointer type.
 
+## Web on Phones: Symptom -> Fix
+
+Adapted from [emilkowalski/skills](https://github.com/emilkowalski/skills) `mobile-native` (MIT). Web only; Flutter handles these natively.
+
+| Symptom | Fix |
+| --- | --- |
+| Hover state stuck after a tap (card stays lifted) | Wrap hover rules in `@media (hover: hover) and (pointer: fine)` |
+| Grey/blue flash on tap | `-webkit-tap-highlight-color: transparent`, with your own `:active` feedback |
+| Full-height layout too tall or jumps as the URL bar moves | `100dvh` for app shells, `100svh` for heroes — not `100vh` |
+| Page zooms in when an input is focused (iOS) | Input font size at least 16px |
+| Taps feel laggy | Feedback on `:active` / pointer-down, and `touch-action: manipulation` |
+| Pull-to-refresh or scroll chaining hijacks an inner scroller | `overscroll-behavior: contain` on the scroller (`none` on `html, body` for app shells) |
+| Long-press selects button text | `user-select: none` on controls (never on content) |
+| Horizontal carousel scrolls the page vertically | `touch-action: pan-y` on the gesture surface |
+| Status-bar colour doesn't match the theme | `<meta name="theme-color">` per `prefers-color-scheme` |
+| Right in devtools, wrong on a phone | Test on real hardware (see Testing below) |
+
 ## Safe Areas: Handle the Notch
 
 ```css

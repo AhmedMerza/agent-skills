@@ -36,6 +36,7 @@ My personal collection of agent skills, synced across machines — works with [C
 | `persona-walkthrough` | Blind persona subagents (new customer, artist, admin…) use the app cold on an emulator and report where they get lost, how it feels, and why — each finding with a code-verified fix. |
 | `ponytail` | Lazy-senior-dev discipline — YAGNI, reuse first. Put its ladder in `CLAUDE.md` to make it always-on; as a skill it rarely auto-fires. |
 | `ui-audit` | Technical UI checks (a11y, perf, theming, responsive) → scored report. |
+| `break-ui` | Feed a component realistic worst-case data (long en/ar names, missing prices, huge counts) and report what breaks. |
 | `ui-polish` | Craft on one screen — type, color, spacing, interaction states. |
 | `ux-audit` | Does the page work for the human — friction, cognitive load. Ethics-gated. |
 | `validate-plan` | Adversarially stress-tests a plan before executing. Verdict: proceed/reconsider. |

@@ -88,6 +88,24 @@ Adapted from [unslop](https://github.com/heydamir/unslop) by Damir Sokolovsky (@
 
 **Template check:** swap the product name for another. If the screen still fits, it has no character of its own.
 
+## Scaffold and surface reflexes (sign -> fix)
+
+Adapted from [impeccable](https://github.com/pbakaus/impeccable) `craft-floor.md` by Paul Bakaus, Apache-2.0. These are the defaults a model reaches for when nothing was decided; the first is a hard ban, the rest need a reason from the brief or the app's own kit.
+
+| Sign | Fix |
+| --- | --- |
+| **Eyebrow / kicker above a heading** ("Saved for later" over "Your wishlist"; Vuetify `text-overline` or `v-card-subtitle` above a title; Flutter `labelSmall` above `headlineSmall`) | Ban. Delete the label; the heading carries its own weight |
+| Section numbers `01 / 02 / 03` | Only when the sequence itself is information the reader needs (steps they follow in order) |
+| Hero-metric template: big number, small label, supporting stats, accent | Lead with what the user came for; a figure earns size only if it is the decision |
+| Coloured `border-left`/`border-right` > 1px on cards, rows, callouts, alerts (side stripe) | A tinted surface, an icon, or a plain 1px border; in RTL a side stripe also lands on the wrong side unless logical |
+| Glass and blur as decoration (`backdrop-filter`, Flutter `BackdropFilter`) | Only for a specific effect — content scrolling under a sticky bar — never as the card style |
+| Hard offset shadow (`box-shadow: 4px 4px 0`) outside a deliberately neobrutalist kit | The kit's elevation tokens; declare elevation once, border *or* shadow |
+| Unicode glyphs or emoji as icons (★ ✓ → ♥ in markup) | The app's icon set (`v-icon` / `Icon` component / `Icons.*`), one stroke and weight |
+| Geometric masks (circle, polygon) faking an organic cut-out of a photo | A real alpha cut-out asset, or no effect |
+| Light or dark chosen by product category ("finance = dark") | Choose from the use scene: who, where, what ambient light |
+| Browser surfaces left at defaults: text selection, caret, scrollbars, focus ring, link underline offset, table numerals | Theme them from the palette: `::selection`, `caret-color`, `accent-color`, `scrollbar-color`, `text-underline-offset`, `font-variant-numeric: tabular-nums` |
+| Perpetual decorative loops (floating, pulsing, bobbing) on a resting screen | One entrance at most; resting UI is still (motion decisions belong to `animate`) |
+
 ## Missing Elements (What AI Typically Forgets)
 
 - **No legal links**: Privacy policy and terms of service in footer
