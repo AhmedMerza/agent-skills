@@ -1,0 +1,12 @@
+<!doctype html><html><head><meta charset="utf-8"><title>span-last</title><style>
+/* Classes as Vuetify renders app !3895's tiles at 390px. Regression: grid whose last column spans the row (v-col-12 beside v-col-6) must read as ONE grid, not a lone card. */
+body{margin:0;font:14px sans-serif}.v-row{display:flex;flex-wrap:wrap;gap:0;padding:12px}
+.v-col-6{flex:0 0 50%;max-width:50%}.v-col-12{flex:0 0 100%;max-width:100%}.v-col{box-sizing:border-box;padding:8px;display:flex}
+.v-card{flex-grow:1;background:#eef;border:1px solid #ccd;border-radius:12px;padding:16px}
+</style></head><body><div class="v-row">
+<div class="v-col v-col-6 v-col-sm-4 v-col-md"><div class="v-card">2<br>Orders with the promotion</div></div>
+<div class="v-col v-col-6 v-col-sm-4 v-col-md"><div class="v-card">1.000<br>Discount given</div></div>
+<div class="v-col v-col-6 v-col-sm-4 v-col-md"><div class="v-card">4<br>Orders without it</div></div>
+<div class="v-col v-col-6 v-col-sm-6 v-col-md"><div class="v-card">4<br>Orders we can't tell</div></div>
+<div class="v-col v-col-12 v-col-sm-6 v-col-md"><div class="v-card">10<br>New merchants</div></div>
+</div></body></html>

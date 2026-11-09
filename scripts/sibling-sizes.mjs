@@ -106,7 +106,14 @@ function collectInPage() {
   }
   const kids = (el) => [...el.children].filter((c) => !/^(SCRIPT|STYLE|TEMPLATE|NOSCRIPT|BR|INPUT|OPTION)$/.test(c.tagName) && vis(c))
   const STATE = /active|selected|-enter|-leave|focus|hover|disabled|checked|expanded|open|loading|^router-link|^v-theme--|^text-|^bg-|^elevation-|--variant-|^on-/
-  const sig = (el) => el.tagName + '.' + [...el.classList].filter((c) => !STATE.test(c)).sort().join('.')
+  // Grid-width classes say how wide a column is, not what it is: a grid whose last column spans the row
+  // (v-col-12 beside v-col-6) is still one grid. Leave them out, or the spanning item forms its own group
+  // and the item before it reads as a lone card (seen on app !3895's result tiles). They collapse to their family below.
+  const SIZE = /^(v-col|col)-(xs|sm|md|lg|xl|xxl)$|^(v-col|col|offset|v-col-offset)(-(xs|sm|md|lg|xl|xxl))?-(\d+|auto)$|^(sm|md|lg|xl|2xl):|^(w|basis|col-span|flex-basis)-/
+  // A sized class collapses to its family (v-col-sm-4 -> v-col), so columns that differ only in width share a
+  // signature; Vuetify renders no bare v-col, so dropping them would leave the columns with no class at all.
+  const fam = (c) => (SIZE.test(c) ? (c.match(/^(v-col|col)/) || [])[1] : c)
+  const sig = (el) => el.tagName + '.' + [...new Set([...el.classList].filter((c) => !STATE.test(c)).map(fam).filter(Boolean))].sort().join('.')
   const painted = (el) => {
     const cs = getComputedStyle(el)
     return !/^(transparent|rgba\(0, 0, 0, 0\))$/.test(cs.backgroundColor) || cs.backgroundImage !== 'none' || cs.boxShadow !== 'none'

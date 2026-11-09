@@ -1,0 +1,13 @@
+<!doctype html><html><head><meta charset="utf-8"><title>vuetify-uneven</title><style>
+/* app !3895 before the fix, as Vuetify renders it: columns carry only sized classes (no bare v-col),
+   cards are not stretched, one label wraps -> that card is taller. Must be flagged at 1440. */
+body{margin:0;font:14px sans-serif}.v-row{display:flex;flex-wrap:wrap;padding:12px}
+[class*="v-col"]{box-sizing:border-box;padding:12px;flex:1 0 0}
+.v-card{background:#eef;border:1px solid #ccd;border-radius:12px;padding:16px;width:140px}
+</style></head><body><div class="v-row">
+<div class="v-col-6 v-col-sm-4 v-col-md"><div class="v-card">2<br>Orders with the promotion</div></div>
+<div class="v-col-6 v-col-sm-4 v-col-md"><div class="v-card">1.000<br>Discount</div></div>
+<div class="v-col-6 v-col-sm-4 v-col-md"><div class="v-card">4<br>Without it</div></div>
+<div class="v-col-6 v-col-sm-4 v-col-md"><div class="v-card">4<br>Can't tell</div></div>
+<div class="v-col-6 v-col-sm-4 v-col-md"><div class="v-card">10<br>New merchants</div></div>
+</div></body></html>
