@@ -158,6 +158,17 @@ Consult [responsive-design reference](../ui-polish/reference/responsive-design.m
 - **Hover-only affordances** — on a touch build hover never fires, so anything hidden behind
   it is unreachable.
 
+**Measure sibling sizes (required for web screens; Flutter when a device or emulator is connected).**
+Eyes skim past a card 20px taller than its row; on app !3895 (2026-11-09) five stat tiles rendered
+106/106/126px and this audit missed it from screenshots. Run
+`node ~/agent-skills/scripts/sibling-sizes.mjs <url> --widths 1440,1000,700,390 [--storage-state <file>] [--wait-text <heading>]`
+(Flutter: `--android --serial <device>` on each audited screen). It reports rows of repeated siblings
+(cards, tiles, buttons, tabs) whose heights differ by more than 2px, siblings out of line, and a grid's
+last row left with a lone part-width item. Every finding is at least **P2** under Responsive, with the
+measured numbers in the report; a row that breaks at the default desktop width (1440) is **P1**. Exit 2
+means it could not run: say so, don't count it as clean. On Flutter it only sees widgets that have a
+semantics node, so clean there is weaker evidence.
+
 **Score**: 0=Desktop-only, 1=Major breakage on mobile, 2=Partial (mostly works, gaps), 3=Good (responsive, minor issues), 4=Excellent (mobile-first, adapts to input method)
 
 ### 5. Interaction States

@@ -9,7 +9,8 @@
 //   web start URL [PROFILE]   launch the browser (if not running) and open URL; PROFILE as below, default desktop
 //   web reset URL             fresh visitor: new browser context (no cookies/storage), open URL
 //   web shot [name]           screenshot of the visible window -> $OUT/<name>.png, prints path + size
-//                             (also saves what a screen reader hears as <name>.txt, for coverage.py)
+//                             (also saves what a screen reader hears as <name>.txt, for coverage.py, and the
+//                             measured sibling sizes as <name>.layout.json; uneven rows print as `LOOK:` lines)
 //   web tap X Y               click (a touch tap on mobile/tablet profiles)
 //   web hold X Y              press and hold ~0.9s
 //   web swipe X1 Y1 X2 Y2     scroll like droid.sh: swipe up (high Y -> low Y) scrolls down
@@ -159,7 +160,14 @@ async function serve(startProfile) {
       })
       writeFileSync(join(OUT, `${name}.png`), Buffer.from(data, 'base64'))
       writeFileSync(join(OUT, `${name}.txt`), await texts())
-      return `${join(OUT, `${name}.png`)} (${Math.round(width / s)}x${Math.round(height / s)})`
+      const shotLine = `${join(OUT, `${name}.png`)} (${Math.round(width / s)}x${Math.round(height / s)})`
+      // what the eye skims past (one card taller than its row) is measured, then said as a perception; best effort
+      try {
+        const { measurePage, lookLines } = await import('../../../scripts/sibling-sizes.mjs')
+        const found = await measurePage(page, { settleMs: 600 })
+        writeFileSync(join(OUT, `${name}.layout.json`), JSON.stringify(found, null, 2))
+        return [shotLine, ...lookLines(found)].join('\n')
+      } catch (e) { log(`sibling-sizes: ${e.message}`); return shotLine }
     },
     tap: async ([x, y]) => {
       if (profile.hasTouch) await page.touchscreen.tap(px(x), px(y)); else await page.mouse.click(px(x), px(y))

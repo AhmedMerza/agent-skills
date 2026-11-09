@@ -31,7 +31,7 @@ ANDROID_DRIVER = """Every command below goes through ONE wrapper that already kn
 ```
 D={driver}
 $D reset {package}        # once, at the very start (fresh install); wait ~6s before the first shot
-$D shot                      # screenshot -> prints a PNG path; READ that image with the Read tool to see the screen
+$D shot                      # screenshot -> prints a PNG path (and any LOOK: lines); READ that image with the Read tool to see the screen
 $D texts                     # what a screen reader hears (use it only if the image is unclear)
 $D tap X Y   $D swipe X1 Y1 X2 Y2   $D type X Y "text" (taps the field first; always use this in forms)   $D key back|enter|del
 {sms_line}```
@@ -41,7 +41,7 @@ WEB_DRIVER = """Every command below goes through ONE wrapper that already knows 
 ```
 D={driver}
 $D start '{url}' {profile}   # once, at the very start: opens the browser as a first-time visitor
-$D shot                      # screenshot of the window -> prints a PNG path; READ that image with the Read tool to see it
+$D shot                      # screenshot of the window -> prints a PNG path (and any LOOK: lines); READ that image with the Read tool to see it
 $D texts                     # what a screen reader hears (use it only if the image is unclear)
 $D tap X Y                   # click
 $D scroll down|up   $D type "text"   $D key back|enter|tab|del|esc (or any key/combo: t, ctrl+v)   $D drag X1 Y1 X2 Y2 [shift]

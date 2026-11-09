@@ -14,7 +14,8 @@
 #                              (needs: droid.sh adbkb install). TYPE_MODE=adbkb forces it, =input forbids it
 #   droid.sh key back|home|enter|tab|del
 #   droid.sh texts              visible on-screen text + content-descriptions (what a screen reader hears)
-#                              (every `shot` also saves these next to the PNG as <name>.txt, for coverage.py)
+#                              (every `shot` also saves these next to the PNG as <name>.txt, for coverage.py, and the
+#                              measured sibling sizes as <name>.layout.json; uneven rows print as `LOOK:` lines)
 #   droid.sh adbkb install|status|off   ADB keyboard (downloaded on demand to ~/.cache, never vendored)
 #   droid.sh teardown           restore device state: size/density, rotation, network, font scale, night mode, keyboard
 #   droid.sh reset PKG          wipe app data (fresh install state) and launch
@@ -63,7 +64,12 @@ case "${1:-}" in
     rw=$(real_size | cut -dx -f1)
     awk -v r="$rw" -v s="$sw" 'BEGIN{printf "%.6f", r/s}' > "$SCALE_FILE"
     "$0" texts > "$OUT/$name.txt" 2>/dev/null || true
-    echo "$OUT/$name.png (${sw}x${sh})";;
+    echo "$OUT/$name.png (${sw}x${sh})"
+    # measure sibling sizes on the dump `texts` just made; best effort, never fails the shot
+    sib="$(dirname "$(readlink -f "$0")")/../../../scripts/sibling-sizes.mjs"
+    if command -v node >/dev/null && [ -f "$sib" ] && "${ADB[@]}" exec-out cat /sdcard/ui.xml > "$OUT/.ui.xml" 2>/dev/null; then
+      node "$sib" --android --xml "$OUT/.ui.xml" --json-out "$OUT/$name.layout.json" --look 2>/dev/null || true
+    fi;;
   tap)   "${ADB[@]}" shell input tap "$(to_real "$2")" "$(to_real "$3")";;
   hold)  x=$(to_real "$2"); y=$(to_real "$3"); "${ADB[@]}" shell input swipe "$x" "$y" "$x" "$y" 900;;
   swipe) "${ADB[@]}" shell input swipe "$(to_real "$2")" "$(to_real "$3")" "$(to_real "$4")" "$(to_real "$5")" 350;;
