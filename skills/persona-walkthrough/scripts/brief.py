@@ -15,7 +15,8 @@ Persona file = header lines `key: value`, then `## section` blocks.
           android: serial, package
           web: url (where the persona starts), profile (optional: mobile|tablet|laptop|desktop|ultrawide|WxH,
                default desktop), pw_dir (optional: dir whose node_modules has playwright; else $PW_DIR),
-               locale (optional, default en-US)
+               locale (optional, default en-US), route_hook (optional: .mjs whose default export (ctx, log)
+               rewrites API responses via ctx.route — inject test data without seeding a shared DB; else $ROUTE_HOOK)
   sections: who, goal (both required); rules (optional extra bullets);
             checkpoint2 (optional override of the price/money checkpoint);
             verdict_extra (optional, appended to the verdict checkpoint)
@@ -102,7 +103,9 @@ def main():
     if web:
         wrapper = outdir / "web"
         pw_dir = meta.get("pw_dir") or os.environ.get("PW_DIR", "")
-        wrapper.write_text(f'#!/usr/bin/env bash\nexport OUT="{outdir}" PW_DIR="{pw_dir}" LOCALE="{meta.get("locale", "en-US")}"\nexec node "{HERE / "web.mjs"}" "$@"\n')
+        hook = meta.get("route_hook") or os.environ.get("ROUTE_HOOK", "")
+        hook_env = f' ROUTE_HOOK="{Path(hook).resolve()}"' if hook else ""
+        wrapper.write_text(f'#!/usr/bin/env bash\nexport OUT="{outdir}" PW_DIR="{pw_dir}" LOCALE="{meta.get("locale", "en-US")}"{hook_env}\nexec node "{HERE / "web.mjs"}" "$@"\n')
         driver_block = WEB_DRIVER.format(driver=wrapper, url=meta["url"], profile=meta.get("profile", "desktop"),
                                          sms_line=sms_line,
                                          device_note=meta.get("device_note", ""))

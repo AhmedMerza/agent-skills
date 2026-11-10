@@ -111,6 +111,9 @@ async function serve(startProfile) {
     if (ctx) await ctx.close()
     ctx = await browser.newContext({ ...profile, locale: process.env.LOCALE || 'en-US', colorScheme: scheme, storageState })
     await ctx.grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => {}) // copy/paste works like a real browser
+    // Optional orchestrator hook: ROUTE_HOOK=<file.mjs> whose default export (ctx, log) can ctx.route()
+    // API responses to inject test data without seeding a shared DB. The persona never sees it.
+    if (process.env.ROUTE_HOOK) await (await import(pathToFileURL(resolve(process.env.ROUTE_HOOK)).href)).default(ctx, log)
     page = await ctx.newPage()
     page.on('console', m => m.type() === 'error' && log(`console.error ${m.text()}`))
     page.on('pageerror', e => log(`pageerror ${e.message}`))
