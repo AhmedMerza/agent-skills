@@ -171,5 +171,5 @@ cascade top-down. Inline edits update instantly, then the header re-counts.
 - [ ] Mobile layout chosen per archetype (sheet, stacked cards, scrolling chips, bottom dock).
 - [ ] Working lists show 5–7 rows per phone screen; row actions are icons/swipe, not full buttons.
 - [ ] One solid primary per screen, in the thumb zone; close and back look different.
-- [ ] Zero/healthy values are neutral; colour marks only non-zero exceptions.
+- [ ] Zero values are neutral; non-zero counts keep their hue in its readable text tone; red/amber only for exceptions.
 - [ ] No raw server enums, hard-coded English, or developer copy in the Arabic or English UI.

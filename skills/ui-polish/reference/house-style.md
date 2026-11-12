@@ -48,8 +48,11 @@ both first-class.
 6. **Pills are for controls** (buttons, tabs, chips, toggles). Containers get the radius scale; nested
    radius = outer minus padding.
 7. **Tones mean something.** Lime = success, coral = danger, sky = info. Never decorative. **Zero
-   and healthy values are neutral ink** — "0 failed" in red is a false alarm; colour only a
-   non-zero exception. One meaning per hue across the app (six competing tile colours = none).
+   values are neutral ink** — "0 failed" in red is a false alarm. A **non-zero** count keeps its
+   category hue in that hue's per-theme *text* tone (dark green, dark cyan…), so it is both
+   colourful and readable; don't flatten healthy counts to black (users read an all-ink stat grid
+   as "colour removed" — an ops admin app, 2026-11-12). Red/amber are reserved for exceptions; a running
+   total (4,843 done) is context and can stay ink. One meaning per hue across the app.
    Every glass value — rim, blur, radius, shadow, scrim — is a token; a literal `sigma: 11` or
    `BoxShadow(color: Colors.black…)` in a widget is drift.
 8. **Shadows are soft and tinted** (`--shadow`, `--shadow-pop`); the primary button may carry a faint
