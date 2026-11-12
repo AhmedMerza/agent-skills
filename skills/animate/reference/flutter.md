@@ -1,6 +1,6 @@
 # Flutter motion recipes
 
-Built-in first (`AnimationController`, implicit widgets, `Hero`), with `flutter_animate` as the preferred sugar for combos (`flutter pub add flutter_animate`). Adapt widget names to the real tree. Honor reduced motion:
+Built-in first (`AnimationController`, implicit widgets, `TweenAnimationBuilder`, `Hero`). `flutter_animate` recipes below apply only to repos that already use it and don't run `LeakTesting.enable()` — version 4.5.2 leaks an animation object per effect and leaves pending timers from `delay`, failing leak-checked suites (measured on a sibling Flutter app, 2026-11-12). Adapt widget names to the real tree. Honor reduced motion:
 
 ```dart
 final reduce = MediaQuery.of(context).disableAnimations; // true → keep fades, drop big travel

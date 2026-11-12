@@ -72,8 +72,11 @@ the same shared entrance and only once per page visit (never on refresh or filte
 ribbons grow `scaleX` from the start edge (mirrored in RTL), steppers fill to the current step and
 the current dot pops, key figures count up, a drawer slides in and its sections cascade top-down.
 After an inline edit the row updates at once and the header figures re-count — that's the
-secondary reaction. Flutter: `flutter_animate` (`.animate().fadeIn().slideY()`, `.scaleX()`) and
-`TweenAnimationBuilder` for count-ups; propose installing `flutter_animate` if absent.
+secondary reaction. Flutter: built-in `TweenAnimationBuilder` for rises, fills and count-ups,
+keyed so a rebuild/refresh doesn't replay it (a sibling Flutter app's `RiseIn`/`EntranceProgress` in
+`lib/core/widgets/refined/` is the reference). Use `flutter_animate` only if the repo already has it
+**and** doesn't run `LeakTesting.enable()` — 4.5.2 leaks an animation object per effect and its
+`delay` leaves pending timers, which fails leak-checked test suites.
 
 **Signature moments** (one or two per product, on rare, meaningful actions — send, save, pay,
 publish; never on a high-frequency control). Reference studies: a *send* button that folds into a
@@ -82,16 +85,16 @@ throws out a gold one that lands upright under gravity. What makes them work: th
 becomes the object, the motion says what happened (it left / it became gold), ~1.2–1.5s total,
 the state commits at press (not at landing), reduced motion swaps straight to the end state. Both
 are dependency-free — SVG polygons + WAAPI, or a small rAF physics loop writing CSS variables — so
-GSAP is not required for this class either. Flutter: `CustomPainter` + one `AnimationController`,
-or `flutter_animate` chains.
+GSAP is not required for this class either. Flutter: `CustomPainter` + one `AnimationController`
+(disposed in `dispose()`).
 
 ## The `/animate` workflow
 
 ### 1. Detect the platform
 - **Vue/Vuetify** if `package.json` has `vue` (+ likely `vuetify`, `@vueuse/core`). Files: `.vue`.
 - **Flutter** if `pubspec.yaml` exists. Files: `.dart`.
-- Note available motion libs: web — `@vueuse/motion`, `motion` (Motion One/Framer vanilla), `@formkit/auto-animate`, or none (fall back to **WAAPI + CSS**, zero-dep). Flutter — `flutter_animate` (preferred), else built-in `AnimationController`/implicit widgets.
-- If a JS spring/FLIP lib would materially help and none is present, **propose** installing one (`motion` for web, `flutter_animate` for Flutter) — but always have a zero-dep fallback ready.
+- Note available motion libs: web — `@vueuse/motion`, `motion` (Motion One/Framer vanilla), `@formkit/auto-animate`, or none (fall back to **WAAPI + CSS**, zero-dep). Flutter — built-in implicit widgets / `TweenAnimationBuilder` / `AnimationController` first; `flutter_animate` only if already installed and the repo has no leak-tracking tests (`LeakTesting.enable()` — `flutter_animate` 4.5.2 fails them).
+- If a JS spring/FLIP lib would materially help and none is present, **propose** installing one (`motion` for web) — but always have a zero-dep fallback ready. On Flutter, don't propose `flutter_animate` into a leak-checked repo.
 
 **Match the codebase's existing motion vocabulary — don't re-derive or invent fresh.** Before writing anything, find the transitions the project already uses (`grep -rl '<Transition' <src-dir>` on web) and read a couple; match their transition-name and style conventions rather than inventing your own. Check `package.json` for what's actually installed: if a spring/FLIP lib (`motion`, `@vueuse/motion`, `@formkit/auto-animate`) is **not** present, the zero-dep WAAPI + CSS + `<Transition>` path (plus `@vueuse/core` if it's installed) needs nothing and is the default — using an uninstalled lib needs an install *proposal* first. You're extending an existing *spring/travel/secondary-reaction* vocabulary, not starting from a blank canvas.
 
