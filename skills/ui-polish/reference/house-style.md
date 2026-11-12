@@ -42,6 +42,15 @@ both first-class.
 4. **Blur is for surfaces, not rows.** Cards, bars, sheets, dialogs. Never per table row or list
    item, and drop to a solid surface (`--solid`) inside long tables, scroll-heavy lists and on
    `prefers-reduced-transparency`. Blur on hundreds of elements is a frame-rate bug on low-end phones.
+   **Even one live blur over scrolling content is expensive on Android.** Measured on a Galaxy A16
+   (90 Hz, profile build, 2026-11-12): an ops admin app with Glass rasterised at 27–38 ms per frame
+   (27–37 fps, ~100% janky); the same list with Glass off ran at 12.9 ms (77 fps). On mobile, prefer a
+   **pre-blurred static backdrop** (blur the gradient or photo once, as an image) and tinted
+   translucent fills with no `BackdropFilter`; keep a live blur only where content truly scrolls
+   under a bar *and* the device can afford it (gate by a measured tier or a setting). Full-screen
+   `ShaderMask`/`saveLayer` fades cost a further ~3–4 ms per frame. **A Glass change is not done until
+   it is profiled on a mid-range Android** (profile build, `Flutter.Frame` or `gfxinfo` p50/p90,
+   Glass on vs off) and the numbers are in the MR.
 5. **No glass on glass.** A card inside a card uses a well (`--well`) or nothing, never a second blur.
    A **solid** surface (sheet, dialog) gives its children a solid sub-palette (`--well`, `--line`):
    glass card tokens (22% fill, white rim) inside a solid sheet have no visible edge.
