@@ -41,7 +41,16 @@ the layout animates the first screenful of top-level cards on a *real page chang
 - opacity never starts at 0 for longer than the first frame of content (no blank flash), and never
   delays interaction — the page is clickable from frame one;
 - reduced motion: no entrance at all;
-- a page with its own choreography opts out (`data-own-entrance`) instead of fighting it.
+- a page with its own choreography opts out (`data-own-entrance`) instead of fighting it;
+- **never select by a one-time visibility snapshot and leave the rest static.** Anything not picked
+  shows at full opacity while the picked ones sit at 0 through their delay, so later rows appear
+  *before* earlier ones. Either animate a group whole or not at all; below-the-fold items get a
+  scroll-triggered reveal (IntersectionObserver / `ScrollTrigger.batch`), or none;
+- caps count **whole rows** (round to the column count), never a fixed item number that splits a
+  grid row at wide screens;
+- don't re-enter what was already on screen: chrome that rendered during loading (toolbars, filter
+  chips) animates at mount, not again when data lands;
+- no dead gap when data replaces a spinner: the data path starts at delay ≈ 0.
 
 Per-component entrances, fade-slide-up on every section, and scroll-reveal on working UI stay
 banned — the shared entrance is the one allowed. Presentational pages follow `showcase.md`.
