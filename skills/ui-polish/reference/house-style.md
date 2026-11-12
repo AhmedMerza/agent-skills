@@ -64,3 +64,16 @@ here rather than per component so pages can't drift.
 
 Owned by the `animate` skill. The house entrance is one shared composable, not per-page code —
 see animate's "Page entrance" section.
+
+## Accent variants (same system, different mood)
+
+Token swaps only — the rules above don't change. Pick one per product; contrast-check the
+light-mode text tone of each.
+
+| Variant | Light bg / text / accent | Dark bg / accent | Surface |
+| --- | --- | --- | --- |
+| the reference app (default) | `#E9ECE7` / ink / `#7367F0` | `#111513` / `#7367F0` | glass |
+| Terracotta (warm, retail) | `#e7e0d6` / `#1d1a16` / `#ad4622` | `#1c1916` / `#f0a07a` | glass over a photo |
+| Navy pastel (ops, stock) | `#e8ecf6` / `#121a2e` / ember `#c21f37` | `#0a1222` / `#eeb2a3` | glass, pastel status gradients |
+| Teal editorial (storefront) | `#f7f6f2` / `#161a19` / `#0b7a73` | `#111514` / `#3cc2b5` | solid, hairlines, no glass |
+| Mono (ERP, dense) | `#efefec` / `#111` / black primary | `#0b0b0b` / white primary | glass cards, solid drawer |

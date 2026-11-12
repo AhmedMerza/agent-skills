@@ -85,7 +85,7 @@ Adapted from [unslop](https://github.com/heydamir/unslop) by Damir Sokolovsky (@
 | Mixed number formats ($48,210 vs $124,860.40) | One format per column; tabular figures for numbers that line up |
 | Emoji in pills, counts or badges; "New", "PRO" or "Beta" badges with emoji | Plain text or one icon from the set |
 | Greeting headlines ("Welcome back!"), `!` in UI text, hype words | State the content; no exclamation marks |
-| Stat cards padded with sparklines or icons | Label, figure, and change with what it compares to |
+| Stat cards padded with decorative sparklines or icons | Label, figure, and change with what it compares to; a sparkline only when it plots the figure's real series (see the key figure in [screen patterns](screen-patterns.md)) |
 | Charts with a colour per series by default | One accent for the series that matters, neutral steps for the rest |
 
 **Template check:** swap the product name for another. If the screen still fits, it has no character of its own.
@@ -98,7 +98,7 @@ Adapted from [impeccable](https://github.com/pbakaus/impeccable) `craft-floor.md
 | --- | --- |
 | **Eyebrow / kicker above a heading** ("Saved for later" over "Your wishlist"; Vuetify `text-overline` or `v-card-subtitle` above a title; Flutter `labelSmall` above `headlineSmall`) | Ban. Delete the label; the heading carries its own weight |
 | Section numbers `01 / 02 / 03` | Only when the sequence itself is information the reader needs (steps they follow in order) |
-| Hero-metric template: big number, small label, supporting stats, accent | Lead with what the user came for; a figure earns size only if it is the decision |
+| Hero-metric template: big number, small label, supporting stats, accent — with no comparison and no link to the question | Lead with what the user came for; a figure earns size when it is the decision (an order's total, what's still owed, items below par) and carries its comparison |
 | Coloured `border-left`/`border-right` > 1px on cards, rows, callouts, alerts (side stripe) | A tinted surface, an icon, or a plain 1px border; in RTL a side stripe also lands on the wrong side unless logical |
 | Glass and blur as decoration (`backdrop-filter`, Flutter `BackdropFilter`) on a one-off card or section | Either the app's declared glass tokens ([house style](house-style.md)) applied everywhere, or none; outside a glass system, only for content scrolling under a sticky bar |
 | Hard offset shadow (`box-shadow: 4px 4px 0`) outside a deliberately neobrutalist kit | The kit's elevation tokens; declare elevation once, border *or* shadow |

@@ -67,6 +67,24 @@ Don't add GSAP to an app for something CSS or WAAPI covers. Where it is already 
 it for timelines and reuse the app's shared curves/constants — but a simple hover or press is
 still CSS.
 
+**Data devices on entrance.** On a data screen the entrance tells the story of the numbers, inside
+the same shared entrance and only once per page visit (never on refresh or filter): meters and
+ribbons grow `scaleX` from the start edge (mirrored in RTL), steppers fill to the current step and
+the current dot pops, key figures count up, a drawer slides in and its sections cascade top-down.
+After an inline edit the row updates at once and the header figures re-count — that's the
+secondary reaction. Flutter: `flutter_animate` (`.animate().fadeIn().slideY()`, `.scaleX()`) and
+`TweenAnimationBuilder` for count-ups; propose installing `flutter_animate` if absent.
+
+**Signature moments** (one or two per product, on rare, meaningful actions — send, save, pay,
+publish; never on a high-frequency control). Reference studies: a *send* button that folds into a
+paper plane and flies off, then "Sent ✓"; a *favourite* button that swallows the grey star and
+throws out a gold one that lands upright under gravity. What makes them work: the control itself
+becomes the object, the motion says what happened (it left / it became gold), ~1.2–1.5s total,
+the state commits at press (not at landing), reduced motion swaps straight to the end state. Both
+are dependency-free — SVG polygons + WAAPI, or a small rAF physics loop writing CSS variables — so
+GSAP is not required for this class either. Flutter: `CustomPainter` + one `AnimationController`,
+or `flutter_animate` chains.
+
 ## The `/animate` workflow
 
 ### 1. Detect the platform

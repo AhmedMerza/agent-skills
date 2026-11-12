@@ -45,7 +45,13 @@ uses, hand-rolled widgets beside a kit that already has them. Before writing mar
 4. **Parity across variants.** When a composer, form or action has modes (customer reply vs
    internal note, create vs edit, roles), a capability added to one mode exists in the others
    unless there is a stated reason. Check the backend accepts it before gating it in the UI.
-5. Then apply the rest of this skill and the checklist below.
+5. **Answer the page's question with devices, and say what data they need.** Write the one
+   question the screen answers, pick its archetype in [screen patterns](reference/screen-patterns.md),
+   and replace text with devices (stepper, threshold meter, split well, key figure with comparison,
+   value-carrying action). Then list each device's fields per
+   [data for visuals](reference/data-for-visuals.md), mark what the API already sends, and **propose
+   the backend change** with the UI. Missing devices go into the kit (web and Flutter), not inline.
+6. Then apply the rest of this skill and the checklist below.
 
 ## Reference Documents
 
@@ -59,6 +65,8 @@ examples show Vue 3 / Vuetify and Flutter side by side, so read the pair that ma
 - [UX Writing](reference/ux-writing.md) — button labels, error messages, empty states, terminology
 - [Anti-Patterns](reference/anti-patterns.md) — AI slop detection, generic patterns to avoid, missing elements checklist
 - [House style](reference/house-style.md) — the default Glass look (from the reference app) for apps with no system of their own: tokens, glass legibility rules, bilingual type stack, Vuetify defaults
+- [Screen patterns](reference/screen-patterns.md) — archetypes (board, record drawer, stock list, overview, catalog) and the visual devices that replace text, web + Flutter + mobile layout
+- [Data for visuals](reference/data-for-visuals.md) — the API contract each device needs; server-decided severity, next action, status history, list summaries
 - Motion → **the `animate` skill**, not a reference here.
 
 ## Core Philosophy
