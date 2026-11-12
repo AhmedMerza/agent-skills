@@ -66,7 +66,14 @@ Flutter draws no focus ring by default on most custom widgets — you opt in exp
 ## Loading States
 
 **Optimistic updates**: Show success immediately, rollback on failure. Use for low-stakes actions, not payments.
-**Skeleton screens > spinners**—they preview content shape and feel faster.
+**Skeleton screens > spinners**—they preview content shape and feel faster. The skeleton has the
+*same shape as the devices* it stands for (a pill-sized block, a meter-height bar, a stepper of
+dots), so nothing jumps when data lands; chrome that doesn't depend on data (title, tabs, filters)
+renders real, not as a skeleton.
+**Image placeholders are tinted**, never grey: use a dominant/average colour from the API
+(`image.tint`) or the category tone, so a loading grid already looks like itself.
+**Inline edits are instant**: −/+ steppers and toggles update the row and the header totals at
+once, save in the background, and roll back with a message if the server rejects.
 
 ### Vue Loading Patterns
 
@@ -127,6 +134,11 @@ Use confirmation only for:
 - Truly irreversible actions (account deletion)
 - High-cost actions
 - Batch operations
+
+The same goes for non-destructive state changes — receive a PO, mark shipped, change a count,
+move a stage: do it, show "Marked shipped · Undo" for ~5s. Undo needs backend support (the previous
+value or a revert endpoint); list it in the data contract. Vue: `v-snackbar` with an action;
+Flutter: `SnackBar(action: SnackBarAction(label: undo))`.
 
 ## Keyboard Navigation
 

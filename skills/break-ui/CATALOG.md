@@ -76,6 +76,23 @@ Unbreakable strings: they have no spaces, so the browser has nowhere to wrap the
 | `1.284` in `de-DE` vs `1,284` in `en-US` | Locale formatting; hardcoded separators are wrong for half the world |
 | A value that changes live (`99` → `100`) | Width jump and jitter without `tabular-nums` |
 
+## Visual data devices (steppers, meters, split wells, key figures — see ui-polish screen-patterns)
+
+| Value | Breaks |
+| --- | --- |
+| Meter at `0`, exactly at target, `1.8×` target | Empty bar invisible on glass; tick hidden under the fill; overfill clipped or spilling out of the card |
+| Meter with **no target** (`par_level: null`) | Divide by zero, a full bar that means nothing — fall back to the number alone |
+| Meter, `on_hand` negative (oversold) | Bar drawn backwards; severity must be `bad`, not hidden |
+| Stepper with no status history / a skipped step / a cancelled or returned order | Missing dates render "Invalid Date"; skipped step shown as done; cancel has no place in the line — needs an off-track state |
+| Stepper with 9 steps on a 390px phone | Labels overlap — vertical layout or current-step-only on narrow widths |
+| Split well 100% paid, 0% paid, overpaid (credit) | Zero-width segment still shows a rounded cap; overpaid has no state |
+| Key figure `987,654,321.50` / `-42` / missing comparison | Overflows the tile; delta pill shows `NaN%`; arrow direction wrong for "lower is better" metrics |
+| Words for time: `runs_out_at` in the past, `null`, 400 days away, in Arabic | "Runs out in -2 days"; plural forms (Arabic has six); "in 1 year" vs a date |
+| Sparkline with 1 point, all zeros, all equal, one huge spike | Flat line at the bottom reads as "broken"; spike flattens the rest — clamp or log only with a note |
+| Segmented bar with one segment at 0.3% | Invisible sliver with an orphan legend; minimum visible width + legend still lists it |
+| Device colour in RTL | Fill grows from the wrong edge; stepper runs left-to-right in Arabic |
+| Severity enum the client doesn't know (`critical` added server-side) | No colour, or crash — map unknown to the neutral tone |
+
 ## Collections
 
 | Value | Breaks |

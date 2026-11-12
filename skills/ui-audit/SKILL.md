@@ -308,6 +308,33 @@ one-off `backdrop-filter`/gradients outside the tokens. Audit the system instead
 
 **Score**: 0=Obvious AI output, 1=Many generic patterns, 2=Some tells remain, 3=Distinctive with minor tells, 4=Indistinguishable from human-designed
 
+### 8. At-a-Glance Comprehension (data screens)
+
+Can a user tell whether things are good or bad, and what to do next, **without reading**? Run the
+field → device lookup in [screen patterns](../ui-polish/reference/screen-patterns.md) over every
+fact the page shows.
+
+**Check for:**
+- **Text where a device fits**: a quantity with a target shown as a bare number (no meter), an
+  ordered status shown as a word (no stepper), paid/owed as two numbers (no split well), a deadline
+  as a raw timestamp (no words-for-time), a share-of-whole as a totals table
+- **Numbers without a comparison**: a figure with no target, previous period, par or total beside it
+- **Severity computed in the client**: hard-coded thresholds (`qty < 5 ? 'red'`) instead of a
+  server `severity` enum — flag file:line
+- **Text-wall tables**: more than 7 columns, an ID as the first column, cells that are all plain
+  text, problem pages not sorted worst-first, no mobile card layout
+- **Generic primary action**: "Save"/"Submit"/"Update" where the action could name its effect and
+  number ("Record balance $4,611")
+- **Hand-rolled devices**: a stepper/meter/pill built inline in the page when the kit has (or
+  should have) one
+
+Each finding cites the field, the device it should be, and the data it needs (and whether the API
+sends it) — same columns as ui-polish's Suggest mode, so the fix list is directly actionable.
+
+**Score**: 0=Wall of text and tables, 1=A few pills on a text page, 2=Main question answered
+visually but details are text, 3=Most facts are devices with comparisons, 4=The first screenful
+answers the page's question at a glance, every number has its comparison
+
 ## What NOT to Audit
 
 - Backend code, API design, database queries
