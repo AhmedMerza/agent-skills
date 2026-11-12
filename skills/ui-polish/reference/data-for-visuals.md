@@ -13,7 +13,13 @@ the UI. This is a suggestion to the user, not a silent backend edit.
    `allowed_transitions[]`. The primary button and stage drag read these; the client never encodes
    the workflow.
 3. **Status has history.** `status_history [{status, entered_at, by}]` feeds the stepper's dates.
-   A bare `status` column only draws "current".
+   A bare `status` column only draws "current". **Our own records only:** never fill a stepper's
+   state, captions or dates from a third-party feed (carrier/provider tracking, webhook payloads,
+   free-text event logs). Those differ per provider in order, wording and duplicates, and can
+   contradict our status. Show them as-is in their own timeline, labelled by source; if the product
+   needs them to move a stage, the backend normalises them into our status history first. (the reference app
+   !3969 captioned the current stage with "the newest carrier event" assuming newest-first arrays —
+   wrong for several providers.)
 4. **Every list has a summary.** One aggregate per list screen: `counts_by_stage`,
    `value_by_stage`, `below_par_count`, `outstanding_total` — feeds key figures, ribbons, tab and
    chip counts in one call. Respect the active filters.
