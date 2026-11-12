@@ -9,6 +9,47 @@ for that device. Pick the archetype, use its devices, and hand the backend the c
 Patterns distilled from studying commercial admin templates (codeandchill: Kerfa, Tavola, Cadra,
 Fitlo). Reuse the ideas, never their code or assets.
 
+## Suggest mode — tell the user before they ask
+
+Whenever you build, change, or even just open a data page (web or Flutter), scan what it shows as
+text and **propose** the upgrades in this shape, at most 5, biggest win first. Suggest; don't
+restyle a page the user didn't ask you to change.
+
+> **Visual upgrades for `<page>`** — the question this page answers: *"…"*
+> | Now (text) | Show instead | Tells the user at a glance | Data needed | API has it? |
+> | --- | --- | --- | --- | --- |
+> | `Qty: 2` | stock meter with par tick, red/amber/green | "running low" without reading | `on_hand`, `par_level`, `severity` | `on_hand` only — add `par_level` |
+> | `Status: in_transit` | order stepper, date under each step | where it is and how long each step took | `stages[]`, `status_history[]` | status only |
+
+### Field → device (the lookup)
+
+| The data is… | Don't show | Show |
+| --- | --- | --- |
+| a quantity with a target, limit or par (stock, capacity, credit, quota, drivers on shift) | `12` / `12 of 30` | **threshold meter**, colour by server severity, tick at the target |
+| a status in an ordered flow (order, shipment, onboarding, approval) | a status word or dropdown | **stage stepper** with dates; in a list row, a mini stepper or "3 of 5" ring |
+| a status with no order (active, blocked, failed) | plain text | **status pill** (dot + tint) |
+| money paid vs owed, used vs left | two numbers | **split well**: both figures over one bar |
+| a percentage or completion | `67%` | **ring or bar** with the number inside/beside it |
+| a deadline, ETA, expiry, run-out | a timestamp | **words for time** ("late by 2 days", "runs out tonight"), tinted by urgency |
+| a trend or history | a column of numbers | **sparkline** (real series) + delta vs last period |
+| a share of a whole (by category, stage, channel) | a totals table | **segmented bar** or ribbon with legend |
+| a count of related things (items, people, attachments) | `4 items` | "Oak chair **+3**", avatar stack, thumbnails |
+| a person or customer | a name column | **avatar mark** + name |
+| a category or type | a word | **colour-dot chip** or icon tile |
+| a yes/no | "Yes"/"No" | icon or toggle, coloured only when it matters |
+| a location or route | an address string | mini map or route line (only if location is the question) |
+| long free text (notes, descriptions) | the full paragraph | a one-line summary + expand |
+| the thing to do next | a generic "Save" | **value-carrying action** ("Record balance $4,611") |
+
+### Tables are not exempt
+A table of plain text is the most overwhelming screen there is. In every table:
+- each column passes through the lookup above — cells hold pills, mini meters, avatars, words for time;
+- 5–7 columns max on desktop; the rest move to the row's drawer;
+- sort worst-first by default when the page is about problems (late, low, behind);
+- the first column is the identity (avatar/thumbnail + name + one-line summary), not an ID;
+- numbers right-aligned, tabular, with their unit; totals row or key figures above, not below;
+- mobile: rows become stacked cards with the same devices, first N + "Show all".
+
 ## Device vocabulary (build these once, in the kit — web and Flutter)
 
 | Device | Replaces | Web (Vue/Vuetify) | Flutter |
