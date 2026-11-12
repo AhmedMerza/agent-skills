@@ -114,6 +114,48 @@ Question: *which one do I want, and can I get it in one move?*
 - Bundle actions with the total in the label; drawer with per-item choices preselected (size from
   profile) and a live total.
 
+### 6. Ops home / triage (dispatch, support, admin hubs)
+Question: *what needs me right now?*
+- The headline is the **exception**, as a tap target: "10 unassigned · 1 late", not a greeting,
+  a shift clock or a module grid. Healthy reads as one calm line ("All on time").
+- One ranked "needs you now" queue (late, at risk, stale, unassigned by age) with one-tap resolve
+  inline; modules come after.
+- Every module tile carries a live number or nothing — never a bare "Report".
+- The biggest number is the decision, not the running total (4,843 delivered is context, not a hero).
+
+## Working lists on a phone (ops, dispatch, support)
+- **Density:** at least 5–7 rows per phone screen. Header + filters + search take ≤ 30% of the
+  first screen; collapse the stage rail into a segmented control or the app bar on scroll.
+- **Per-row actions** are a trailing icon, swipe, or long-press — not a full-width button on every
+  card. Multi-select for bulk (dispatch 5 at once).
+- **No redundant labels:** don't repeat the active tab or filter in every row ("Unassigned" pill
+  inside the Unassigned tab), and don't badge a count the screen already shows.
+- **Truncation priority:** the name/identity keeps its width; times and meta shrink, move to the
+  second line, or go compact ("14:05").
+- **Time as the primary datum** where the job is time-bound: "late in 14m", urgency edge on the row.
+
+## Action hierarchy and ergonomics (all screens)
+- **One solid primary per screen.** Tonal/ghost is for secondary; a tonal primary on glass reads
+  as disabled.
+- **Thumb zone:** on phones the primary action, filter and close live in the bottom half or the
+  bottom bar, not the top-right corner. Targets ≥ 44pt (iOS) / 48dp (Android).
+- **Close ≠ back:** different icon and position; a sheet closes with ✕ or a drag, a page goes back
+  with the platform chevron.
+- **Destructive and rare actions are separated** from routine ones in action sheets (own group,
+  danger tone, last), and icons differ per action — eight identical icons is a list of words.
+- **No developer copy in the UI** ("Actions are applied on the live backend", debug labels,
+  raw enum values).
+
+## Localisation of data, not just strings
+- Server enums (order status, module names, vehicle types) are mapped to translated labels on the
+  client or sent as translated labels — never the raw server string in an Arabic UI.
+- Hard-coded English in widgets is a bug even when the l10n file is complete; grep for literals.
+- Phone numbers, IDs, amounts and times sit in LTR isolates (`<bdi>` / `Directionality(ltr)` /
+  `⁦…⁩`): "97317000001+" and "AM 05:32 قبل" are bidi bugs.
+- An Arabic typeface is bundled and set as fallback (Flutter `fontFamilyFallback`, web
+  `unicode-range` stack) — system fallback has mismatched weight and metrics.
+- Letter-spaced caps styling is Latin-only; Arabic section labels get weight or size instead.
+
 ## Motion for these devices (owned by `animate`)
 Meters grow, steppers fill, ribbons grow `scaleX` from the start edge (mirror in RTL), key figures
 count up — **once, on the shared entrance**, never on refresh. Drawer slides in, its sections
@@ -127,3 +169,7 @@ cascade top-down. Inline edits update instantly, then the header re-counts.
 - [ ] Devices come from the kit; a missing one is added to the kit, not hand-rolled in the page.
 - [ ] The API contract for each device is listed ([data-for-visuals.md](data-for-visuals.md)).
 - [ ] Mobile layout chosen per archetype (sheet, stacked cards, scrolling chips, bottom dock).
+- [ ] Working lists show 5–7 rows per phone screen; row actions are icons/swipe, not full buttons.
+- [ ] One solid primary per screen, in the thumb zone; close and back look different.
+- [ ] Zero/healthy values are neutral; colour marks only non-zero exceptions.
+- [ ] No raw server enums, hard-coded English, or developer copy in the Arabic or English UI.

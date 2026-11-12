@@ -34,14 +34,24 @@ both first-class.
 3. **Contrast against the worst backdrop pixel**, not against the token. Light glass at ~22% white
    lets the backdrop decide legibility: measure text on the lightest and darkest spot behind a card.
    Small accent-coloured text uses a contrast-fixed `--accent-text`, never the raw accent (the reference app's
-   `#7367F0` is 3.8:1 on light glass — fine as a fill, too low for text).
+   `#7367F0` is 3.8:1 on light glass — fine as a fill, too low for text). **The same goes for every
+   status tone**: each has a bright for fills/dots and a per-theme *text* tone (web: `--good #28670c`,
+   `--warning #7d5300`, `--bad #9e2f19` on light). Bright amber/green/cyan text on light glass
+   measured 1.1–1.8:1 in an ops admin app — a fixed "not theme-dependent" status palette is the bug.
+   Keep the backdrop's darkest stop light enough that text tones still clear 4.5:1 over it.
 4. **Blur is for surfaces, not rows.** Cards, bars, sheets, dialogs. Never per table row or list
    item, and drop to a solid surface (`--solid`) inside long tables, scroll-heavy lists and on
    `prefers-reduced-transparency`. Blur on hundreds of elements is a frame-rate bug on low-end phones.
 5. **No glass on glass.** A card inside a card uses a well (`--well`) or nothing, never a second blur.
+   A **solid** surface (sheet, dialog) gives its children a solid sub-palette (`--well`, `--line`):
+   glass card tokens (22% fill, white rim) inside a solid sheet have no visible edge.
 6. **Pills are for controls** (buttons, tabs, chips, toggles). Containers get the radius scale; nested
    radius = outer minus padding.
-7. **Tones mean something.** Lime = success, coral = danger, sky = info. Never decorative.
+7. **Tones mean something.** Lime = success, coral = danger, sky = info. Never decorative. **Zero
+   and healthy values are neutral ink** — "0 failed" in red is a false alarm; colour only a
+   non-zero exception. One meaning per hue across the app (six competing tile colours = none).
+   Every glass value — rim, blur, radius, shadow, scrim — is a token; a literal `sigma: 11` or
+   `BoxShadow(color: Colors.black…)` in a widget is drift.
 8. **Shadows are soft and tinted** (`--shadow`, `--shadow-pop`); the primary button may carry a faint
    accent glow — one, and nowhere else.
 

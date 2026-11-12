@@ -15,6 +15,14 @@ Invoke with an optional target: `/ui-audit [page, component, or feature]`
 
 Without a target, audit the most recently changed frontend files.
 
+**Reviewing a whole app or screen (not a diff)?** This audit alone misses density, action
+hierarchy, thumb reach, copy and flow problems — a blind side-by-side on an ops admin app (2026-11-12)
+showed it. Run it together with `ux-audit` (flow, friction, hierarchy), `break-ui` (truncation
+priority, worst-case data) and ui-polish's [screen patterns](../ui-polish/reference/screen-patterns.md)
+sections *Ops home*, *Working lists on a phone*, *Action hierarchy and ergonomics* and
+*Localisation of data*. Render from the branch that's actually shipped (`origin/<default>`), not a
+stale local default branch.
+
 **Detect the stack first.** Each dimension below lists checks for Vue 3 / Vuetify and for
 Flutter. Run only the set that matches — reporting a missing `:focus-visible` on a Dart file
 wastes the reader's attention and discredits the findings next to it. The *dimensions* and
