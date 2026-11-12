@@ -36,7 +36,8 @@ uses, hand-rolled widgets beside a kit that already has them. Before writing mar
    (inline, tab, sheet), where actions sit. Reuse that structure unless the user asked for a new one.
 2. **Use the kit and tokens.** Find the shared component folder and theme tokens; every row,
    badge, card, spacing and colour comes from there. A hand-rolled widget needs a reason the kit
-   can't meet.
+   can't meet. **No kit or tokens yet** (new app, or a page outside any system)? Start from the
+   [house style](reference/house-style.md) instead of inventing a look.
 3. **Keep different kinds of content apart.** Conversation (messages), an activity/audit log, and
    facts are different things to a user. Don't interleave them in one feed with only a section
    label between; separate them the way the sibling screen does (tab, sheet, or clearly distinct
@@ -57,6 +58,7 @@ examples show Vue 3 / Vuetify and Flutter side by side, so read the pair that ma
 - [Responsive Design](reference/responsive-design.md) — mobile-first, breakpoints, input detection, safe areas
 - [UX Writing](reference/ux-writing.md) — button labels, error messages, empty states, terminology
 - [Anti-Patterns](reference/anti-patterns.md) — AI slop detection, generic patterns to avoid, missing elements checklist
+- [House style](reference/house-style.md) — the default Glass look (from the reference app) for apps with no system of their own: tokens, glass legibility rules, bilingual type stack, Vuetify defaults
 - Motion → **the `animate` skill**, not a reference here.
 
 ## Core Philosophy

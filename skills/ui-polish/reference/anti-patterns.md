@@ -4,6 +4,8 @@ Common patterns that make AI-generated interfaces look generic. Use this as a ch
 
 In an existing app, its own kit, tokens and sibling screens win over any rule here (see Build mode in SKILL.md). These rules decide new choices; they are not a reason to restyle what the app already does consistently.
 
+**Declared system vs reflex.** Glass, a backdrop gradient, pill controls and a large radius are slop when they are sprinkled on — a one-off `backdrop-filter`, a per-section gradient, literal values. They are a style when the app declares them once in tokens and applies them everywhere, as the [house style](house-style.md) does. Judge a declared system by its own rules (contrast against the backdrop, no blur on rows, tones with meaning), not by these bans.
+
 ## Visual & Color
 
 - **Pure `#000000` black**: Use off-black, dark charcoal, or tinted dark (`#0a0a0a`, `#121212`, dark navy)
@@ -98,7 +100,7 @@ Adapted from [impeccable](https://github.com/pbakaus/impeccable) `craft-floor.md
 | Section numbers `01 / 02 / 03` | Only when the sequence itself is information the reader needs (steps they follow in order) |
 | Hero-metric template: big number, small label, supporting stats, accent | Lead with what the user came for; a figure earns size only if it is the decision |
 | Coloured `border-left`/`border-right` > 1px on cards, rows, callouts, alerts (side stripe) | A tinted surface, an icon, or a plain 1px border; in RTL a side stripe also lands on the wrong side unless logical |
-| Glass and blur as decoration (`backdrop-filter`, Flutter `BackdropFilter`) | Only for a specific effect — content scrolling under a sticky bar — never as the card style |
+| Glass and blur as decoration (`backdrop-filter`, Flutter `BackdropFilter`) on a one-off card or section | Either the app's declared glass tokens ([house style](house-style.md)) applied everywhere, or none; outside a glass system, only for content scrolling under a sticky bar |
 | Hard offset shadow (`box-shadow: 4px 4px 0`) outside a deliberately neobrutalist kit | The kit's elevation tokens; declare elevation once, border *or* shadow |
 | Unicode glyphs or emoji as icons (★ ✓ → ♥ in markup) | The app's icon set (`v-icon` / `Icon` component / `Icons.*`), one stroke and weight |
 | Geometric masks (circle, polygon) faking an organic cut-out of a photo | A real alpha cut-out asset, or no effect |

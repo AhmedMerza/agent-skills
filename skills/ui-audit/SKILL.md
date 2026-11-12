@@ -283,6 +283,16 @@ Does this look like generic AI-generated UI? Check for the telltale signs:
 - **Component cliches**: Pill badges everywhere, accordion FAQ, modals for everything, footer link farm with 4 columns
 - **Flat surfaces**: No texture, no depth, generic `box-shadow` with pure black, inconsistent light direction
 
+**Declared glass systems are not slop.** If the app defines glass/backdrop/pill/radius tokens once
+and applies them consistently (e.g. the reference app's `_design-tokens.scss`, see
+[house style](../ui-polish/reference/house-style.md)), don't flag the look itself — flag only
+one-off `backdrop-filter`/gradients outside the tokens. Audit the system instead:
+- text contrast measured on the lightest **and** darkest backdrop area behind a glass card;
+- small accent-coloured text using the raw accent instead of a contrast-fixed `--accent-text`;
+- `backdrop-filter` on table rows, list items, or inside long scroll lists (performance);
+- glass nested in glass;
+- literal hex/`rgba()` in pages where a glass token exists (count them — adoption ratio).
+
 **Flutter tells specifically:**
 - **Untouched Material defaults**: stock `ThemeData()` indigo/purple, a default `AppBar` with
   default elevation, `Card` with default radius and shadow — the "I ran `flutter create` and

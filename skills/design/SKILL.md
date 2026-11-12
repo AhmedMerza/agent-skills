@@ -6,6 +6,11 @@ description: Give industry-specific UI/UX recommendations BEFORE building — co
 
 # Design Advisor
 
+> **Precedence.** This data is generic industry stock. The app's own kit, then the `ui-polish`
+> [house style](../ui-polish/reference/house-style.md), outrank it. Where a CSV row recommends
+> Inter/Roboto, a purple/blue gradient palette, or a font pairing without an Arabic companion,
+> say so and offer the house-style choice instead — `ui-polish` and `ui-audit` treat those as slop.
+
 ## Overview
 A design advisor skill that provides industry-specific UI/UX recommendations
 before building. Searches design data files to give actionable recommendations

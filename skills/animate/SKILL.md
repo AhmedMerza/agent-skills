@@ -29,6 +29,35 @@ This skill is the **executor + ideator**, and it owns motion end to end — the 
 10. **Continuous drivers never bind 1:1.** Motion driven by a *continuously-varying input* — scroll position, pointer coordinates, a drag delta — is a different animal from a discrete A→B change: there is no start, no end, and no duration to budget. Two rules bind it. **(a)** Always route the input through a **damped follower** (chase the target a fraction of the remaining distance each frame) — raw binding reads as mechanical and reproduces every jitter in the input device. **(b)** Easing curves are meaningless here: a bezier maps *time*→progress, and the user owns time, so the shaping lives entirely in the damping. And under reduced motion you **unbind the driver** rather than shorten it — there's no state change to communicate, so snap to the settled value and stop tracking. This class is heavily gated: see the continuous restraint gate in the decision map, because scroll/pointer effects are hero vocabulary and this skill is subtle by default.
 11. **Reuse the platform's transitions before hand-rolling.** Vuetify 3 already ships `v-expand-transition`, `v-fade-transition`, `v-scroll-x/y-transition`, and a `transition` prop on `v-dialog`/`v-menu`/`v-snackbar`/etc. Reach for those first — they keep motion consistent with the rest of the app and you inherit reduced-motion plumbing. Hand-roll a `<Transition>`/WAAPI combo only when the built-in can't express the choreography (overshoot, travel, secondary reaction). On Flutter the equivalent is implicit widgets (`AnimatedScale/Opacity/Switcher`, `Hero`) before custom `AnimationController`s.
 
+## Page entrance and engine choice (app-wide defaults)
+
+**Every app gets exactly one page entrance — shared, never per page.** One composable mounted in
+the layout animates the first screenful of top-level cards on a *real page change*. Rules
+(the reference app's `resources/ts/composables/usePageEntrance.ts` is the reference implementation):
+- small for an all-day tool: rise ~12px + scale 0.985, ~450ms, strong ease-out, 40ms stagger,
+  at most ~8 cards, nested cards ride with their parent, below-the-fold cards don't animate;
+- **only when the page changes** — filter, sort, paging and polling visits to the same page keep
+  their cards still (key on component + path, ignore the query string);
+- opacity never starts at 0 for longer than the first frame of content (no blank flash), and never
+  delays interaction — the page is clickable from frame one;
+- reduced motion: no entrance at all;
+- a page with its own choreography opts out (`data-own-entrance`) instead of fighting it.
+
+Per-component entrances, fade-slide-up on every section, and scroll-reveal on working UI stay
+banned — the shared entrance is the one allowed. Presentational pages follow `showcase.md`.
+
+**Which engine.** Use the cheapest one that can express the motion:
+
+| Engine | Use for | Why |
+| --- | --- | --- |
+| CSS transitions / `@keyframes`, Vuetify `v-*-transition` | hover, press, focus, state toggles, enter/leave of one element, one-shot bursts | zero JS, runs on the compositor (stays smooth while the main thread is busy mounting a page), reduced-motion via one media query |
+| WAAPI (`el.animate`) | FLIP travel, retargetable motion, staggers over a dynamic list, the page entrance in an app with no GSAP | native and interruptible, returns a promise, no dependency, also compositor-backed for `transform`/`opacity` |
+| GSAP (only if already installed) | multi-step timelines with overlap and labels (boot sequence, delete/send/pay button choreography), sequences that must reverse or scrub | timeline sugar and cross-browser robustness; cost: ~25KB+, runs on the main thread via rAF so it can jank during heavy mounts, and needs `clearProps` cleanup |
+
+Don't add GSAP to an app for something CSS or WAAPI covers. Where it is already in (the reference app), keep
+it for timelines and reuse the app's shared curves/constants — but a simple hover or press is
+still CSS.
+
 ## The `/animate` workflow
 
 ### 1. Detect the platform
