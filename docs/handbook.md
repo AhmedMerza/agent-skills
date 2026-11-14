@@ -106,7 +106,7 @@ proposes a fix to the skill itself.
 - `skill-compare` vs `skill-audit` — **intake** vs **maintenance**: pricing someone else's skill before adopting it vs watching your own for drift once they're running.
 - `qa-sweep` vs `ui-audit` vs `ux-audit` — three questions about the same screen: does it **work at all** (drive it in a browser, find what's broken) vs is it **built correctly** (a11y/perf/theming, read statically) vs does it **work for the human** (friction/cognitive load).
 - `persona-walkthrough` vs `ux-audit` vs `qa-sweep` — `ux-audit` *reasons* about friction from the design; `qa-sweep` checks things *work*; `persona-walkthrough` *becomes the user*: blind subagents with different knowledge, language and patience drive the real app and report comprehension, feelings (with reasons) and where they quit. Cheap, repeatable first pass; it does not replace watching real people.
-- `design` / `animate` / `ui-polish` — *before* building (colors/type/layout) vs *while* building (motion, interaction details).
+- `design` / `animate` / `ui-polish` — the app's identity (is the look any good, what should replace it) vs *while* building (motion, interaction details).
 
 ## Planning & Judgment
 
@@ -149,12 +149,11 @@ proposes a fix to the skill itself.
 ## UI / UX
 
 Which one you want depends on what "improve the design" means — they answer four different
-questions. Vue and Flutter are both covered everywhere except `design`, which is web-only by
-construction (its data is CSS and landing-page patterns).
+questions. Vue and Flutter are both covered everywhere.
 
 | Skill | What it does | Vue | Flutter |
 |-------|--------------|:---:|:---:|
-| `design` | Industry-specific UI/UX recommendations BEFORE building — color palettes (hex), font pairings, layout patterns, anti-pattern warnings. Greenfield direction-setting, not for a repo that already has tokens. | ✅ | — |
+| `design` | Art direction: critiques an app's visual identity (palette, type, surfaces, imagery, density) with measured numbers, shows 2–3 directions on its real screens, applies the pick as theme tokens + `DESIGN.md`. Runs on its own when the look is called generic or the app has no identity. | ✅ | ✅ |
 | `animate` | Adds physical, subtle motion to a UI target. Proposes ideas, implements the chosen one as a choreographed combo. Owns *all* motion — the others hand it over. | ✅ | ✅ |
 | `ui-polish` | Craft on one screen — type, colour, spacing, hierarchy, interaction states, UX copy, the invisible details. "It looks generic/unfinished." *(adapted from Emil Kowalski)* | ✅ | ✅ |
 | `ui-audit` | Technical quality checks on one target — a11y, performance, theming, responsive, interaction states, anti-patterns. Scored 0–4 per dimension with severities. | ✅ | ✅ |

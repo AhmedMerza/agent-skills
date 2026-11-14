@@ -16,7 +16,7 @@ My personal collection of agent skills, synced across machines — works with [C
 | Skill | What it does |
 | --- | --- |
 | `animate` | Physical, choreographed motion for a UI target (Vue/Vuetify, Flutter). |
-| `design` | Industry-specific colors, type pairings, layout patterns — before building. |
+| `design` | Art direction: critiques an app's visual identity with measurements, shows 2–3 directions on its real screens, applies the pick as tokens + `DESIGN.md`. |
 | `design-drift` | Whole-repo design-system health: token adoption, missing scales, duplicate kits. |
 | `explain` | Maps an unfamiliar feature end-to-end into a navigable `file:line` map. |
 | `video-teardown` | Reverse-engineers a product from its video walkthroughs; diffs against your codebase. |

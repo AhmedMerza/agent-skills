@@ -60,6 +60,38 @@ What keeps this calm is small travel and long decelerating eases, not stillness.
 travel reduced to ~18 px, starting ≤250 ms after the click. Filtering in place = leaving items
 `exit` together → survivors `move` → newcomers `enter-surface` at 40 ms stagger.
 
+**Theme, look and language changes** — the page stays, only its paint changes:
+- **Light/dark toggle, look/theme picker, accent change (user-triggered): circular reveal from the
+  control.** Web, measured from a reference site:
+  ```js
+  function switchTheme(apply, trigger) {          // apply() flips data-theme / Vuetify theme
+    if (!document.startViewTransition || reducedMotion()) return apply()
+    const r = trigger?.getBoundingClientRect()
+    const x = r ? r.left + r.width / 2 : innerWidth - 40
+    const y = r ? r.top + r.height / 2 : 40
+    const end = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y))
+    document.startViewTransition(apply).ready.then(() => {
+      document.documentElement.animate(
+        { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${end}px at ${x}px ${y}px)`] },
+        { duration: 450, easing: 'cubic-bezier(.65,0,.35,1)', pseudoElement: '::view-transition-new(root)' })
+    }).catch(() => {})
+  }
+  ```
+  plus CSS `::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal }`
+  so only the circle moves. The origin is the control the user touched (a picker swatch, the moon
+  icon); with no trigger, the top-end corner (mirrored in RTL). No View Transitions support or
+  reduced motion → apply instantly. Focus stays where it was.
+- **Flutter:** no View Transitions — wrap the app in a `RepaintBoundary`, capture the old frame
+  (`toImage`), switch the theme, overlay the old image and animate a `ClipPath` that *removes* a
+  growing circle from it (origin = the tapped widget's centre, radius to the farthest corner,
+  450 ms, `Cubic(.65, 0, .35, 1)`), then drop the overlay. One controller, disposed; skip under
+  `MediaQuery.disableAnimations`. No package needed.
+- **Language / direction switch (en ↔ ar):** not a circle — the layout mirrors, so a sweep reads as
+  breakage. Plain View Transition crossfade (default root fade, ≤250 ms) on web; on Flutter a
+  200 ms fade between the two frames. The page then does NOT replay its entrance.
+- **System-driven change** (OS switches dark mode while the app is open, theme restored on load):
+  no animation — apply before first paint (no flash of the default look).
+
 **Overlays:** drawer slides from its edge (450–600 ms, expo.out or slight back-out), its sections
 cascade 40–50 ms apart after 80–120 ms; modal and menu `pop` from the button that opened them;
 close is `exit`. Toast in `pop` (back-out 1.8), out 250–300 ms, auto-dismiss ~3 s.

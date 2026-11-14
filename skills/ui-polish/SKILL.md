@@ -25,6 +25,8 @@ This skill owns the **still** frame: what the interface looks like and how it re
 
 The boundary is simple: **if it changes over time, it's `animate`. If it's true in a screenshot, it's here.**
 
+One more hand-off: whether the app's **identity** (palette, typeface, surface recipe, the look as a whole) is any good, and what should replace it, belongs to the **`design`** skill. This skill makes a screen right *within* an identity; when the user says the whole look is generic or not nice, go there.
+
 ## Build mode — match the app before you write a widget
 
 A screen in an existing app is judged against its neighbours first, not against taste. Most ugly
@@ -36,8 +38,11 @@ uses, hand-rolled widgets beside a kit that already has them. Before writing mar
    (inline, tab, sheet), where actions sit. Reuse that structure unless the user asked for a new one.
 2. **Use the kit and tokens.** Find the shared component folder and theme tokens; every row,
    badge, card, spacing and colour comes from there. A hand-rolled widget needs a reason the kit
-   can't meet. **No kit or tokens yet** (new app, or a page outside any system)? Start from the
-   [house style](reference/house-style.md) instead of inventing a look.
+   can't meet. The app's `DESIGN.md`, if it has one, outranks the house style. **No kit or
+   tokens yet** (new app, a page outside any system, or only framework defaults and no
+   `DESIGN.md`)? The app has no deliberate identity: run the **`design`** skill (critique, then
+   directions shown on this screen) and tell the user, rather than inventing a look. For a
+   one-off page, or while they decide, start from the [house style](reference/house-style.md).
 3. **Keep different kinds of content apart.** Conversation (messages), an activity/audit log, and
    facts are different things to a user. Don't interleave them in one feed with only a section
    label between; separate them the way the sibling screen does (tab, sheet, or clearly distinct
@@ -78,6 +83,7 @@ examples show Vue 3 / Vuetify and Flutter side by side, so read the pair that ma
 - [Screen patterns](reference/screen-patterns.md) — archetypes (board, record drawer, stock list, overview, catalog) and the visual devices that replace text, web + Flutter + mobile layout
 - [Data for visuals](reference/data-for-visuals.md) — the API contract each device needs; server-decided severity, next action, status history, list summaries
 - Motion → **the `animate` skill** (its `reference/motion-system.md` is the house default), not a reference here.
+- Identity → **the `design` skill** (critique, directions, the app's `DESIGN.md`); per-app pointers live in `reference/app-identities.local.md` (gitignored, written by `design` apply mode).
 
 ## Core Philosophy
 
