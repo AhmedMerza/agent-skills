@@ -2,7 +2,9 @@
 
 The default look for a **new** Vue/Vuetify app, or one with no kit or tokens of its own. An app
 that already has a consistent system keeps it (Build mode wins). This file sets the direction; the
-canonical implementation is the reference app on `dev` — read it, don't re-derive values from memory:
+canonical implementation is the reference app on `dev` — read it, don't re-derive values from memory.
+Where the reference app lives on this machine is in `reference-app.local.md` next to this file
+(gitignored; if it's missing, ask the user):
 
 | Layer | the reference app file |
 | --- | --- |
