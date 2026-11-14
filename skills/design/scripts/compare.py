@@ -2,7 +2,8 @@
 """Build a local side-by-side page from direction screenshots.
 
   compare.py SHOTS_DIR [FOLDER ...]            side-by-side page
-  compare.py --sheet DIR [--cols N] [--width PX]   contact sheet: tile DIR/*.png into DIR/contact-sheet.png
+  compare.py --sheet DIR [--cols N] [--width PX] [--out FILE]   contact sheet of DIR/*.png, one row group per viewport,
+                                               written to DIR/../sheets/<DIR name>.png (never inside a direction folder)
 
 SHOTS_DIR holds one folder per column, each with PNGs named
 <screen>__<viewport>__<theme>__<locale>.png  (e.g. dashboard__phone__dark__ar.png).
@@ -31,26 +32,41 @@ def sheet(args):
         from PIL import Image
     except ImportError:
         sys.exit("--sheet needs Pillow; see the install line in --help (venv, not system python)")
-    cols = int(args[args.index("--cols") + 1]) if "--cols" in args else 4
-    w = int(args[args.index("--width") + 1]) if "--width" in args else 360
+    def opt(k, default):
+        return args[args.index(k) + 1] if k in args else default
+    cols, w = int(opt("--cols", 4)), int(opt("--width", 360))
     d = Path(args[0])
-    files = sorted(p for p in d.glob("*.png") if p.name != "contact-sheet.png")
+    out_path = Path(opt("--out", d.parent / "sheets" / f"{d.name}.png"))
+    files = sorted(d.glob("*.png"))
     if not files:
         sys.exit(f"no PNGs in {d}")
-    tiles = []
+    groups = {}  # one row group per viewport (name part 2), so tablet frames are not shrunk beside phone ones
     for p in files:
-        im = Image.open(p).convert("RGB")
-        tiles.append(im.resize((w, round(im.height * w / im.width))))
-    rows = [tiles[i:i + cols] for i in range(0, len(tiles), cols)]
+        parts = p.stem.split("__")
+        groups.setdefault(parts[1] if len(parts) > 1 else "", []).append(p)
+    rows = []  # (tiles, tile width)
+    for ps in groups.values():
+        vw = w * 2 if max(Image.open(p).width for p in ps) > 700 else w
+        n = max(1, cols * w // vw)
+        for i in range(0, len(ps), n):
+            tiles = []
+            for p in ps[i:i + n]:
+                im = Image.open(p).convert("RGB")
+                tiles.append(im.resize((vw, round(im.height * vw / im.width))))
+            rows.append(tiles)
     heights = [max(t.height for t in r) for r in rows]
-    out = Image.new("RGB", (cols * (w + 8) + 8, sum(heights) + 8 * (len(rows) + 1)), "#1b1b1b")
+    width = max(sum(t.width + 8 for t in r) for r in rows) + 8
+    out = Image.new("RGB", (width, sum(heights) + 8 * (len(rows) + 1)), "#1b1b1b")
     y = 8
     for r, h in zip(rows, heights):
-        for i, t in enumerate(r):
-            out.paste(t, (8 + i * (w + 8), y))
+        x = 8
+        for t in r:
+            out.paste(t, (x, y))
+            x += t.width + 8
         y += h + 8
-    out.save(d / "contact-sheet.png")
-    print(d / "contact-sheet.png")
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out.save(out_path)
+    print(out_path)
 
 
 def text(path):

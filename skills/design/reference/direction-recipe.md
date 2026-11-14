@@ -119,6 +119,12 @@ Cost: about 60 s per direction (all cells in one `flutter test` run).
 - Direction switch at compile time: `--dart-define=DIRECTION=a` read via `String.fromEnvironment`
   in the theme layer (in the throwaway worktree). Theme, locale and viewport (`tester.view`
   physical size and device pixel ratio) are set per cell in the test.
+- The test harness resets the view size between tests: set `tester.view.physicalSize` and
+  `devicePixelRatio` inside every test and reset them in `tearDown`.
+- The first `RepaintBoundary` capture can miss backdrop layers. Capture from a boundary wrapping
+  the whole app including the backdrop, after a pump that lets the backdrop image load.
+- Shadows under translucent glass show through it: put shadows only on opaque surfaces, or clip
+  them under the glass.
 
 ### Web override recipe
 

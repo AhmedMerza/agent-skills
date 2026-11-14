@@ -6,10 +6,12 @@
   palette.py hex L C H [L C H ...]        OKLCH -> hex, chroma reduced until in sRGB gamut (L 0-1 or 0-100)
   palette.py tint FG:ALPHA:BG [...]       alpha colour over a ground -> effective hex (ALPHA 0-1 or 0-100)
 
-Hex only, with or without '#'. `contrast` reports failing pairs but exits 0; add --strict to
+Hex only, with or without '#'. 8-digit hex is CSS #RRGGBBAA by default; add --argb to read it as
+Flutter 0xAARRGGBB / AARRGGBB (any command taking colours: contrast, tint, hues). `contrast` reports failing pairs but exits 0; add --strict to
 exit 1 when any pair is under 4.5:1.
 """
 import math
+import re
 import sys
 
 
@@ -86,7 +88,18 @@ def tint(fg, alpha, bg):
     return "#" + "".join(f"{round((alpha * x + (1 - alpha) * y) * 255):02x}" for x, y in zip(f, b))
 
 
+def argb(c):
+    """Flutter AARRGGBB (optional 0x / #) -> #RRGGBBAA; other tokens (alpha numbers) pass through."""
+    h = re.sub(r"^(0x|#)", "", c, flags=re.I)
+    if len(h) == 8 and re.fullmatch(r"[0-9a-fA-F]{8}", h):
+        return "#" + h[2:] + h[:2]
+    return c
+
+
 def main():
+    if "--argb" in sys.argv:
+        sys.argv.remove("--argb")
+        sys.argv[2:] = [":".join(argb(c) for c in a.split(":")) for a in sys.argv[2:]]
     if len(sys.argv) < 3 or sys.argv[1] not in ("contrast", "hues", "hex", "tint"):
         sys.exit(__doc__)
     if sys.argv[1] == "hex":
