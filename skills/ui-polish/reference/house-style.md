@@ -84,9 +84,37 @@ both first-class.
 elevation), fields `variant: 'outlined'`, density comfortable, one icon set (the reference app: Tabler). Set it
 here rather than per component so pages can't drift.
 
+## Proportions (measured from the user's reference sites, 2026-11-14)
+
+Use when there is no sibling screen to match. Four sites the user picked share these.
+- **Type:** one variable sans, hierarchy by weight (500/600/700) inside a 12–18px range plus one
+  big title: body 14/1.45 w500 (16 on content-heavy screens); page title ~37px/600/1.04,
+  −0.025em, 28px at ≤834; card title 15–18/600–700; KPI value 22–26/600; labels 12–12.5;
+  badges 11/700; tabular numerals on every figure.
+- **Surfaces:** no CSS borders — a 1px inset ring (ink ~8% light / white rim dark) plus a long
+  negative-spread shadow (`0 22–30px 44–60px -30px`). Real blur only on top bar, tab bar and
+  overlays; cards fake glass with an alpha gradient (blur is a frame-rate cost — see the Glass
+  rules above). Overlays are opaque.
+- **Radii:** controls 999; cards 22–26 (20 on phones); modals/drawers 26–28; fields 14; media
+  inside a card = card radius − card padding.
+- **Spacing:** grid gap 16 (10–12 on phones); card padding 18–24; page gutter 20–32 desktop,
+  14–18 tablet, 12–14 phone.
+- **Controls:** buttons 40–44 (primary CTA up to 52); chips 34–36; inputs 42–48; icon buttons
+  36–52 with 17–22px icons; raise touch targets to ≥44 with `(pointer: coarse)`, not by width.
+- **Layout:** content grid 4 columns at 1440, 2–3 at 834, 1–2 at 390; KPI tiles ~320–340 × 135–140,
+  four across on desktop, two on phones; 4–5 tiles above the fold on desktop. Phone nav is a
+  floating bottom pill (~64–66 high, ~10px from the edges); tablet uses a 60–80px icon rail.
+- **Media:** product/photo cards 4:5 or 16:11, image 41–48% of the card height; on phones a
+  horizontal card with a ~104px square thumb; hero/banner up to ~45–50% of viewport height.
+  Real photos with explicit width/height and `object-fit: cover` — a fallback icon in a photo
+  slot reads as broken.
+- **Colour:** near-monochrome surfaces; colour is reserved for data and for the consequence of an
+  action; status = saturated text on a 13–17% tint of the same hue.
+
 ## Motion
 
-Owned by the `animate` skill. The house entrance is one shared composable, not per-page code —
+Owned by the `animate` skill — its `reference/motion-system.md` is the house motion system, and
+every built surface gets it. The house entrance is one shared composable, not per-page code —
 see animate's "Page entrance" section.
 
 ## Accent variants (same system, different mood)

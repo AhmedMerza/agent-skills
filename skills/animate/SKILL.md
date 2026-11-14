@@ -1,6 +1,6 @@
 ---
 name: animate
-description: Add professional, physical, subtle motion to a UI target (a page, component, button, loading state, list, etc.) on web (Vue 3 / Vuetify) or Flutter. Use whenever the user invokes /animate or asks to "animate", "add motion to", "make X feel alive", or "add a transition/micro-interaction" to a specific UI element — also covers scroll-driven, parallax, and pointer-driven effects. Proposes 2–4 tailored ideas, implements the chosen one as a choreographed combo (spring/overshoot + physical travel + secondary reaction), and iterates.
+description: Add professional, physical motion to a UI target (a page, component, button, loading state, list, etc.) on web (Vue 3 / Vuetify) or Flutter. Use on your own, without being asked, whenever you build a new page or screen, build or change a component, or change a page's layout — every built surface ships with the house motion system (per-element nested entrance, data draw-ins, hover/press, overlay and route transitions; reference/motion-system.md), and a surface without it is unfinished. Also use whenever the user invokes /animate or asks to "animate", "add motion to", "make X feel alive", or "add a transition/micro-interaction" to a specific UI element — also covers scroll-driven, parallax, and pointer-driven effects. Proposes 2–4 tailored ideas, implements the chosen one as a choreographed combo (spring/overshoot + physical travel + secondary reaction), and iterates.
 ---
 
 # /animate — Motion Design Executor
@@ -29,13 +29,21 @@ This skill is the **executor + ideator**, and it owns motion end to end — the 
 10. **Continuous drivers never bind 1:1.** Motion driven by a *continuously-varying input* — scroll position, pointer coordinates, a drag delta — is a different animal from a discrete A→B change: there is no start, no end, and no duration to budget. Two rules bind it. **(a)** Always route the input through a **damped follower** (chase the target a fraction of the remaining distance each frame) — raw binding reads as mechanical and reproduces every jitter in the input device. **(b)** Easing curves are meaningless here: a bezier maps *time*→progress, and the user owns time, so the shaping lives entirely in the damping. And under reduced motion you **unbind the driver** rather than shorten it — there's no state change to communicate, so snap to the settled value and stop tracking. This class is heavily gated: see the continuous restraint gate in the decision map, because scroll/pointer effects are hero vocabulary and this skill is subtle by default.
 11. **Reuse the platform's transitions before hand-rolling.** Vuetify 3 already ships `v-expand-transition`, `v-fade-transition`, `v-scroll-x/y-transition`, and a `transition` prop on `v-dialog`/`v-menu`/`v-snackbar`/etc. Reach for those first — they keep motion consistent with the rest of the app and you inherit reduced-motion plumbing. Hand-roll a `<Transition>`/WAAPI combo only when the built-in can't express the choreography (overshoot, travel, secondary reaction). On Flutter the equivalent is implicit widgets (`AnimatedScale/Opacity/Switcher`, `Hero`) before custom `AnimationController`s.
 
-## Page entrance and engine choice (app-wide defaults)
+## Build mode and the house motion system (app-wide defaults)
 
-**Every app gets exactly one page entrance — shared, never per page.** One composable mounted in
-the layout animates the first screenful of top-level cards on a *real page change*. Rules
-(the reference app's `resources/ts/composables/usePageEntrance.ts` is the reference implementation):
-- small for an all-day tool: rise ~12px + scale 0.985, ~450ms, strong ease-out, 40ms stagger,
-  at most ~8 cards, nested cards ride with their parent, below-the-fold cards don't animate;
+**Every built surface moves, element by element.** The default is
+[motion-system.md](reference/motion-system.md), measured from the reference sites the user picked:
+regions in reading order → siblings staggered → each card's contents after its card, three levels
+deep. A page or card that rises as one block, with its rows, bars and numbers just sitting there,
+is the failure the user keeps reporting. **When you invoke this skill yourself while building**,
+skip the ideas menu (step 4): apply the system to everything you built — entrance, data
+draw-ins, hover/press, travelling selection pill, overlays, route change — verify it (step 6),
+then offer at most one signature moment at the end.
+
+**One shared entrance, with role presets — never per-page hand code.** A composable/directive in
+the layout (or one Flutter widget) with presets per role (`title`, `card`, `content`, `row`,
+`data`). The reference app's `resources/ts/composables/usePageEntrance.ts` is the starting point;
+extend it to the nested levels rather than writing a second one. Rules learned from real bugs:
 - **only when the page changes** — filter, sort, paging and polling visits to the same page keep
   their cards still (key on component + path, ignore the query string);
 - opacity never starts at 0 for longer than the first frame of content (no blank flash), and never
@@ -44,16 +52,18 @@ the layout animates the first screenful of top-level cards on a *real page chang
 - a page with its own choreography opts out (`data-own-entrance`) instead of fighting it;
 - **never select by a one-time visibility snapshot and leave the rest static.** Anything not picked
   shows at full opacity while the picked ones sit at 0 through their delay, so later rows appear
-  *before* earlier ones. Either animate a group whole or not at all; below-the-fold items get a
-  scroll-triggered reveal (IntersectionObserver / `ScrollTrigger.batch`), or none;
+  *before* earlier ones. Below-the-fold items get the same presets on first viewport entry
+  (IntersectionObserver / `ScrollTrigger.batch`), once;
 - caps count **whole rows** (round to the column count), never a fixed item number that splits a
-  grid row at wide screens;
+  grid row at wide screens; stagger shrinks with count (`clamp(35, 500/n, 80)` ms) so no cascade
+  runs past ~700 ms;
 - don't re-enter what was already on screen: chrome that rendered during loading (toolbars, filter
   chips) animates at mount, not again when data lands;
 - no dead gap when data replaces a spinner: the data path starts at delay ≈ 0.
 
-Per-component entrances, fade-slide-up on every section, and scroll-reveal on working UI stay
-banned — the shared entrance is the one allowed. Presentational pages follow `showcase.md`.
+Hand-rolled per-component entrances on their own clocks stay banned — everything goes through the
+shared entrance so it reads as one cascade. No parallax or scrub on working UI. Presentational
+pages additionally follow `showcase.md`.
 
 **Which engine.** Use the cheapest one that can express the motion:
 
@@ -102,7 +112,9 @@ GSAP is not required for this class either. Flutter: `CustomPainter` + one `Anim
 Read the actual component/page. Identify: what triggers (click/hover/mount/state-change/route), what the element *is*, where it goes, what could be a secondary reactor (a badge, count, icon, sibling), and how often a user sees it (drives intensity). Find the real selectors/refs/widget — don't animate in the abstract. **While you're in the file, take stock of the motion already there** — existing `<Transition>`s, keyframes, `v-motion`/`flutter_animate` calls, hover/press states. You're adding to a system, not a blank canvas.
 
 ### 3. The restraint gate — should this move *at all*?
-Motion is not the default-good answer; **the most professional outcome is sometimes less motion, or none.** Before proposing anything, decide honestly whether this target earns new motion. Recommend **doing nothing** (or *subtracting* existing motion) when any of these hold:
+**The gate is for extras, not the baseline.** The house motion system is never gated off on a surface you built — it is the finish, like spacing. This gate decides whether a target earns motion *beyond* it (a combo, a loop, a scroll or pointer effect), and it still keeps high-frequency controls to tiny hover/press.
+
+Extra motion is not the default-good answer; **the most professional outcome is sometimes less, or none.** Before proposing anything, decide honestly whether this target earns new motion. Recommend **doing nothing** (or *subtracting* existing motion) when any of these hold:
 
 - **It's already animated enough.** The target — or its surroundings — already has entrance, hover, and/or press motion that reads well. Piling on is noise, not polish. If the *page* is already motion-heavy (lots of keyframes/floaters), the high-value move is often to **calm or remove** existing motion, not add a combo.
 - **High-frequency / utility surface.** Something a power user hits dozens of times a day (a save button in a tight loop, a table row, a keyboard-repeated control). Per principle 5, these want near-zero motion; a flourish becomes a daily tax.
@@ -150,11 +162,12 @@ Then iterate on their reaction; offer the next idea if they want to compare. Don
 > Implement on a **feature branch**, never directly on the main/dev branch.
 
 ### Animating a whole surface (page / dashboard)
-When the target is a whole page ("make the dashboard feel alive"), do **not** run the single-target loop on every element — that produces the "everything moves at once" failure mode, where nothing reads because nothing is still. Instead:
-- **Triage, don't blanket.** Pick the 2–4 elements that carry the most meaning (the primary metric, the hero CTA, the data that just loaded) and leave the rest deliberately still. Stillness is what makes the moving parts legible.
-- **One sequenced entrance, not N unrelated ones.** On mount, run a *single* coordinated entrance (cards rise+fade 30–80ms apart, ordered top-down or by importance) rather than each widget animating on its own clock. This is the `list-stagger` combo applied at page scope.
-- **Interaction motion only on the hot path.** Within the page, reserve press/hover/success combos for the elements the user actually acts on; ambient widgets stay quiet.
-- **Budget it.** If more than ~3–4 things move on load, cut. Re-run the restraint gate per element, not just once for the page as a whole.
+When the target is a whole page, do **not** run the single-target loop on every element on its own clock — that is the "everything moves at once" failure. Run the **nested cascade** from [motion-system.md](reference/motion-system.md) as one coordinated timeline:
+- **Level 1 — regions** in reading order (shell → title → stats → toolbar → grid), 100–150 ms apart.
+- **Level 2 — siblings** staggered `clamp(35, 500/n, 80)` ms; title per character at 22 ms.
+- **Level 3 — card contents** 135–150 ms after their card: media, text, then data marks (each bar, row, meter and number on its own beat; numbers count up, lines draw).
+- **Legibility comes from small moves, not stillness:** travel ≤30 px, scale ≥.97, ≤0.9 s per element, everything settled by ~2 s, page clickable from frame one.
+- **Interaction motion where the user acts** (hover lift, press, travelling pill, state-change feedback); at most one ambient loop per view.
 
 ## Combo library (the reusable vocabulary)
 
@@ -184,6 +197,7 @@ Ambient loops (`live-pulse`, `attention-sheen`) are a different class from every
 Default intensities: spring `{ stiffness: 300, damping: 20 }` (snappy) or Apple-style `{ duration: 0.45, bounce: 0.2 }`. Overshoot CSS: `cubic-bezier(0.34, 1.56, 0.64, 1)`. Strong ease-out: `cubic-bezier(0.23, 1, 0.32, 1)`. Flutter: `Curves.easeOutBack` (overshoot), `Curves.elasticOut` (bouncy, use sparingly), `Curves.fastOutSlowIn` (movement).
 
 ## References
+- [House motion system](reference/motion-system.md) — **the default for every built surface**: three-level cascade, tokens (web + Flutter curves), data, interaction, navigation, overlays, feedback, hard constraints. Read it first.
 - [Motion decision map](reference/decision-map.md) — **the judgment layer**: 7 context facts + 12 laws (8 for discrete changes, 4 for continuous drivers) + change→pattern table that picks *which* motion and *why*. Consult in step 3.5, before proposing.
 - [Motion modifiers](reference/techniques.md) — **orthogonal knobs** that layer onto a combo you've already picked (stagger order, velocity-derived distortion, two-config springs, second-beat decoupling, proximity falloff). Consult *after* the combo is chosen, never instead of choosing one. Zero modifiers is the right answer for most targets.
 - [Showcase effects](reference/showcase.md) — Marquee, spotlight card, border beam (ported from Magic UI). **Presentational surfaces only**; read when the target is a hero/landing/welcome page, never for working UI.
@@ -192,7 +206,8 @@ Default intensities: spring `{ stiffness: 300, damping: 20 }` (snappy) or Apple-
 - Deep web motion theory → the `ui-polish` skill.
 
 ## Checklist before you call it done
-- [ ] Passed the **restraint gate** — this target genuinely earns motion (not already-animated, not a high-frequency tax); "do nothing" was a real option, not skipped.
+- [ ] A surface you built carries the **house motion system** ([motion-system.md](reference/motion-system.md)): per-element nested entrance (no block fades), data draw-ins, hover/press, travelling selection, overlays from their trigger, route exit + replay.
+- [ ] Anything *beyond* that passed the **restraint gate** — not already-animated, not a high-frequency tax; "do nothing" was a real option.
 - [ ] Primary motion uses spring/overshoot, not linear.
 - [ ] If something moved locations, it **traveled** (no fade-here/fade-there).
 - [ ] There's a **secondary reaction**, not just the primary.

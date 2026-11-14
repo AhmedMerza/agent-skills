@@ -1,6 +1,6 @@
 ---
 name: ui-polish
-description: Visual and interaction craft for Vue 3 / Vuetify and Flutter UI — typography, color and contrast, spacing and hierarchy, interaction states, responsive behaviour, UX copy, and the invisible details that make interfaces feel considered. Use on your own, without being asked, BEFORE writing markup whenever you build a new screen or change the layout of an existing one (web or mobile) — it makes you match the app's sibling screens and kit first. Also use on your own whenever you touch, read or review a page that shows data as plain text, numbers or tables — then propose the visual upgrades (quantity → meter, status → pill or stepper, owed → paid/balance bar, dates → words) with the data each needs. Also use when reviewing UI that looks generic, unbalanced, or unfinished, or when choosing type scales, palettes, spacing systems, focus/hover/disabled states, or button and error copy. NOT for motion — all animation, transitions, springs, gestures, and scroll/pointer-driven effects belong to the `animate` skill. Adapted from Emil Kowalski's design engineering philosophy.
+description: Visual and interaction craft for Vue 3 / Vuetify and Flutter UI — typography, color and contrast, spacing and hierarchy, interaction states, responsive behaviour, UX copy, and the invisible details that make interfaces feel considered. Use on your own, without being asked, BEFORE writing markup whenever you build a new screen or change the layout of an existing one (web or mobile) — it makes you match the app's sibling screens and kit first, hands the motion layer to `animate`, and makes you look at the result at phone, tablet and desktop width before calling it done. Also use on your own whenever you touch, read or review a page that shows data as plain text, numbers or tables — then propose the visual upgrades (quantity → meter, status → pill or stepper, owed → paid/balance bar, dates → words) with the data each needs. Also use when reviewing UI that looks generic, unbalanced, or unfinished, or when choosing type scales, palettes, spacing systems, focus/hover/disabled states, or button and error copy. Motion itself (animation, transitions, springs, gestures, scroll/pointer effects) belongs to the `animate` skill, which build mode invokes. Adapted from Emil Kowalski's design engineering philosophy.
 ---
 
 # Design Engineering
@@ -51,7 +51,17 @@ uses, hand-rolled widgets beside a kit that already has them. Before writing mar
    value-carrying action). Then list each device's fields per
    [data for visuals](reference/data-for-visuals.md), mark what the API already sends, and **propose
    the backend change** with the UI. Missing devices go into the kit (web and Flutter), not inline.
-6. Then apply the rest of this skill and the checklist below.
+6. Then apply the rest of this skill and the checklist below. Sizes, type and density with no
+   sibling to match come from the house style's **Proportions** section.
+7. **Motion is part of the build — invoke `animate` yourself** once the markup is in. Every built
+   screen ships with the house motion system (per-element entrance, data draw-ins, hover/press,
+   overlays); the user should never have to ask for it.
+8. **Look at it before you say done.** Screenshot the screen at 390, 834 and 1440 wide, and in
+   Arabic/RTL (web: the `browse` skill or Playwright; Flutter: emulator or golden screenshots).
+   Compare against the sibling screen and the house-style proportions, and fix what a glance
+   shows: overlap, misalignment, cramped or half-empty areas, touch targets under 44px on touch,
+   fallback icons where a photo belongs. If you cannot capture, say so — never claim it looks right
+   unseen.
 
 ## Reference Documents
 
@@ -67,7 +77,7 @@ examples show Vue 3 / Vuetify and Flutter side by side, so read the pair that ma
 - [House style](reference/house-style.md) — the default Glass look (from the reference app) for apps with no system of their own: tokens, glass legibility rules, bilingual type stack, Vuetify defaults
 - [Screen patterns](reference/screen-patterns.md) — archetypes (board, record drawer, stock list, overview, catalog) and the visual devices that replace text, web + Flutter + mobile layout
 - [Data for visuals](reference/data-for-visuals.md) — the API contract each device needs; server-decided severity, next action, status history, list summaries
-- Motion → **the `animate` skill**, not a reference here.
+- Motion → **the `animate` skill** (its `reference/motion-system.md` is the house default), not a reference here.
 
 ## Core Philosophy
 
