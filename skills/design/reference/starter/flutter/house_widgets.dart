@@ -197,12 +197,14 @@ class HouseFloatingAction extends StatelessWidget {
   }
 }
 
-/// Money never prints without its currency. Urbanist has no tabular figures, so each digit gets
-/// a fixed-width box: amounts line up in a column and a count-up does not jitter.
+/// Money prints with the app's configured [currency]. If the app has none, pass null: the number
+/// is shown alone - never invent a currency, and say "currency not known" in the final message.
+/// Urbanist has no tabular figures, so each digit gets a fixed-width box: amounts line up in a
+/// column and a count-up does not jitter.
 class MoneyText extends StatelessWidget {
-  const MoneyText(this.value, {super.key, required this.currency, this.decimals = 2, this.style});
+  const MoneyText(this.value, {super.key, this.currency, this.decimals = 2, this.style});
   final num value;
-  final String currency;
+  final String? currency;
   final int decimals;
   final TextStyle? style;
 
@@ -214,7 +216,7 @@ class MoneyText extends StatelessWidget {
     final whole = fixed[0].replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (m) => '${m[1]},');
     final figure = '${value < 0 ? '-' : ''}$whole${decimals > 0 ? '.${fixed[1]}' : ''}';
     return Semantics(
-      label: '$currency $figure',
+      label: currency == null ? figure : '$currency $figure',
       excludeSemantics: true,
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -222,11 +224,13 @@ class MoneyText extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.baseline,
         textBaseline: TextBaseline.alphabetic,
         children: [
-          Text(
-            currency,
-            style: s.copyWith(fontSize: size * .82, color: s.color?.withValues(alpha: .7)),
-          ),
-          SizedBox(width: size * .3),
+          if (currency != null) ...[
+            Text(
+              currency!,
+              style: s.copyWith(fontSize: size * .82, color: s.color?.withValues(alpha: .7)),
+            ),
+            SizedBox(width: size * .3),
+          ],
           for (final ch in figure.characters)
             ch.contains(RegExp(r'\d'))
                 ? SizedBox(

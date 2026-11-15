@@ -113,7 +113,8 @@ class HouseTokens extends ThemeExtension<HouseTokens> {
   HouseTokens lerp(HouseTokens? other, double t) => t < .5 || other == null ? this : other;
 }
 
-/// Bundle the fonts first (see the README): Urbanist + IBM Plex Sans Arabic as the fallback.
+/// Needs the kit's fonts in assets/fonts/ and `uses-material-design: true` (pubspec.fonts.yaml);
+/// house_fonts_test.dart proves both. Urbanist, with IBM Plex Sans Arabic as the fallback.
 ThemeData houseTheme(Brightness brightness) {
   final t = brightness == Brightness.dark ? HouseTokens.dark : HouseTokens.light;
   const tnum = [FontFeature.tabularFigures()];

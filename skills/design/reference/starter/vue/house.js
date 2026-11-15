@@ -66,7 +66,28 @@ export const houseDefaults = {
   VTooltip: { location: 'top' },
 }
 
-/** Money as plain text (sentences, notes). In columns and KPIs use <Money>, which also aligns digits. */
+/**
+ * Money as plain text (sentences, notes). In columns and KPIs use <Money>, which also aligns digits.
+ * `currency` is the app's configured currency code. If the app has none, pass null: the amount is
+ * formatted for the locale without a unit. Never invent a currency; report "currency not known".
+ */
 export function money(value, currency, locale = 'en') {
-  return new Intl.NumberFormat(locale, { style: 'currency', currency, numberingSystem: 'latn' }).format(value)
+  const style = currency ? { style: 'currency', currency } : { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+  return new Intl.NumberFormat(locale, { ...style, numberingSystem: 'latn' }).format(value)
+}
+
+/**
+ * Proves the bundled fonts really load (a 404 or a missing fonts.css otherwise falls back to
+ * system fonts without any error). Call once in dev, and from the screenshot script:
+ * resolves to the list of missing families, [] when both load.
+ */
+export async function checkHouseFonts() {
+  const loads = async (font, sample) => {
+    try { return (await document.fonts.load(font, sample)).length > 0 } catch { return false }
+  }
+  const missing = []
+  if (!await loads('600 16px Urbanist', 'A')) missing.push('Urbanist')
+  if (!await loads('600 16px "IBM Plex Sans Arabic"', 'ع')) missing.push('IBM Plex Sans Arabic')
+  if (missing.length) console.error(`[house] fonts not loaded: ${missing.join(', ')} - check fonts.css and src/styles/fonts/`)
+  return missing
 }

@@ -1,5 +1,9 @@
-# Merge under the `flutter:` key of pubspec.yaml after running fetch_fonts.sh.
+# Copy the kit's fonts/flutter/ folder to assets/fonts/ (TTFs + OFL texts; no network needed),
+# then make the app's ONE `flutter:` section contain the lines below. Merge into the existing
+# section: a second `flutter:` key, or dropping `uses-material-design: true`, removes the
+# Material icon font and every Icon() renders blank.
 flutter:
+  uses-material-design: true
   fonts:
     - family: Urbanist
       fonts:

@@ -1,27 +1,35 @@
-/* House fonts, self-hosted. Copy to src/styles/fonts.css and import once from the app entry.
-   npm i @fontsource-variable/urbanist @fontsource/ibm-plex-sans-arabic
-   Urbanist ships its own @font-face with unicode-range. The Arabic package ships none, so the
-   faces are declared here, limited to the Arabic ranges: Latin text never falls through to it
-   and a page with no Arabic never downloads it. */
-@import '@fontsource-variable/urbanist/wght.css';
-
+/* House fonts, bundled with the kit (no network, no npm package). Copy this file to
+   src/styles/fonts.css and the kit's fonts/web/ folder to src/styles/fonts/, then import this
+   file once from the app entry. Both families are SIL OFL 1.1; keep the OFL-*.txt files with
+   them. Each face has a unicode-range: Latin text never falls through to the Arabic family and
+   a page with no Arabic never downloads it. Verify with checkHouseFonts() from house.js. */
+@font-face {
+  font-family: 'Urbanist'; font-style: normal; font-display: swap; font-weight: 100 900;
+  src: url('./fonts/urbanist-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Urbanist'; font-style: normal; font-display: swap; font-weight: 100 900;
+  src: url('./fonts/urbanist-latin-ext-wght-normal.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
 @font-face {
   font-family: 'IBM Plex Sans Arabic'; font-style: normal; font-display: swap; font-weight: 400;
-  src: url('@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-arabic-400-normal.woff2') format('woff2');
+  src: url('./fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2') format('woff2');
   unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
 }
 @font-face {
   font-family: 'IBM Plex Sans Arabic'; font-style: normal; font-display: swap; font-weight: 500;
-  src: url('@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-arabic-500-normal.woff2') format('woff2');
+  src: url('./fonts/ibm-plex-sans-arabic-arabic-500-normal.woff2') format('woff2');
   unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
 }
 @font-face {
   font-family: 'IBM Plex Sans Arabic'; font-style: normal; font-display: swap; font-weight: 600;
-  src: url('@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-arabic-600-normal.woff2') format('woff2');
+  src: url('./fonts/ibm-plex-sans-arabic-arabic-600-normal.woff2') format('woff2');
   unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
 }
 @font-face {
   font-family: 'IBM Plex Sans Arabic'; font-style: normal; font-display: swap; font-weight: 700;
-  src: url('@fontsource/ibm-plex-sans-arabic/files/ibm-plex-sans-arabic-arabic-700-normal.woff2') format('woff2');
+  src: url('./fonts/ibm-plex-sans-arabic-arabic-700-normal.woff2') format('woff2');
   unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
 }

@@ -9,7 +9,9 @@ import StatusPill from '../components/StatusPill.vue'
 import { money } from '../plugins/house'
 import { orders } from '../data/orders'
 
-const CURRENCY = 'AED'          // the app's currency; never print a bare number
+// The app's configured currency code (config, tenant or user setting). The sample data carries
+// none, so this stays null: amounts are formatted for the locale without a unit. Never invent one.
+const CURRENCY = null
 const { t, locale } = useI18n()
 const { smAndDown } = useDisplay()
 

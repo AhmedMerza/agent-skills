@@ -11,12 +11,13 @@ warm glass in dark mode, per-element entrance. Sources: ui-polish `house-style.m
 | File | To | Wire |
 | --- | --- | --- |
 | `fonts.css`, `tokens.css` | `src/styles/` | import both in the entry, after `vuetify/styles` |
-| `house.js` | `src/plugins/` | `createVuetify({ theme: houseTheme, defaults: houseDefaults })`; `money()` |
+| `../fonts/web/` (folder) | `src/styles/fonts/` | the woff2 files `fonts.css` points at; nothing to install |
+| `house.js` | `src/plugins/` | `createVuetify({ theme: houseTheme, defaults: houseDefaults })`; `money()`; `checkHouseFonts()` |
 | `entrance.js` | `src/motion/` | `app.directive('enter', vEnter)`; `switchTheme()` for the theme toggle |
 | `StatusPill.vue`, `Money.vue` | `src/components/` | `<StatusPill tone="good" icon="…">`, `<Money :value :currency :locale>` (Urbanist has no tabular figures; this aligns digits) |
 | `example/` | read, then adapt | shell (`App.vue`) and a list page (`OrdersPage.vue`) built on the kit |
 
-`npm i @fontsource-variable/urbanist @fontsource/ibm-plex-sans-arabic`. Build pages from the
+Build pages from the
 `house-*` classes in `tokens.css` (`house-page`, `house-title`, `house-grid`, `house-tile`,
 `house-card`, `house-seg`, `house-rows`, `house-pill`), not from raw Vuetify defaults.
 
@@ -24,11 +25,21 @@ warm glass in dark mode, per-element entrance. Sources: ui-polish `house-style.m
 
 | File | To | Wire |
 | --- | --- | --- |
-| `fetch_fonts.sh` | run once in the project root | downloads the OFL TTFs to `assets/fonts/` (commit them in the app) |
-| `pubspec.fonts.yaml` | merge into `pubspec.yaml` | the two font families |
+| `../fonts/flutter/` (folder) | `assets/fonts/` | the TTFs + OFL texts; `fetch_fonts.sh` is only an optional refresh |
+| `pubspec.fonts.yaml` | merge into the ONE `flutter:` section | the two families; keep `uses-material-design: true` or every icon is blank |
+| `house_fonts_test.dart` | `test/` | fails if a font or the icon font is not really bundled |
 | `house_theme.dart` | `lib/theme/` | `theme: houseTheme(Brightness.light)`, `darkTheme: houseTheme(Brightness.dark)` |
 | `house_widgets.dart` | `lib/widgets/` | `builder: (_, c) => HouseBackdrop(child: c!)`; `HouseCard`, `StatusPill`, `MoneyText`, `Enter`, `DataText`, `HouseFloatingAction` |
 | `example/` | read, then adapt | a list screen built on the kit |
+
+Everything works offline: the fonts are in the kit (`fonts/`, 0.95 MB in total: 0.23 MB woff2
+for web, 0.71 MB TTF for Flutter; Urbanist and IBM Plex Sans Arabic, both SIL OFL 1.1, licence
+texts included) and icons use the Material font that ships with the SDK. For offline Flutter
+web screenshots build with `flutter build web --no-web-resources-cdn`.
+
+Keep the kit a separate, self-contained change: copy and wire it before the screen, and do not
+mix screen code into it, so it can be its own commit when the user commits (commits need the
+user's yes). Name it in the final message: "house starter applied, accent X".
 
 ## Swap these, nothing else
 
@@ -42,12 +53,16 @@ deep-blue dark mode also needs the two backdrop glow colours changed to blue.
 
 Check each on a screenshot (phone and desktop, light and dark, en and ar), not in the code.
 
-1. **Fonts loaded** — Urbanist for Latin, IBM Plex Sans Arabic for Arabic; not system fonts or Roboto.
+1. **Fonts loaded, proven** — Urbanist for Latin, IBM Plex Sans Arabic for Arabic; not system
+   fonts or Roboto. A missing file falls back silently, so prove it: web `await checkHouseFonts()`
+   returns `[]` in the running page; Flutter `house_fonts_test.dart` passes.
 2. **Ground** is the tinted paper (or warm/deep-blue dark) with the fixed backdrop, on the whole
    page at any scroll length; never plain white or grey, never a gradient that ends part-way down.
 3. **Cards** use the house surface: rim + long soft shadow, radius 20–24, no border colour.
 4. **Status** is a tonal pill with an icon; text is the per-theme tone of the same hue.
-5. **Money** shows its currency, in tabular figures, end-aligned in columns.
+5. **Money** shows the app's configured currency, in tabular figures (`Money` / `MoneyText`),
+   end-aligned in columns. No currency in the data, config or locale settings → show the number
+   alone, locale-formatted, and list "currency not known" in the final message. Never invent one.
 6. **Buttons** are sentence-case pills; no uppercase anywhere.
 7. **One signature detail** per screen: the inverted feature tile/card for the number or item
    that matters most (or a per-character title, or a travelling nav pill).

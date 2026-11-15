@@ -61,10 +61,11 @@ Do it before writing the screen's markup, so the screen is built on the look it 
   marks (house-style "Accent variants"; keep any existing brand colour as the accent), re-measure
   them, and build the screen from the kit's pieces. It is not done until the README's ten-point
   "minimum house look" checklist holds on screenshots (phone and desktop, light and dark, en and
-  ar). Add a `DESIGN.md` headed "House default — not chosen by the user yet"; the look goes in
-  its own commit, before the screen.
-  In the final message, one line: the look applied, and that 2–3 directions are available on
-  request.
+  ar). Add a `DESIGN.md` headed "House default — not chosen by the user yet". Apply the look
+  before the screen and keep it a separate, self-contained change (its own commit when the user
+  commits — do not commit unprompted).
+  In the final message, one line: the starter kit and accent applied, anything the checklist
+  could not settle (e.g. "currency not known"), and that 2–3 directions are available on request.
 - **Established app** (many screens, other contributors): do not change global tokens inside a
   feature branch. Run **Critique** (measured, not a suggestion), build the screen on the house
   proportions and motion against the existing tokens, and put "design: <one-sentence verdict> —
