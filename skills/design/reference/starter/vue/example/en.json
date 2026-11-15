@@ -1,0 +1,12 @@
+{
+  "app": { "name": "Shop Admin", "language": "Switch language", "theme": "Switch theme" },
+  "nav": { "label": "Main", "home": "Home", "orders": "Orders" },
+  "home": { "title": "Welcome", "body": "Manage your shop here." },
+  "status": { "pending": "Pending", "paid": "Paid", "shipped": "Shipped", "delivered": "Delivered", "cancelled": "Cancelled", "refunded": "Refunded" },
+  "orders": {
+    "title": "Orders", "count": "{n} orders", "toFulfil": "{n} to fulfil", "export": "Export", "new": "New order",
+    "revenue": "Revenue", "open": "To fulfil", "moving": "On the way", "deliveredN": "{n} delivered", "lost": "Cancelled or refunded",
+    "filter": "Filter by status", "all": "All", "order": "Order", "customer": "Customer", "date": "Date", "status": "Status", "total": "Total",
+    "none": "No orders with this status."
+  }
+}

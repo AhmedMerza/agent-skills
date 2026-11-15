@@ -1,0 +1,23 @@
+# Merge under the `flutter:` key of pubspec.yaml after running fetch_fonts.sh.
+flutter:
+  fonts:
+    - family: Urbanist
+      fonts:
+        - asset: assets/fonts/Urbanist-400.ttf
+          weight: 400
+        - asset: assets/fonts/Urbanist-500.ttf
+          weight: 500
+        - asset: assets/fonts/Urbanist-600.ttf
+          weight: 600
+        - asset: assets/fonts/Urbanist-700.ttf
+          weight: 700
+    - family: IBM Plex Sans Arabic
+      fonts:
+        - asset: assets/fonts/IBMPlexSansArabic-400.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexSansArabic-500.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexSansArabic-600.ttf
+          weight: 600
+        - asset: assets/fonts/IBMPlexSansArabic-700.ttf
+          weight: 700

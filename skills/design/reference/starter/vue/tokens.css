@@ -1,0 +1,279 @@
+/* House starter tokens. Copy to src/styles/tokens.css and import once, after 'vuetify/styles'.
+   Swap the four values marked SWAP (and the same four in house.js); leave the rest.
+   Every text/ground pair below was measured with skills/design/scripts/palette.py (>= 4.5:1
+   on the lightest and darkest pixel of the backdrop). Re-measure after any swap. */
+
+:root,
+.v-theme--light {
+  --house-ground: #f4f1ea;            /* SWAP  warm paper, never #fff or a flat grey */
+  --house-accent: #0b7a73;            /* SWAP  fills: primary button, active nav, focus */
+  --house-accent-text: #0a6b65;       /* SWAP  accent as small text (5.6:1 on ground) */
+  --house-on-accent: #ffffff;         /* SWAP  text on an accent fill (5.2:1) */
+
+  --house-solid: #fdfcf9;             /* opaque surface: sheets, dialogs, menus, long tables */
+  --house-well: #ece8df;              /* inset area inside a card; never a second card */
+  --house-ink: #1b1a17;
+  --house-muted: #5e5a52;             /* 5.3:1 on the darkest backdrop pixel */
+  --house-line: rgba(27, 26, 23, 0.08);
+  --house-rim: inset 0 0 0 1px rgba(27, 26, 23, 0.07);
+  --house-card: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.64));
+  --house-shadow: 0 1px 2px rgba(60, 45, 20, 0.05), 0 26px 52px -30px rgba(60, 45, 20, 0.3);
+  --house-shadow-pop: 0 2px 6px rgba(60, 45, 20, 0.08), 0 34px 70px -28px rgba(60, 45, 20, 0.42);
+  --house-bar: rgba(244, 241, 234, 0.78);
+  --house-backdrop:
+    radial-gradient(60% 46% at 12% 0%, rgba(11, 122, 115, 0.1), transparent 70%),
+    radial-gradient(52% 44% at 96% 8%, rgba(232, 150, 96, 0.16), transparent 72%);
+
+  /* Status: a bright for dots, bars and tints; a per-theme text tone for words and numbers. */
+  --house-good: #2e9e5b;    --house-good-text: #1f6b3a;    --house-good-fill: rgba(46, 158, 91, 0.15);
+  --house-warn: #d99a1b;    --house-warn-text: #7a5200;    --house-warn-fill: rgba(217, 154, 27, 0.18);
+  --house-bad: #d9503f;     --house-bad-text: #a03324;     --house-bad-fill: rgba(217, 80, 63, 0.14);
+  --house-info: #3b82d6;    --house-info-text: #1f5fa8;    --house-info-fill: rgba(59, 130, 214, 0.14);
+  --house-move: #7a68d8;    --house-move-text: #5a45b8;    --house-move-fill: rgba(122, 104, 216, 0.14);
+  --house-calm: #8a857a;    --house-calm-text: #57534b;    --house-calm-fill: rgba(138, 133, 122, 0.16);
+  --house-accent-fill: color-mix(in srgb, var(--house-accent) 13%, transparent);
+
+  /* The signature tile: one inverted tile per screen, for the number that matters most. */
+  --house-feature: #1b1a17;
+  --house-on-feature: #f6f2ea;
+  color-scheme: light;
+}
+
+/* html is listed so the canvas behind the fixed layer (overscroll, long pages) is dark too. */
+html:has(.v-application.v-theme--dark),
+[data-theme='dark'],
+.v-theme--dark {
+  --house-ground: #171412;            /* SWAP  warm near-black (deep blue: #0a1222) */
+  --house-accent: #3cc2b5;            /* SWAP */
+  --house-accent-text: #3cc2b5;       /* SWAP  6.0:1 on the lightest card pixel */
+  --house-on-accent: #10201e;         /* SWAP  7.7:1 */
+
+  --house-solid: #25211e;
+  --house-well: rgba(255, 255, 255, 0.05);
+  --house-ink: #f3efe8;
+  --house-muted: #aaa398;             /* 5.3:1 on the lightest card pixel */
+  --house-line: rgba(255, 255, 255, 0.08);
+  --house-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  --house-card: linear-gradient(180deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.04));
+  --house-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 28px 56px -30px rgba(0, 0, 0, 0.75);
+  --house-shadow-pop: 0 2px 8px rgba(0, 0, 0, 0.4), 0 36px 80px -28px rgba(0, 0, 0, 0.85);
+  --house-bar: rgba(23, 20, 18, 0.72);
+  --house-backdrop:
+    radial-gradient(56% 44% at 10% 0%, rgba(214, 128, 72, 0.3), transparent 72%),
+    radial-gradient(48% 42% at 98% 6%, rgba(150, 96, 60, 0.26), transparent 72%);
+
+  --house-good-text: #8fdcaa;   --house-good-fill: rgba(46, 158, 91, 0.2);
+  --house-warn-text: #f1c56b;   --house-warn-fill: rgba(217, 154, 27, 0.2);
+  --house-bad-text: #f5a497;    --house-bad-fill: rgba(217, 80, 63, 0.22);
+  --house-info-text: #9cc6f5;   --house-info-fill: rgba(59, 130, 214, 0.22);
+  --house-move-text: #c0b4f7;   --house-move-fill: rgba(122, 104, 216, 0.24);
+  --house-calm-text: #c9c3b8;   --house-calm-fill: rgba(138, 133, 122, 0.22);
+  --house-accent-fill: color-mix(in srgb, var(--house-accent) 18%, transparent);
+
+  --house-feature: #f3efe8;
+  --house-on-feature: #1b1a17;
+  color-scheme: dark;
+}
+
+:root {
+  --house-r-card: 24px;
+  --house-r-tile: 18px;
+  --house-r-field: 14px;
+  --house-r-modal: 28px;
+  --house-blur: 18px;                 /* top bar, tab bar and overlays only */
+  --house-gap: 16px;
+  --house-pad: 22px;
+  --house-gutter: 32px;
+  --house-font: 'Urbanist Variable', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+}
+@media (max-width: 834px) { :root { --house-gutter: 16px; --house-pad: 18px; --house-r-card: 20px; } }
+@media (max-width: 480px) { :root { --house-gutter: 14px; --house-gap: 12px; --house-pad: 16px; } }
+
+/* ---- Ground: one FIXED layer behind the whole app. Never a gradient on a container that is
+   sized to the viewport or to the content - it ends where the first screenful ends. ---- */
+html { background: var(--house-ground); }
+body { margin: 0; background: transparent; }
+.v-application, .house-app {
+  background: transparent !important;
+  color: var(--house-ink);
+  font-family: var(--house-font);
+  font-size: 14px; font-weight: 500; line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+.v-application::before, .house-app::before {
+  content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: var(--house-backdrop), var(--house-ground);
+}
+.v-application__wrap { position: relative; z-index: 1; }
+.v-application [class*='text-'], .v-application .v-btn, .v-application .v-chip,
+.v-application input, .v-application textarea { font-family: inherit; }
+
+/* ---- Type ---- */
+.house-title {
+  margin: 0; font-size: clamp(28px, 2.1vw + 20px, 38px); font-weight: 600; line-height: 1.04;
+  letter-spacing: -0.025em; color: var(--house-ink);
+}
+:dir(rtl) .house-title { letter-spacing: 0; line-height: 1.3; }   /* never track Arabic */
+.house-sub { margin: 6px 0 0; color: var(--house-muted); font-size: 14px; }
+.house-sub b { color: var(--house-ink); font-weight: 600; }
+.house-label { color: var(--house-muted); font-size: 12.5px; font-weight: 600; }
+.house-num { font-variant-numeric: tabular-nums; }   /* a no-op in Urbanist: see Money.vue */
+/* Money.vue: small unit, figure in fixed-width digit boxes (real tabular columns). */
+.house-money { display: inline-flex; align-items: baseline; gap: .3em; white-space: nowrap; }
+.house-money__unit { font-size: .82em; font-weight: 600; opacity: .7; }
+.house-money__figure { direction: ltr; unicode-bidi: isolate; font-weight: 600; }
+.house-digit { display: inline-block; width: .55em; text-align: center; }
+.house-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.house-muted { color: var(--house-muted); }
+.house-accent-text { color: var(--house-accent-text); }
+
+/* ---- Page ---- */
+.house-page { max-width: 1360px; margin-inline: auto; padding: 8px var(--house-gutter) 56px; }
+.house-grid { display: grid; gap: var(--house-gap); grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1100px) { .house-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ---- Card: faked glass (alpha gradient + 1px inset rim + long negative-spread shadow).
+   No border, no backdrop-filter. .house-solid for sheets, dialogs and long tables. ---- */
+.house-card, .v-card {
+  background: var(--house-card) !important;
+  color: var(--house-ink) !important;
+  border: 0 !important;
+  border-radius: var(--house-r-card) !important;
+  box-shadow: var(--house-rim), var(--house-shadow) !important;
+}
+.house-card { padding: var(--house-pad); }
+.house-solid, .v-overlay__content > .v-card, .v-overlay__content > .v-list, .v-menu > .v-overlay__content > * {
+  background: var(--house-solid) !important;
+  box-shadow: var(--house-rim), var(--house-shadow-pop) !important;
+}
+.v-dialog > .v-overlay__content > .v-card { border-radius: var(--house-r-modal) !important; }
+.house-well { background: var(--house-well); border-radius: var(--house-r-tile); }
+@media (hover: hover) and (pointer: fine) {
+  .house-lift { transition: transform 450ms cubic-bezier(.22, .61, .36, 1); }
+  .house-lift:hover { transform: translateY(-4px); }
+}
+
+/* ---- KPI tile ---- */
+.house-tile {
+  display: flex; flex-direction: column; gap: 6px; min-height: 132px; padding: 18px 20px;
+  border-radius: var(--house-r-card); background: var(--house-card); color: var(--house-ink);
+  box-shadow: var(--house-rim), var(--house-shadow);
+}
+.house-tile__head { display: flex; align-items: center; gap: 10px; font-size: 13.5px; font-weight: 600; }
+.house-tile__icon {
+  display: grid; place-items: center; width: 34px; height: 34px; border-radius: 12px; flex: none;
+  background: var(--house-well); font-size: 18px;
+}
+.house-tile__value { margin-top: auto; font-size: 25px; font-weight: 600; line-height: 1.1; letter-spacing: -0.01em; }
+.house-tile__value .house-money__unit { font-size: 13px; letter-spacing: 0; }
+.house-tile__note { font-size: 12.5px; color: var(--house-muted); }
+.house-tile--feature { background: var(--house-feature); color: var(--house-on-feature); box-shadow: var(--house-shadow); }
+.house-tile--feature .house-tile__icon { background: color-mix(in srgb, var(--house-on-feature) 14%, transparent); }
+.house-tile--feature .house-tile__note { color: color-mix(in srgb, var(--house-on-feature) 72%, transparent); }
+.house-tile--tint { background: linear-gradient(180deg, var(--house-accent-fill), var(--house-accent-fill)), var(--house-card); }
+@media (max-width: 480px) {
+  .house-tile { min-height: 112px; padding: 14px; }
+  .house-tile__value { font-size: 21px; }
+}
+
+/* ---- Status pill: tint of the hue + dark (light theme) or light (dark theme) text of the
+   same hue + an icon, so status never rides on colour alone. ---- */
+.house-pill {
+  display: inline-flex; align-items: center; gap: 6px; height: 26px; padding-inline: 8px 11px;
+  border-radius: 999px; font-size: 12px; font-weight: 700; line-height: 1; white-space: nowrap;
+  background: var(--house-calm-fill); color: var(--house-calm-text);
+}
+.house-pill .v-icon, .house-pill svg { font-size: 14px; width: 14px; height: 14px; }
+.house-pill--good { background: var(--house-good-fill); color: var(--house-good-text); }
+.house-pill--warn { background: var(--house-warn-fill); color: var(--house-warn-text); }
+.house-pill--bad  { background: var(--house-bad-fill);  color: var(--house-bad-text); }
+.house-pill--info { background: var(--house-info-fill); color: var(--house-info-text); }
+.house-pill--move { background: var(--house-move-fill); color: var(--house-move-text); }
+.house-pill--accent { background: var(--house-accent-fill); color: var(--house-accent-text); }
+.house-count {
+  display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding-inline: 6px;
+  border-radius: 999px; font-size: 11px; font-weight: 700;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+
+/* ---- Segmented nav / filter pill ---- */
+.house-seg {
+  display: inline-flex; gap: 2px; padding: 5px; border-radius: 999px; max-width: 100%;
+  background: var(--house-card); box-shadow: var(--house-rim); overflow-x: auto; scrollbar-width: none;
+}
+.house-seg > * {
+  display: inline-flex; align-items: center; gap: 7px; height: 38px; padding-inline: 16px; flex: none;
+  border: 0; border-radius: 999px; background: none; color: var(--house-muted); cursor: pointer;
+  font: inherit; font-size: 13.5px; font-weight: 600; text-decoration: none; white-space: nowrap;
+}
+.house-seg > :hover { color: var(--house-ink); }
+.house-seg > .is-active, .house-seg > [aria-current='page'], .house-seg > [aria-pressed='true'] {
+  background: var(--house-feature); color: var(--house-on-feature);
+}
+.house-seg > :focus-visible { outline: 2px solid var(--house-accent); outline-offset: 2px; }
+
+/* Main nav: a .house-seg in the bar on desktop, a floating bottom pill on phones. */
+@media (max-width: 700px) {
+  .house-nav {
+    position: fixed; inset-inline: 10px; bottom: 10px; z-index: 6; height: 64px; padding: 7px;
+    background: var(--house-solid); box-shadow: var(--house-rim), var(--house-shadow-pop);
+  }
+  .house-nav > * { flex: 1; justify-content: center; height: 100%; }
+  .house-page { padding-bottom: 104px; }
+}
+
+/* ---- Top bar: one of the few places real blur is allowed ---- */
+.house-bar {
+  position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 12px;
+  padding: 14px var(--house-gutter);
+}
+/* The blur sits on a pseudo-element: backdrop-filter on the bar itself would make it the
+   containing block of every position:fixed child (the phone nav would stick to the bar). */
+.house-bar::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; background: var(--house-bar);
+  -webkit-backdrop-filter: blur(var(--house-blur)); backdrop-filter: blur(var(--house-blur));
+}
+.house-brand { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+.house-brand__mark {
+  display: grid; place-items: center; width: 38px; height: 38px; border-radius: 13px;
+  background: var(--house-accent); color: var(--house-on-accent); font-size: 20px;
+}
+.house-icon-btn {
+  display: grid; place-items: center; width: 42px; height: 42px; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--house-card); color: var(--house-ink); box-shadow: var(--house-rim); font: inherit; font-weight: 700; font-size: 13px;
+}
+.house-avatar {
+  display: grid; place-items: center; width: 34px; height: 34px; border-radius: 999px; flex: none;
+  font-size: 11.5px; font-weight: 700; background: var(--house-well); color: var(--house-ink);
+}
+
+/* ---- Rows: a table on desktop, stacked rows on phones; no blur, no per-row card ---- */
+.house-rows { width: 100%; border-collapse: collapse; }
+.house-rows th {
+  padding: 4px 14px 12px; text-align: start; font-size: 12.5px; font-weight: 600; color: var(--house-muted);
+}
+.house-rows td { padding: 13px 14px; border-top: 1px solid var(--house-line); vertical-align: middle; }
+.house-rows .is-end { text-align: end; }
+.house-rows tbody tr { transition: background-color 120ms; }
+.house-rows tbody tr:hover { background: var(--house-well); }
+.house-strong { font-weight: 600; }
+
+/* ---- Vuetify skin: what defaults cannot say ---- */
+.v-btn { text-transform: none !important; letter-spacing: 0 !important; font-weight: 600 !important; }
+.v-btn:active { transform: scale(.97); transition: transform 120ms; }
+.v-btn.bg-primary { box-shadow: 0 8px 18px -10px var(--house-accent) !important; }   /* the one glow */
+.v-chip { font-weight: 700; }
+.v-field--variant-outlined { --v-field-border-opacity: .14; border-radius: var(--house-r-field); }
+.v-table, .v-data-table { background: transparent !important; color: inherit !important; }
+.v-table td, .v-table th { border-color: var(--house-line) !important; }
+.v-toolbar, .v-app-bar { background: var(--house-bar) !important; color: var(--house-ink) !important; }
+
+@media (prefers-reduced-transparency: reduce) {
+  .house-card, .v-card, .house-tile:not(.house-tile--feature), .house-seg { background: var(--house-solid) !important; }
+  .house-bar::before { background: var(--house-ground); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; }
+}
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }

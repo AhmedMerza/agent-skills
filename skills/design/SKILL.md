@@ -55,9 +55,14 @@ Direction as prose.
 Do it before writing the screen's markup, so the screen is built on the look it will ship with.
 
 - **New or personal app** (a fresh scaffold, a handful of screens, no other contributors in
-  `git log`): pick the anchor-2/3 look that fits the category (house-style "Accent variants";
-  keep any existing brand colour as the accent), write it into the theme tokens and a `DESIGN.md`
-  headed "House default — not chosen by the user yet", in its own commit, then build the screen.
+  `git log`): **copy the starter kit, do not improvise a theme** —
+  [reference/starter/README.md](reference/starter/README.md) (Vue 3 + Vuetify and Flutter: theme,
+  tokens, fonts, pill, card, entrance, plus an example screen). Swap only the accent values it
+  marks (house-style "Accent variants"; keep any existing brand colour as the accent), re-measure
+  them, and build the screen from the kit's pieces. It is not done until the README's eight-point
+  "minimum house look" checklist holds on screenshots (phone and desktop, light and dark, en and
+  ar). Add a `DESIGN.md` headed "House default — not chosen by the user yet"; the look goes in
+  its own commit, before the screen.
   In the final message, one line: the look applied, and that 2–3 directions are available on
   request.
 - **Established app** (many screens, other contributors): do not change global tokens inside a
