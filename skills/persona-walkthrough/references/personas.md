@@ -95,4 +95,4 @@ pw_dir: /path/storage/playwright # optional: dir whose node_modules has playwrig
 locale: ar                       # optional: the browser language (default en-US)
 ```
 
-Generate: `python3 scripts/brief.py dan.md > brief.txt`, then pass `brief.txt` as the subagent prompt. Keep each project's cast files with its saved reports so later runs can reuse them.
+Generate: `mkdir -p <run-dir> && python3 scripts/brief.py dan.md --outdir <run-dir> > <run-dir>/brief.txt`, then give the subagent the brief's absolute path. Keep each project's cast files with its saved reports so later runs can reuse them.
