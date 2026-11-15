@@ -18,3 +18,4 @@ Use the skills installed from `agent-skills` when the task reaches their trigger
 - A goal that spans several repos or sessions and that the user wants run for them: `lead` in world mode, as the manager of the worker sessions.
 
 Choose the applicable next step from the current state. Do not run planning gates retroactively on a finished change, or repeat a gate without a new change or unresolved concern. If a skill is unavailable or its tools cannot run, state that limitation and use the closest safe workflow. Never claim a skill ran merely because its name appeared in a summary.
+- A "do not spawn subagents" cap does not block `persona-walkthrough`: its one-fresh-blind-subagent-per-persona is the allowed exception. Each persona brief itself says "do not spawn subagents" (flat, one level). An orchestrator told not to spawn at all runs personas sequentially on one device and says so.

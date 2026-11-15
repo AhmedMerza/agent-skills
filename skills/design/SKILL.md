@@ -87,7 +87,9 @@ Full recipe, token mapping and capture mechanics: [reference/direction-recipe.md
 2. **Write 2–3 directions that differ in kind**, not in hue. Different ground (warm paper vs
    cool mono vs deep glass), different accent strategy (one accent vs data-only colour vs pastel
    tiles), different surface recipe. Two directions that differ only in accent hex are one
-   direction. Each is complete: palette light + dark as tokens, type, surface recipe, accent
+   direction. Each must also change the ground, the accent strategy and the type versus the
+   current look; compare it with the current screen and reject it if a viewer could not tell
+   them apart at a glance. Each is complete: palette light + dark as tokens, type, surface recipe, accent
    strategy, imagery rules, one signature detail. Each names the anchor it comes from.
 3. **Check category fit.** Read the product's rows in `data/ui-reasoning.csv` and
    `data/colors.csv`. Use them to catch a mismatch (a playful pastel on a compliance tool), not to

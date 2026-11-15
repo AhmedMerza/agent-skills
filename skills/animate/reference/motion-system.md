@@ -85,7 +85,13 @@ travel reduced to ~18 px, starting ≤250 ms after the click. Filtering in place
   (`toImage`), switch the theme, overlay the old image and animate a `ClipPath` that *removes* a
   growing circle from it (origin = the tapped widget's centre, radius to the farthest corner,
   450 ms, `Cubic(.65, 0, .35, 1)`), then drop the overlay. One controller, disposed; skip under
-  `MediaQuery.disableAnimations`. No package needed.
+  `MediaQuery.disableAnimations`. No package needed. Measured: an uncapped `toImage` taken as the
+  animation starts caused one 23–28 ms frame. So capture the old frame *before* switching, at a
+  capped `pixelRatio`, and start the clip animation on the next frame once the image is ready;
+  no frame then goes over budget.
+- **SPA routers (web):** when the language switch is a client navigation, use the router's own
+  view-transition option: Inertia `router.visit(url, { viewTransition: true })`. For a router
+  without one, wrap it: `document.startViewTransition(() => new Promise(r => router.visit(url, { onFinish: r })))`.
 - **Language / direction switch (en ↔ ar):** not a circle — the layout mirrors, so a sweep reads as
   breakage. Plain View Transition crossfade (default root fade, ≤250 ms) on web; on Flutter a
   200 ms fade between the two frames. The page then does NOT replay its entrance.
@@ -115,6 +121,13 @@ bumps (`scale 1.06, y −4`) and flashes the accent for ~900 ms. Error: shake `x
 - **Real `backdrop-filter` blur is expensive** — one reference with 22 blurred surfaces rendered at
   ~6 fps headless (16 ms/frame without). Real blur only on the top bar, tab bar and overlays;
   cards fake the glass with an alpha gradient + 1 px rim. Profile on a mid-range Android.
+- **A cached, pre-blurred backdrop image is rendered at screen resolution.** A downscaled cache
+  (1/8) magnifies its dither into a visible weave on a real phone. Painting the gradients live
+  every frame cost about 17 ms of raster on a mid-range phone; the screen-resolution cached image
+  cost about 0.5 ms.
+- **Headless or desktop CPU-raster numbers are not evidence for phone performance.** A headless
+  run showed 4x raster where the real phone showed +0.5 ms. Only profile-build numbers from a real
+  mid-range phone decide.
 - At most one ambient loop per view (background drift, live dot), and it stops under reduced motion.
 
 ## Implementation shape

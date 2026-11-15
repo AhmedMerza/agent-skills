@@ -44,6 +44,8 @@ tracks), not from a trend. If it needs a new dependency or a new asset pipeline,
 
 ## Making directions differ in kind
 
+**Be bold.** Each of the 2–3 directions must change the ground (background), the accent strategy and the type, not just tint the current look. Before showing one, put it next to the current screen and reject it if a viewer could not tell them apart at a glance. (A first round that only nudged colours in light mode came out near-identical to the current look and had to be redone.)
+
 Vary at least two of these axes between any two directions:
 
 | Axis | Options |
