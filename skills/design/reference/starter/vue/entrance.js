@@ -40,10 +40,18 @@ function play(el, role, delay) {
 }
 
 // Per-character rise for a Latin title. Arabic is never split (it would break letter joining).
+// The letters live in a temporary aria-hidden overlay; the framework's own text node is never
+// touched (only made transparent), so a later locale or data change still updates the title.
 function title(el, delay) {
   const text = el.textContent
-  el.setAttribute('aria-label', text)
-  el.textContent = ''
+  const cs = getComputedStyle(el)
+  const overlay = document.createElement('span')
+  overlay.ariaHidden = 'true'
+  overlay.style.cssText = `position:absolute;inset:0;padding:${cs.padding};color:${cs.color};pointer-events:none`
+  const prev = { position: el.style.position, color: el.style.color }
+  if (cs.position === 'static') el.style.position = 'relative'
+  el.style.color = 'transparent'
+  el.appendChild(overlay)
   const anims = [...text].map((ch, i) => {
     const clip = document.createElement('span')
     clip.ariaHidden = 'true'
@@ -51,14 +59,12 @@ function title(el, delay) {
     const s = clip.appendChild(document.createElement('span'))
     s.style.cssText = 'display:inline-block;white-space:pre'
     s.textContent = ch
-    el.appendChild(clip)
+    overlay.appendChild(clip)
     return s.animate([{ transform: 'translateY(115%) rotate(6deg)' }, { transform: 'none' }],
       { duration: 850, delay: delay + i * 22, easing: EASE.title, fill: 'backwards' })
   })
-  Promise.all(anims.map(a => a.finished)).then(() => {
-    if (el.getAttribute('aria-label') === text && el.firstChild?.ariaHidden) el.textContent = text
-    el.removeAttribute('aria-label')
-  }).catch(() => {})
+  const done = () => { overlay.remove(); el.style.position = prev.position; el.style.color = prev.color }
+  Promise.all(anims.map(a => a.finished)).then(done, done)
 }
 
 export const vEnter = {
