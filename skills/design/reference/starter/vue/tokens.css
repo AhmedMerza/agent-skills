@@ -216,11 +216,11 @@ body { margin: 0; background: transparent; }
 /* Main nav: a .house-seg in the bar on desktop, a floating bottom pill on phones. */
 @media (max-width: 700px) {
   .house-nav {
-    position: fixed; inset-inline: 10px; bottom: 10px; z-index: 6; height: 64px; padding: 7px;
+    position: fixed; inset-inline: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 6; height: 64px; padding: 7px;
     background: var(--house-solid); box-shadow: var(--house-rim), var(--house-shadow-pop);
   }
   .house-nav > * { flex: 1; justify-content: center; height: 100%; }
-  .house-page { padding-bottom: 104px; }
+  .house-page { padding-bottom: calc(64px + 10px + 16px + env(safe-area-inset-bottom)); }   /* clears the floating nav */
 }
 
 /* ---- Top bar: one of the few places real blur is allowed ---- */
@@ -258,6 +258,10 @@ body { margin: 0; background: transparent; }
 .house-rows tbody tr { transition: background-color 120ms; }
 .house-rows tbody tr:hover { background: var(--house-well); }
 .house-strong { font-weight: 600; }
+/* User data (names, addresses) wraps in cards and list rows. Clip only in a dense table cell,
+   and then put the full text in title="". */
+.house-wrap { overflow-wrap: anywhere; min-width: 0; }
+.house-clip { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 
 /* ---- Vuetify skin: what defaults cannot say ---- */
 .v-btn { text-transform: none !important; letter-spacing: 0 !important; font-weight: 600 !important; }

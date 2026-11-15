@@ -142,6 +142,8 @@ class HouseIconWell extends StatelessWidget {
 /// User or API text that may be in either script (names, addresses). Direction follows the
 /// first strong character, so a Latin address inside an Arabic screen keeps its word order
 /// ("12 Palm Street", not "Palm Street 12"), while it still aligns to the screen's start edge.
+/// It WRAPS: user data is never ellipsized in a card body. Pass [maxLines] only in a dense table
+/// cell; the full text then sits in a tooltip.
 class DataText extends StatelessWidget {
   const DataText(this.data, {super.key, this.style, this.maxLines});
   final String data;
@@ -151,14 +153,46 @@ class DataText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strong = RegExp(r'[A-Za-z\u0590-\u08FF]').firstMatch(data)?.group(0) ?? 'a';
-    final rtlText = strong.codeUnitAt(0) >= 0x590;
-    return Text(
+    final text = Text(
       data,
       style: style,
       maxLines: maxLines,
       overflow: maxLines == null ? null : TextOverflow.ellipsis,
-      textDirection: rtlText ? TextDirection.rtl : TextDirection.ltr,
+      textDirection: strong.codeUnitAt(0) >= 0x590 ? TextDirection.rtl : TextDirection.ltr,
       textAlign: Directionality.of(context) == TextDirection.rtl ? TextAlign.right : TextAlign.left,
+    );
+    return maxLines == null ? text : Tooltip(message: data, child: text);
+  }
+}
+
+/// A floating primary action over a list: `Scaffold(extendBody: true, bottomNavigationBar:
+/// HouseFloatingAction(child: FilledButton(...)))`. The ground fades in behind it so rows never
+/// sit half-covered, and the list MUST end with `HouseFloatingAction.clearance(context)` of
+/// bottom padding (action height + 16 + 16 + safe area) so its last row scrolls clear.
+class HouseFloatingAction extends StatelessWidget {
+  const HouseFloatingAction({super.key, required this.child});
+  final Widget child;
+
+  static const _height = 46.0, _gap = 16.0;
+  static double clearance(BuildContext context) => _height + _gap * 2 + MediaQuery.viewPaddingOf(context).bottom;
+
+  @override
+  Widget build(BuildContext context) {
+    final ground = HouseTokens.of(context).ground;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [ground.withValues(alpha: 0), ground.withValues(alpha: .94), ground],
+          stops: const [0, .5, 1],
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.fromLTRB(_gap, 36, _gap, _gap),
+        child: Center(heightFactor: 1, child: child),
+      ),
     );
   }
 }

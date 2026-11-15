@@ -59,7 +59,7 @@ Do it before writing the screen's markup, so the screen is built on the look it 
   [reference/starter/README.md](reference/starter/README.md) (Vue 3 + Vuetify and Flutter: theme,
   tokens, fonts, pill, card, entrance, plus an example screen). Swap only the accent values it
   marks (house-style "Accent variants"; keep any existing brand colour as the accent), re-measure
-  them, and build the screen from the kit's pieces. It is not done until the README's eight-point
+  them, and build the screen from the kit's pieces. It is not done until the README's ten-point
   "minimum house look" checklist holds on screenshots (phone and desktop, light and dark, en and
   ar). Add a `DESIGN.md` headed "House default — not chosen by the user yet"; the look goes in
   its own commit, before the screen.

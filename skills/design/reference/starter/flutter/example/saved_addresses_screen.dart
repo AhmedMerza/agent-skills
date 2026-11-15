@@ -115,8 +115,12 @@ class SavedAddressesScreen extends StatelessWidget {
     );
 
     return Scaffold(
-      floatingActionButton: wide ? null : Enter(after: const Duration(milliseconds: 400), child: add),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      extendBody: true,
+      bottomNavigationBar: wide
+          ? null
+          : HouseFloatingAction(
+              child: Enter(after: const Duration(milliseconds: 400), child: add),
+            ),
       body: SafeArea(
         bottom: false,
         child: Align(
@@ -124,7 +128,12 @@ class SavedAddressesScreen extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1240),
             child: ListView(
-              padding: EdgeInsets.fromLTRB(gutter, wide ? 28 : 10, gutter, 110),
+              padding: EdgeInsets.fromLTRB(
+                gutter,
+                wide ? 28 : 10,
+                gutter,
+                wide ? 56 : HouseFloatingAction.clearance(context),
+              ),
               children: [
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -226,9 +235,9 @@ class _AddressCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                DataText(a.label, style: text.titleMedium, maxLines: 1),
+                DataText(a.label, style: text.titleMedium),
                 const SizedBox(height: 3),
-                DataText(a.line1, style: text.bodyMedium!.copyWith(color: t.muted), maxLines: 2),
+                DataText(a.line1, style: text.bodyMedium!.copyWith(color: t.muted)),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 8,

@@ -27,7 +27,7 @@ warm glass in dark mode, per-element entrance. Sources: ui-polish `house-style.m
 | `fetch_fonts.sh` | run once in the project root | downloads the OFL TTFs to `assets/fonts/` (commit them in the app) |
 | `pubspec.fonts.yaml` | merge into `pubspec.yaml` | the two font families |
 | `house_theme.dart` | `lib/theme/` | `theme: houseTheme(Brightness.light)`, `darkTheme: houseTheme(Brightness.dark)` |
-| `house_widgets.dart` | `lib/widgets/` | `builder: (_, c) => HouseBackdrop(child: c!)`; `HouseCard`, `StatusPill`, `MoneyText`, `Enter`, `DataText` |
+| `house_widgets.dart` | `lib/widgets/` | `builder: (_, c) => HouseBackdrop(child: c!)`; `HouseCard`, `StatusPill`, `MoneyText`, `Enter`, `DataText`, `HouseFloatingAction` |
 | `example/` | read, then adapt | a list screen built on the kit |
 
 ## Swap these, nothing else
@@ -38,7 +38,7 @@ app's existing brand colour, or from a row of house-style "Accent variants". The
 `python3 skills/design/scripts/palette.py contrast <text>:<ground> …` — every pair ≥ 4.5:1. A
 deep-blue dark mode also needs the two backdrop glow colours changed to blue.
 
-## Minimum house look — Default mode is not done until all eight hold
+## Minimum house look — Default mode is not done until all ten hold
 
 Check each on a screenshot (phone and desktop, light and dark, en and ar), not in the code.
 
@@ -52,3 +52,8 @@ Check each on a screenshot (phone and desktop, light and dark, en and ar), not i
 7. **One signature detail** per screen: the inverted feature tile/card for the number or item
    that matters most (or a per-character title, or a travelling nav pill).
 8. **Entrance motion** on every region: title, toolbar, cards, then rows — never one block fade.
+9. **User data wraps, never truncates** in a card or list row (names, addresses: `DataText`,
+   `.house-wrap`). Ellipsis only in a dense table cell, with the full text in a tooltip/`title`.
+10. **Nothing floats over the last row.** A list under a floating action or floating nav ends
+    with bottom padding of its height + 16 + 16 + safe area (`HouseFloatingAction.clearance`,
+    `.house-page` on web); scroll to the end and look.

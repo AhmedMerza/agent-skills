@@ -89,7 +89,7 @@ const initials = n => { const w = n.trim().split(/\s+/); return /[\u0600-\u06ff]
         <tbody>
           <tr v-for="o in rows" :key="o.id" v-enter="'row'">
             <td class="house-strong house-num" dir="ltr">{{ o.id }}</td>
-            <td><div class="orders-who"><span class="house-avatar" aria-hidden="true">{{ initials(o.customer) }}</span><bdi class="house-strong orders-name">{{ o.customer }}</bdi></div></td>
+            <td><div class="orders-who"><span class="house-avatar" aria-hidden="true">{{ initials(o.customer) }}</span><bdi class="house-strong house-clip" :title="o.customer">{{ o.customer }}</bdi></div></td>
             <td class="house-muted house-num">{{ day(o.date) }}</td>
             <td><StatusPill :tone="STATUS[o.status].tone" :icon="STATUS[o.status].icon">{{ t(`status.${o.status}`) }}</StatusPill></td>
             <td class="is-end"><Money :value="o.total" :currency="CURRENCY" :locale="locale" /></td>
@@ -100,7 +100,7 @@ const initials = n => { const w = n.trim().split(/\s+/); return /[\u0600-\u06ff]
         <li v-for="o in rows" :key="o.id" v-enter="'row'">
           <span class="house-avatar" aria-hidden="true">{{ initials(o.customer) }}</span>
           <div class="orders-list__main">
-            <bdi class="house-strong orders-name">{{ o.customer }}</bdi>
+            <bdi class="house-strong house-wrap">{{ o.customer }}</bdi>
             <span class="house-muted house-num orders-meta"><span dir="ltr">{{ o.id }}</span> · {{ day(o.date) }}</span>
           </div>
           <div class="orders-list__end">
@@ -120,7 +120,6 @@ const initials = n => { const w = n.trim().split(/\s+/); return /[\u0600-\u06ff]
 .orders-filter { margin: 22px 0 14px; }
 .orders-card { padding: 18px 8px 8px; }
 .orders-who { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.orders-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .orders-bad { color: var(--house-bad-text); }
 .orders-list { list-style: none; margin: 0; padding: 0; }
 .orders-list li { display: flex; align-items: center; gap: 12px; padding: 13px 10px; }
