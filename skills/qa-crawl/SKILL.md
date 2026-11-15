@@ -114,7 +114,7 @@ One MR per page **that needed something** — a clean page opens nothing. Title 
 - **UI proposals** as an unchecked list, explicitly marked *not applied* — so the reviewer knows the diff doesn't contain them
 - anything marked `needs-human` and why
 
-Attach images by uploading them to the project first (`glab api projects/:id/uploads -F file=@<path>` returns the markdown to embed). If upload isn't available, link the on-disk paths and say plainly that the images weren't attached — don't silently drop the evidence.
+Attach images by uploading them to the project first (on GitLab `~/agent-skills/scripts/gitlab-mr-images.sh upload <files>` prints the markdown to embed — `glab api … -F` 400s — and `gitlab-mr-images.sh verify <iid>` proves they render). If upload isn't available, link the on-disk paths and say plainly that the images weren't attached — don't silently drop the evidence.
 
 ## Guardrails
 
