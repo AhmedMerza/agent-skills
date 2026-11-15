@@ -42,8 +42,28 @@ When an anchor and a CSV row disagree, the anchor wins and you say so.
 - New product, nothing built → **Direction** (render on the first real screen or a faithful
   static mock of it; there is nothing to critique).
 - User has picked a direction → **Apply**.
+- Sent here by `ui-polish` in the middle of a build task (the user asked for a screen, not a
+  look) → **Default**. Never defer this to "a design pass next" — that is how every unattended
+  run skipped it (measured 2026-11-15: 0 of 4 fresh sessions ran design on an app with no
+  identity; all four shipped framework defaults).
 
-Never jump to Apply without a pick. Never hand over Direction as prose.
+Never jump to Apply without a pick (Default is the one exception, below). Never hand over
+Direction as prose.
+
+### Default — no identity, mid-build
+
+Do it before writing the screen's markup, so the screen is built on the look it will ship with.
+
+- **New or personal app** (a fresh scaffold, a handful of screens, no other contributors in
+  `git log`): pick the anchor-2/3 look that fits the category (house-style "Accent variants";
+  keep any existing brand colour as the accent), write it into the theme tokens and a `DESIGN.md`
+  headed "House default — not chosen by the user yet", in its own commit, then build the screen.
+  In the final message, one line: the look applied, and that 2–3 directions are available on
+  request.
+- **Established app** (many screens, other contributors): do not change global tokens inside a
+  feature branch. Run **Critique** (measured, not a suggestion), build the screen on the house
+  proportions and motion against the existing tokens, and put "design: <one-sentence verdict> —
+  directions on your yes" first in the final message's "needs your yes" list.
 
 ## 1. Critique — is it nice, and if not, why
 
