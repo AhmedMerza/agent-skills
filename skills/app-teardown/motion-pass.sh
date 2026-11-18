@@ -34,9 +34,9 @@ clips() { # $1 recording name, $2 video file, $3 label
   python3 -I "$DIR/defect-clips.py" "$2" "$OUTD/defects/$3.json" "$OUTD/defects" "$3"; }
 
 # Registering an init script relaunches the session's browser, which drops its cookies (and so any login).
-# Carry them across: dump before, restore each one by URL after (bulk JSON restore fails on about:blank).
+# Carry them across: dump before, restore each one by domain + path after (bulk JSON restore fails on about:blank).
 relaunch() {
-  local ck; ck=$(mktemp)
+  local ck; ck=$(mktemp); trap 'rm -f "$ck"' RETURN
   agent-browser --session "$S" cookies get --json > "$ck" 2>/dev/null || true
   agent-browser --session "$S" "$@" open about:blank >/dev/null 2>&1
   python3 -I - "$S" "$ck" <<'PY' || true
@@ -45,15 +45,16 @@ s, f = sys.argv[1], sys.argv[2]
 try: cookies = json.load(open(f))["data"]["cookies"]
 except Exception: cookies = []
 for c in cookies:
-    url = ("https://" if c.get("secure") else "http://") + c["domain"].lstrip(".") + c.get("path", "/")
-    args = ["agent-browser", "--session", s, "cookies", "set", c["name"], c["value"], "--url", url]
+    # --domain keeps a parent-domain scope (.example.com reaches app.example.com); --url would make it host-only
+    args = ["agent-browser", "--session", s, "cookies", "set", c["name"], c["value"], "--domain", c["domain"], "--path", c.get("path", "/")]
+    if c.get("sameSite"): args += ["--same-site", c["sameSite"]]
     if c.get("httpOnly"): args.append("--http-only")
     if c.get("secure"): args.append("--secure")
     if c.get("expires", -1) > 0: args += ["--expires", str(int(c["expires"]))]
     r = subprocess.run(args, capture_output=True, text=True)
     if r.returncode: print(f"motion-pass: could not restore cookie {c['name']}: {r.stdout.strip() or r.stderr.strip()}", file=sys.stderr)
 PY
-  rm -f "$ck"; }
+  }
 
 case $1 in
   open)

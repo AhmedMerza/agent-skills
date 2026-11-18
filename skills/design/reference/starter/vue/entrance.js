@@ -3,11 +3,10 @@
 //   <h1 v-enter="'title'">  <article v-enter="'card'">  <p v-enter="'content'">  <tr v-enter="'row'">
 // Siblings with the same role stagger by themselves; anything inside a v-enter card starts 140 ms
 // after that card. Pass { role, i, n, delay } to override. From-states live in the tween, never in
-// CSS: if this script fails, everything is simply visible. GSAP 3 + Flip (required on web, house
-// rule); every tween lives in a gsap.context() that is reverted on unmount.
+// CSS: if this script fails, everything is simply visible. GSAP 3 (required on web, house rule);
+// every tween lives in a gsap.context() that is reverted on unmount. Register Flip where the app
+// uses it (reorders, card -> drawer); nothing here needs it, so it isn't imported.
 import { gsap } from 'gsap'
-import { Flip } from 'gsap/Flip'
-gsap.registerPlugin(Flip)
 
 const EASE = { surface: 'expo.out', content: 'power3.out', title: 'power4.out' }
 const REGION = { title: 0, content: 110, card: 150, row: 260, data: 300 }   // reading order
@@ -22,7 +21,7 @@ function timing(el, { role, i, n, delay }) {
   const step = role === 'row' ? 35 : clamp(35, 500 / n, 80)
   const parent = el.parentElement.closest('[data-enter]')
   // Vue mounts children before their parent, so the parent's delay may not be stored yet: compute it
-  if (parent && !delays.has(parent)) delays.set(parent, timing(parent, { role: parent.dataset.enter }))
+  if (parent && !delays.has(parent)) delays.set(parent, timing(parent, parent._houseEnterOpts ?? { role: parent.dataset.enter }))
   const base = delay ?? (parent ? delays.get(parent) + 140 : REGION[role] ?? 0)
   return base + Math.min(i, 24) * step
 }
@@ -31,7 +30,7 @@ function play(el, role, ms) {
   const delay = ms / 1000
   const base = { delay, overwrite: 'auto', clearProps: 'transform,opacity' }
   if (role === 'card') {   // opacity is done in ~250 ms; the long ease is on the travel
-    gsap.from(el, { opacity: 0, duration: 0.25, ease: 'power1.out', delay })
+    gsap.from(el, { opacity: 0, duration: 0.25, ease: 'power1.out', delay, clearProps: 'opacity' })
     return gsap.from(el, { ...base, y: 24, scale: 0.98, duration: 0.85, ease: EASE.surface, clearProps: 'transform' })
   }
   if (role === 'title' && !/[֐-ࣿ]/.test(el.textContent) && el.children.length === 0)
@@ -73,11 +72,15 @@ function title(el, delay) {
 
 export const vEnter = {
   beforeMount(el, { value }) {
-    el.dataset.enter = typeof value === 'string' ? value : value?.role ?? 'content'
+    el._houseEnterOpts = typeof value === 'string' ? { role: value } : { role: 'content', ...value }
+    el.dataset.enter = el._houseEnterOpts.role
   },
-  mounted(el, { value }) {
-    if (reduced()) return
-    const o = typeof value === 'string' ? { role: value } : { role: 'content', ...value }
+  mounted(el) {
+    const o = el._houseEnterOpts
+    if (reduced()) {   // keep a cue, drop the travel: a short fade only
+      el._houseEnter = gsap.context(() => gsap.from(el, { opacity: 0, duration: 0.2, clearProps: 'opacity' }))
+      return
+    }
     const delay = delays.get(el) ?? timing(el, o)
     delays.set(el, delay)
     el._houseEnter = gsap.context(() => {})

@@ -77,12 +77,22 @@ Do it before writing the screen's markup, so the screen is built on the look it 
   when there are no tokens. Then:
   - **"keep it"** — build on the house proportions and motion against the existing tokens.
   - **"worth redirecting"** — build the new screen on the house look *scoped to that page*: the
-    starter's tokens under a page-root class or a `Theme` wrapper around the route (Flutter). Web
-    recipe: rewrite the starter `tokens.css` selectors so every `:root` / `.v-theme--light` /
-    `.v-theme--dark` / `.v-application` rule becomes `.house-page`, `.house-page .v-theme--light`,
-    `.house-page .v-theme--dark` (Vuetify puts a theme class on each component, so the descendant
-    forms are needed), and set `--v-theme-primary` (space-separated RGB) inside `.house-page` so
-    Vuetify buttons there take the accent. `fonts.css` and `entrance.js` need no scoping. Siblings and shared layout keep the old tokens. Reuse kit
+    starter's tokens under a page-root `.house-scope` class or a `Theme` wrapper around the route (Flutter). Web
+    recipe — scope class `.house-scope` (not `.house-page`, which is the starter's layout class):
+    - token blocks: `:root` → `.house-scope`; `.v-theme--light` / `.v-theme--dark` →
+      `.house-scope .v-theme--light, .house-scope.v-theme--light` (and dark): Vuetify puts a theme
+      class on each component, so the descendant forms are needed;
+    - every other global rule in `tokens.css` gets the `.house-scope` prefix or is dropped:
+      `html { background }` and `html:has(.v-application.v-theme--dark)` move onto `.house-scope`
+      itself (the page root paints its own ground); `.v-application::before` (the backdrop) becomes
+      `.house-scope::before`; `.v-card`, `.v-overlay__content > …`, `.v-dialog > …` become
+      `.house-scope .v-card` etc. After editing, grep the file: no selector may start without
+      `.house-scope` except `@font-face`;
+    - overlays are teleported out of the page: give every `v-dialog` / `v-menu` / `v-tooltip` on the
+      page `content-class="house-scope"` so they get the tokens;
+    - set `--v-theme-primary` (space-separated RGB) inside `.house-scope` so Vuetify buttons take
+      the accent. `fonts.css` and `entrance.js` need no scoping.
+    Check a sibling page after the change: its cards, dialogs and background must be unchanged. Siblings and shared layout keep the old tokens. Reuse kit
     components whose structure is fine; re-skin them through the scoped tokens, not by forking.
   Either way put "design: <one-sentence verdict> — directions on your yes" first in the final
   message's "needs your yes" list; on "worth redirecting" add "global restyle to match the new

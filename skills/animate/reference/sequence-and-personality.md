@@ -25,7 +25,7 @@ Do not serialize the entire page behind the navigation. Bound the last start del
 
 ## Optional native implementation
 
-[../assets/choreography.js](../assets/choreography.js) is a small, original WAAPI driver exercised on two production admin layouts. Reuse the app’s existing helper when it can express the score; do not add a second competing driver. Otherwise copy this file into the project and load it before the adapter:
+**Web entrance driver: the design starter's GSAP `entrance.js`** (`../../design/reference/starter/vue/entrance.js`), or the app's existing GSAP helper when it can express the score; never add a second competing driver. [../assets/choreography.js](../assets/choreography.js) below is an older WAAPI driver kept as a reference for directional roles and region beats: port its *score* (roles, beats, offsets) to GSAP rather than copying the file. Its original adapter, for reference only:
 
 ```html
 <section data-motion-group data-motion-beat="100">
