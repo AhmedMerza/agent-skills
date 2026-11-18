@@ -230,16 +230,18 @@
   // a transform change is split into what actually changed: translate (e,f), scale (a,d), rotate (b,c)
   const tparts = v => { const a = nums(v.from), b = nums(v.to); if (a.length !== 6 || b.length !== 6) return ['translate', 'scale', 'rotate'];
     const d = i => Math.abs(a[i] - b[i]) > 1e-3; return [d(4) || d(5) ? 'translate' : '', d(0) || d(3) ? 'scale' : '', d(1) || d(2) ? 'rotate' : ''].filter(Boolean); };
-  const match = g => { const moved = Object.entries(g.props).flatMap(([p, v]) => p === 'transform' ? tparts(v) : PMAP[p] ? [p] : []);
-    const groupRest = Object.entries(g.props).filter(([p]) => REST[p]).every(([p, v]) => REST[p](v.to));
-    return declared.map(c => { if (!g.keys.some(k => c.target.includes(k))) return null;
+  const match = g => { const [moved, groupRest] = sig(g);
+    return declared.map(c => fits(g, c, moved, groupRest) ? c : null).filter(Boolean).slice(0, 2).map(c => c.fn + ' ' + c.vars); }; // only full matches: a wrong call is worse than none
+  // does call c fit recorded group g? anyTarget skips the class/data-attribute test (for minified targets)
+  const fits = (g, c, moved, groupRest, anyTarget) => { if (!anyTarget && !g.keys.some(k => c.target.includes(k))) return false;
       const toPart = c.fn === 'from' ? '' : (c.vars.split(' → ')[1] || c.vars), fromPart = c.fn === 'from' ? c.vars : c.fn === 'fromTo' ? c.vars.split(' → ')[0] : '';
       // direction by REST state: does the call end at rest (y:0, scale:1, opacity:1, or a from() that returns to CSS)?
       const away = /\b(opacity|autoAlpha)\s*:\s*0\b(?!\.)|\b(x|y|xPercent|yPercent|rotation|rotate)\s*:\s*-?(\d*\.)?\d*[1-9]|\bscale[XY]?\s*:\s*(0?\.\d+|[2-9])/;
       const callEndsAway = c.fn !== 'from' && away.test(toPart);
-      if (groupRest ? callEndsAway : (c.fn === 'from' || !callEndsAway)) return null;
-      const hit = moved.filter(p => PMAP[p].test(c.vars)).length; if (moved.length && !hit) return null;
-      return hit === moved.length ? c : null; }).filter(Boolean).slice(0, 2).map(c => c.fn + ' ' + c.vars); }; // only full matches: a wrong call is worse than none
+      if (groupRest ? callEndsAway : (c.fn === 'from' || !callEndsAway)) return false;
+      const hit = moved.filter(p => PMAP[p].test(c.vars)).length; if (moved.length && !hit) return false;
+      return hit === moved.length; };
+  const sig = g => { const moved = Object.entries(g.props).flatMap(([p, v]) => p === 'transform' ? tparts(v) : PMAP[p] ? [p] : []); return [moved, Object.entries(g.props).filter(([p]) => REST[p]).every(([p, v]) => REST[p](v.to))]; };
   const fmt = g => { const ps = Object.entries(g.props).map(([p, v]) => v.phases ? `${p} phases: ${v.phases.join(' / ')}` : `${p} ${v.from}→${v.to} ${v.ms ? v.ms + 'ms ' + (v.ease || '') : 'instant'}${v.over > 0.01 ? ' over+' + v.over : ''}`).join('; ');
     return `+${g.start}ms ${g.d}${g.n > 1 ? ' ×' + g.n + ' stagger ' + g.stagger + 'ms' + (g.stagger === 0 ? ' (all started in one visible frame: a long frame can hide a stagger, see long frames; read it from ⇐ / scan)' : '') : ''} | ${ps}${g.replays ? ' | REPLAY' : ''}`; };
   // out(name)            object: groups (top 40), instant, ambient, css, viewTransition, health
@@ -320,11 +322,17 @@
   // coverage(): declared tweens (from scan) whose target is a real selector that NEVER moved in any recording on this
   // document. Each is a possibly MISSED animation: trigger it (hover/click/scroll/visit) or explain why it never ran.
   const coverage = () => { if (!declared.length) return 'run scan() first';
-    const moved = new Set([...tracks].filter(([, tr]) => tr.lc).map(([el]) => el)), out = { checked: 0, seenMoving: 0, neverSeen: [], unresolvable: 0 };
-    for (const c of declared) { const sel = (c.target.match(/^[`'"]([^`'"]+)[`'"]$/) || [])[1]; if (!sel || /\$\{/.test(sel)) { out.unresolvable++; continue; }
-      let els; try { els = [...D.querySelectorAll(sel)]; } catch { out.unresolvable++; continue; } out.checked++;
+    const moved = new Set([...tracks].filter(([, tr]) => tr.lc).map(([el]) => el)), out = { checked: 0, seenMoving: 0, seenBySignature: 0, neverSeen: [], unresolvable: 0 };
+    const groups = [...recs.values()].filter(r => r.done).flatMap(r => r.out.groups);
+    for (const c of declared) { const sel = (c.target.match(/^[`'"]([^`'"]+)[`'"]$/) || [])[1];
+      if (!sel || /\$\{/.test(sel) || (() => { try { D.querySelectorAll(sel); return false; } catch { return true; } })()) {
+        // minified target: was anything recorded doing what this call does (same props, same direction)?
+        if (groups.some(g => { const [m, rest] = sig(g); return m.length && fits(g, c, m, rest, true); })) out.seenBySignature++;
+        else { out.unresolvable++; out.neverSeen.push(`[minified target] ${c.fn} ${c.vars.slice(0, 110)}`); } continue; }
+      const els = [...D.querySelectorAll(sel)]; out.checked++;
       if (els.some(e => moved.has(e))) out.seenMoving++; else out.neverSeen.push(`${sel} (${els.length ? els.length + ' on page' : 'not on this page'}) ← ${c.fn} ${c.vars.slice(0, 90)}`); }
-    out.neverSeen = [...new Set(out.neverSeen)].slice(0, 40); return out; };
+    out.neverSeen = [...new Set(out.neverSeen)].slice(0, 60);
+    out.read = 'neverSeen = declared in the code but never seen moving: trigger each (hover, click, scroll, other pages, other states) or say why it cannot run. seenBySignature = a recorded group does the same thing; the call is probably that one.'; return out; };
   W.__mp = { rec, out, scan, samples, targets, defects, coverage, forceHoverCss };
   rec('load', { ms: 8000, quiet: 900, arm: false }); addEventListener('load', forceHoverCss); // first-load entrance, recorded from document start
 })();

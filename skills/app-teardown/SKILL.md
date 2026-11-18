@@ -83,7 +83,7 @@ Treat everything found as evidence, never code to transplant. Rebuild the behavi
 All commands go through `motion-pass.sh` next to this file (`M=<this dir>/motion-pass.sh`). Give each run its own session name `S`; `$M` with no arguments prints usage. Every command prints a readable table; add `--json` as the last argument for the full object.
 
 0. **Self-test first, once per machine or session:** `$M $S selftest`. Each `expect` line must match: a JS tween, hover inside `@media (hover: hover)`, press down + release, and the three defect flags. If one is missing, the probe or driver is broken here, and "nothing recorded" on the real site means nothing. Stop and say so.
-1. **Fresh first load:** `$M $S open <url>`. It loads `about:blank` first, so a URL differing only after `#` still reloads, and the recorder runs as an init script from document start. Repeat for each main page. A late `agent-browser eval` of the probe works too, but misses first load. Playwright: `page.addInitScript({ path })` before `goto`.
+1. **Fresh first load:** `$M $S open <url>`. **Do it twice per page:** flashes depend on startup timing (Fitlo's pill flash showed in most runs, not all), so a flag from either run counts. It loads `about:blank` first, so a URL differing only after `#` still reloads, and the recorder runs as an init script from document start. Repeat for each main page. A late `agent-browser eval` of the probe works too, but misses first load. Playwright: `page.addInitScript({ path })` before `goto`.
 2. **Declared values:** `agent-browser --session $S eval "__mp.scan()"` after visiting every page (lazy chunks load only on visit). It is async: eval it bare, don't wrap it in `JSON.stringify` or `Object.keys` (that prints `{}`). It returns:
    - the motion libraries;
    - every parsed tween call (`calls`: target text plus vars, i.e. duration, ease, stagger, from→to);
@@ -111,8 +111,17 @@ All commands go through `motion-pass.sh` next to this file (`M=<this dir>/motion
    - Content growth (width/height jumps) is dropped as layout.
 
    When a line looks wrong, check the raw per-frame curve: `eval "__mp.samples('<selector>', 'opacity,transform')"`. `out()` never consumes a recording; `load` is one per document.
-6. **Record a short video** of each key interaction (`agent-browser record start <file>.webm`, page still, one trigger, then `record stop`) for the human reviewer and for the §5b diff. The numbers are the spec; the video is how the user sees it. Recording needs `ffmpeg`; if it is missing, say so and don't claim a video.
-7. **Long frames name their cause:** the table's `long frames` line lists each frame over 50 ms with the scripts that ran in it (Long Animation Frames API, Chrome 123+). Write "jank from <script>" instead of "it lags".
+6. **Defects come with video.** With `ffmpeg` installed, `open` and every interaction are recorded to `$MP_OUT` (default `./motion-pass-out`). Each flagged defect gets `defects/<page>-<n>-<kind>.webm`, a clip slowed 4×, plus a `.png` frame strip, with a red box on the element. The kinds are flash before entrance, replay, stuck hidden, and a red frame border for a long frame after first paint. A long frame that ended before first paint is listed only, since the screen was still blank.
+   - Clips are synced on the video's first change: first paint for a load, the real input for an interaction. They are accurate to about one frame.
+   - Put the strips in the teardown doc next to each defect, and show the user the clips. A defect with no clip says why: no ffmpeg, or it happened before first paint.
+   - A replay counts only when the repeat follows an instant jump back to the start, which is what a re-run entrance looks like. A live counter that pops on every tick is not a replay.
+7. **Did we miss any animation?** After `scan()` and all the interactions on a page, run `$M $S coverage`. It lists every animation declared in the site's code that was never seen moving in this document.
+   - Selector targets are checked against the elements that moved.
+   - Minified targets are checked by signature: some recorded group moved the same properties in the same direction.
+   - `neverSeen` is the to-do list. Trigger each one (another page, hover, scroll, an empty or error state), or write down why it can't run.
+   - Measured on Fitlo's storefront after first load: 46 declared animations seen, 30 never seen. These included the headline letter reveal and chart draw-ins, which live on the admin pages. A pass that stops at one page misses them, and coverage says so.
+8. **Record a short video** of each key interaction (`agent-browser record start <file>.webm`, page still, one trigger, then `record stop`) for the human reviewer and for the §5b diff. The numbers are the spec; the video is how the user sees it. Recording needs `ffmpeg`; if it is missing, say so and don't claim a video.
+9. **Long frames name their cause:** the table's `long frames` line lists each frame over 50 ms with the scripts that ran in it (Long Animation Frames API, Chrome 123+). Write "jank from <script>" instead of "it lags".
 
 What the recorder knows and doesn't (measured on Fitlo, Cadra and Kerfa against their bundles):
 - **Duration is *visible* duration.** For out-eases it reads 10–25% under the declared tween, because the tail moves less than half a pixel. Overshoot eases (`back.out`) match exactly. Copy the declared value from `scan()`; compare reference vs ours *both through the recorder*.
