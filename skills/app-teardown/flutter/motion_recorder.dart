@@ -189,9 +189,12 @@ Future<MotionReport> recordMotion(
       final ph = _phases(t, v, 0);
       if (ph.isEmpty) continue;
       final moving = ph.where((x) => !x.instant).toList();
-      for (var k = 1; k < moving.length; k++) {
-        final a = moving[k], tr = (a.to - a.from).abs();
-        if (moving.take(k).any((b) => (a.from - b.from).abs() < 0.1 * tr && (a.to - b.to).abs() < 0.1 * tr)) replays++;
+      // replay = a moving phase repeating an earlier one right after an INSTANT jump back (a re-run entrance);
+      // a live value that pops on every update eases back each time, so it is not a replay
+      for (var k = 2; k < ph.length; k++) {
+        final a = ph[k], tr = (a.to - a.from).abs();
+        if (a.instant || !ph[k - 1].instant) continue;
+        if (ph.take(k - 1).any((b) => !b.instant && (a.from - b.from).abs() < 0.1 * tr && (a.to - b.to).abs() < 0.1 * tr)) replays++;
       }
       if ((p == 'width' || p == 'height') && moving.isEmpty) continue; // layout jump, not motion
       props[p] = ph;

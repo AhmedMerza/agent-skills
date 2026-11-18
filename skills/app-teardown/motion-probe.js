@@ -176,8 +176,10 @@
       const ch = {}; let start = Infinity, end = 0, replays = 0;
       for (const p of PROPS) { const ser = series(s, p); if (!ser) continue; const ph = phases(ser, p); if (!ph.length) continue;
         const moving = ph.filter(x => x.ms > 0), main = moving[0] || ph[0];
-        // replay: a later moving phase that repeats an earlier one (same from and to, within 10% of its travel)
-        moving.forEach((x, k) => { if (moving.slice(0, k).some(y => { const tr = dist(y.v0, y.v1); return dist(x.v0, y.v0) < 0.1 * tr && dist(x.v1, y.v1) < 0.1 * tr; })) replays++; });
+        // replay: a moving phase that repeats an earlier one (same from and to, within 10% of its travel) AND comes right
+        // after an INSTANT jump back to the start, which is how a re-run entrance looks. A live ticker that pops on every
+        // update repeats too, but eases back each time, so it is not a replay.
+        ph.forEach((x, k) => { if (!x.ms || !k || ph[k - 1].ms) return; if (ph.slice(0, k - 1).some(y => { const tr = dist(y.v0, y.v1); return y.ms && dist(x.v0, y.v0) < 0.1 * tr && dist(x.v1, y.v1) < 0.1 * tr; })) replays++; });
         ch[p] = { from: main.from, to: main.to, ms: main.ms, over: main.over, ease: main.ease };
         if (ph.length > 1) ch[p].phases = ph.map(x => `${Math.max(0, Math.round(x.t0 - t0))}ms ${x.from}→${x.to} ${x.ms ? x.ms + 'ms ' + (x.ease || '') : 'instant'}`).slice(0, 6);
         start = Math.min(start, ph[0].t0); end = Math.max(end, ...ph.map(x => x.t0 + x.ms)); }
@@ -304,6 +306,25 @@
       const safe = els.map(el => [el, all.indexOf(el)]).filter(([el, i]) => { if (/^(buttons|rows|cards)$/.test(k) && UNSAFE.test(label(el))) { o.unsafe.push(`${sel} [${i}] "${label(el)}"`); return false; } return true; });
       if (safe.length) o[k] = { selector: sel, inView: els.length, first: safe.slice(0, 6).map(([el, i]) => `[${i}] ${label(el) || desc(el)}${lifts(el) ? '  (hover motion declared)' : ''}`) }; }
     return o; };
-  W.__mp = { rec, out, scan, samples, targets, forceHoverCss };
+  // defects(name): every flagged moment with WHEN (ms since navigation start) and WHERE (viewport rect), so
+  // motion-pass.sh can cut a slowed video clip with a box around it. Long frames carry their window, no rect.
+  const rectOf = el => { const r = el.getBoundingClientRect(); return [r.left, r.top, r.width, r.height].map(Math.round); };
+  const defects = name => { const r = recs.get(name); if (!r || !r.done) return 'no finished recording ' + name; const o = [];
+    for (const [el, f] of flashes) if (f.at >= r.base - 1 && f.at <= r.tEnd + 1 && el.isConnected) o.push({ kind: 'flash-before-entrance', d: desc(el), at: Math.round(f.at - Math.min(f.ms, 300)), until: Math.round(f.at + 500), rect: rectOf(el) }); // shown → vanishes → enters
+    for (const g of r.out.groups) if (g.replays) { const el = [...tracks.keys()].find(e => desc(e) === g.d && e.isConnected); if (el) o.push({ kind: 'replay', d: g.d, at: Math.round(r.t0 + g.start), until: Math.round(r.t0 + g.start + g.dur), rect: rectOf(el) }); }
+    for (const el of [...hidden].filter(stuck)) o.push({ kind: 'stuck-hidden', d: desc(el), at: Math.round(r.tEnd - 300), until: Math.round(r.tEnd), rect: rectOf(el) });
+    perf.loaf.filter(([s0, d]) => s0 + d >= r.base && s0 <= r.tEnd && d >= 100).forEach(([s0, d, , sc]) => o.push({ kind: 'long-frame', d: Math.round(d) + 'ms' + (sc[0] ? ' ← ' + (sc[0].src || sc[0].inv) : ''), at: Math.round(s0), until: Math.round(s0 + d), rect: null }));
+    const fp = Math.round(firstPaint || performance.getEntriesByName('first-paint')[0]?.startTime || 0);
+    // anchor = the moment the video's first change corresponds to: first paint for a page load, the input for an interaction
+    return { anchor: r.arm ? Math.round(r.t0) : fp, viewport: [innerWidth, innerHeight], defects: o }; };
+  // coverage(): declared tweens (from scan) whose target is a real selector that NEVER moved in any recording on this
+  // document. Each is a possibly MISSED animation: trigger it (hover/click/scroll/visit) or explain why it never ran.
+  const coverage = () => { if (!declared.length) return 'run scan() first';
+    const moved = new Set([...tracks].filter(([, tr]) => tr.lc).map(([el]) => el)), out = { checked: 0, seenMoving: 0, neverSeen: [], unresolvable: 0 };
+    for (const c of declared) { const sel = (c.target.match(/^[`'"]([^`'"]+)[`'"]$/) || [])[1]; if (!sel || /\$\{/.test(sel)) { out.unresolvable++; continue; }
+      let els; try { els = [...D.querySelectorAll(sel)]; } catch { out.unresolvable++; continue; } out.checked++;
+      if (els.some(e => moved.has(e))) out.seenMoving++; else out.neverSeen.push(`${sel} (${els.length ? els.length + ' on page' : 'not on this page'}) ← ${c.fn} ${c.vars.slice(0, 90)}`); }
+    out.neverSeen = [...new Set(out.neverSeen)].slice(0, 40); return out; };
+  W.__mp = { rec, out, scan, samples, targets, defects, coverage, forceHoverCss };
   rec('load', { ms: 8000, quiet: 900, arm: false }); addEventListener('load', forceHoverCss); // first-load entrance, recorded from document start
 })();

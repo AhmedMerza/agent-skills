@@ -13,6 +13,9 @@
 #                                                          (needs a session name never used before: init scripts stick to a session)
 #   motion-pass.sh <session> selftest                      prove the probe sees hover, press, JS tweens and the
 #                                                          three defect flags on this machine (fixture next to this file)
+#   motion-pass.sh <session> coverage                      declared animations (from scan) never seen moving: possibly MISSED
+# Video: with ffmpeg installed, every `open` and interaction is recorded to $MP_OUT (default ./motion-pass-out), and every
+# flagged defect gets a 4x-slowed clip + frame strip with a red box on the element (defect-clips.py). MP_VIDEO=0 turns it off.
 # Add --json as the LAST argument for the full object instead of the readable table. LIMIT=n caps table groups (default 25).
 # press = pointer down, hold, UP: the release is a click, so press only things whose click is safe (§2).
 # The first `open` registers motion-probe.js as the session's init script; it stays registered for the session.
@@ -24,12 +27,20 @@ S=$1; shift
 MODE=table; [[ ${!#} == --json ]] && { MODE=full; set -- "${@:1:$#-1}"; }
 ab() { agent-browser --session "$S" "$@" 2>/dev/null; }
 show() { ab eval "__mp.out('$1', '$MODE', ${LIMIT:-25})"; }
+OUTD=${MP_OUT:-./motion-pass-out}; VIDEO=0; [[ ${MP_VIDEO:-1} == 1 ]] && command -v ffmpeg >/dev/null && VIDEO=1
+slug() { python3 -I -c 'import re,sys; print(re.sub(r"[^a-z0-9]+","-",sys.argv[1].lower()).strip("-")[:60])' "$1"; }
+clips() { # $1 recording name, $2 video file, $3 label
+  [[ $VIDEO == 1 ]] || return 0; mkdir -p "$OUTD/defects"; ab eval "__mp.defects('$1')" > "$OUTD/defects/$3.json"
+  python3 -I "$DIR/defect-clips.py" "$2" "$OUTD/defects/$3.json" "$OUTD/defects" "$3"; }
 
 case $1 in
   open)
     [[ $# -ge 2 ]] || usage
     agent-browser --session "$S" --init-script "$DIR/motion-probe.js" open about:blank >/dev/null 2>&1
-    ab open "$2" >/dev/null; show load; exit ;;
+    if [[ $VIDEO == 1 ]]; then L=$(slug "$2")-load; mkdir -p "$OUTD"; ab record start "$OUTD/$L.webm" "$2" >/dev/null; show load; sleep 0.3; ab record stop >/dev/null
+      echo "video: $OUTD/$L.webm"; clips load "$OUTD/$L.webm" "$L"
+    else ab open "$2" >/dev/null; show load; fi; exit ;;
+  coverage) ab eval "__mp.coverage()"; exit ;;
   targets) ab eval "__mp.targets()"; exit ;;
   perf)
     [[ $# -ge 2 ]] || usage
@@ -53,11 +64,13 @@ XY=$(ab eval "(()=>{const e=document.querySelectorAll($SELJS)[$IDX]; if(!e) retu
 read -r X Y <<<"$XY"
 ab mouse move 2 2 >/dev/null            # start off-target so hover is a real enter
 sleep 0.8                               # let anything the previous step started settle
+V="$OUTD/$(slug "$NAME").webm"; [[ $VIDEO == 1 ]] && mkdir -p "$OUTD"
 case $ACT in   # armed: the clock starts at the real input that IS the interaction
-  hover) ab eval "__mp.rec('$NAME')" >/dev/null; ab mouse move "$X" "$Y" >/dev/null ;;
+  hover) ab eval "__mp.rec('$NAME')" >/dev/null; [[ $VIDEO == 1 ]] && ab record start "$V" >/dev/null && sleep 0.3; ab mouse move "$X" "$Y" >/dev/null ;;
   click|press) ab mouse move "$X" "$Y" >/dev/null; sleep 0.8   # hover settles first; it is not part of the click
-    ab eval "__mp.rec('$NAME', { arm: 'pointerdown' })" >/dev/null; ab mouse down >/dev/null
-    [[ $ACT == press ]] && sleep 0.6; ab mouse up >/dev/null ;;
+    ab eval "__mp.rec('$NAME', { arm: 'pointerdown' })" >/dev/null; [[ $VIDEO == 1 ]] && ab record start "$V" >/dev/null && sleep 0.3
+    ab mouse down >/dev/null; [[ $ACT == press ]] && sleep 0.6; ab mouse up >/dev/null ;;
   *) usage ;;
 esac
 show "$NAME"
+if [[ $VIDEO == 1 ]]; then sleep 0.3; ab record stop >/dev/null; echo "video: $V"; clips "$NAME" "$V" "$(slug "$NAME")"; fi
