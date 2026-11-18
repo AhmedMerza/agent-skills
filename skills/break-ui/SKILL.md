@@ -60,7 +60,8 @@ Look for each signature below:
 
 - at the component's **real container width** (a 2-column phone grid is ~150px per card), then 320px and the widest layout;
 - at **200% zoom** / large OS text scale (Flutter: `textScaler` 2.0);
-- in **Arabic / RTL** and **dark mode** if the product has them.
+- in **Arabic / RTL** and **dark mode** if the product has them;
+- **count vs list**: for every count, KPI or chip count, open what it opens and compare totals under the worst-case filters (empty, one, a filter that excludes everything, a period boundary, soft-deleted or archived members, members on page 2+). A count that opens nothing, a list that shows a different number, or a drawer that only filters the loaded page is a break. Cause is usually two queries (aggregate and list) that drifted; fix by building both from one scope (see `ui-polish/reference/data-for-visuals.md` rule 11).
 
 #### Failure signatures — web (Vue / Vuetify / CSS)
 

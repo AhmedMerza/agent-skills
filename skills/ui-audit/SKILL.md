@@ -253,7 +253,8 @@ Output a summary table, then detail each finding:
 | Interaction States | 2/4 | 3 issues |
 | Performance | 3/4 | 1 issue |
 | AI Slop & Design | 3/4 | 1 issue |
-| **Overall** | **20/28** | **12 issues** |
+| At-a-Glance (data screens) | 2/4 | 2 issues |
+| **Overall** | **22/32** | **14 issues** |
 
 ### Findings
 
@@ -335,13 +336,24 @@ fact the page shows.
   number ("Record balance $4,611")
 - **Hand-rolled devices**: a stepper/meter/pill built inline in the page when the kit has (or
   should have) one
+- **Dead-end numbers**: a count, KPI, chip count or ranked-bar value that opens nothing ("20
+  merchants" with no way to see which). Each is a **P1** on a page the diff built or changed.
+  Exempt only a record's own value or a context-only running total.
+- **Drill-down that disagrees**: open each drill-down and compare its total to the headline under
+  the same filters; any mismatch is **P0** (the page states a number it can't back). In code, flag
+  a members list built from a different query than the aggregate, or a client refilter of a
+  paged list — file:line.
+- **Overview with no attention band**: an overview/ops page whose first screenful has no ranked
+  "needs attention" rows, rows that name a count instead of the consequence, or rows with no
+  inline fix
 
 Each finding cites the field, the device it should be, and the data it needs (and whether the API
 sends it) — same columns as ui-polish's Suggest mode, so the fix list is directly actionable.
 
 **Score**: 0=Wall of text and tables, 1=A few pills on a text page, 2=Main question answered
 visually but details are text, 3=Most facts are devices with comparisons, 4=The first screenful
-answers the page's question at a glance, every number has its comparison
+answers the page's question at a glance, every number has its comparison and opens its members.
+A page with any dead-end number scores at most 2.
 
 ## What NOT to Audit
 

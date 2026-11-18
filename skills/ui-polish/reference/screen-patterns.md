@@ -11,9 +11,13 @@ Fitlo). Reuse the ideas, never their code or assets.
 
 ## Suggest mode — tell the user before they ask
 
-Whenever you build, change, or even just open a data page (web or Flutter), scan what it shows as
+Whenever you **open** a data page you are not changing (web or Flutter), scan what it shows as
 text and **propose** the upgrades in this shape, at most 5, biggest win first. Suggest; don't
 restyle a page the user didn't ask you to change.
+
+On a page you are **building or changing**, this is not a suggestion: apply the lookup below to
+every field the page shows, and apply [Every number is a door](#every-number-is-a-door). List any
+device you could not build (data missing) in the API contract table, not as a "later".
 
 > **Visual upgrades for `<page>`** — the question this page answers: *"…"*
 > | Now (text) | Show instead | Tells the user at a glance | Data needed | API has it? |
@@ -40,6 +44,23 @@ restyle a page the user didn't ask you to change.
 | a location or route | an address string | mini map or route line (only if location is the question) |
 | long free text (notes, descriptions) | the full paragraph | a one-line summary + expand |
 | the thing to do next | a generic "Save" | **value-carrying action** ("Record balance $4,611") |
+
+### Every number is a door
+
+A count or KPI the user cannot open is a claim they cannot check ("20 merchants" — which 20?).
+On every page you build or change:
+- **Every count, KPI, chip count and ranked-bar value opens its members**: a filtered list,
+  or a drawer for small sets, showing per member the identity (name + avatar/thumbnail), the
+  value that put it in the count, its status, and a link to the record. Web: the figure is a
+  `router-link` / button to the filtered route or a URL-addressable drawer; Flutter: `InkWell`
+  pushing the filtered route or a sheet.
+- **The drawer total equals the headline.** Same filters, same period, same source query; a
+  mismatch is a bug, not rounding. Show the count in the drawer title ("20 merchants · last 7 days").
+- Sums and averages open the rows they were computed from, sorted by contribution, biggest first.
+- Exempt only a number that *is* the member (a record's own price) or a pure running total shown
+  as context. Say which, in the PR, if you exempt one.
+- The members come from the `members` contract in [data-for-visuals.md](data-for-visuals.md)
+  (rule 11), never from a client-side refilter of a paged list.
 
 ### Tables are not exempt
 A table of plain text is the most overwhelming screen there is. In every table:
@@ -104,7 +125,13 @@ Question: *what runs out or overloads first, and is it handled?*
 
 ### 4. Overview / dashboard
 Question: *is anything off today, compared with usual?*
-- Key figures with delta vs the previous period and a 7–30 point series.
+- **A "needs attention" band first**, above the key figures: one row per open exception (late,
+  below par, failed, unassigned, stale), worst first. Each row says the consequence in words
+  ("3 orders miss today's cut-off", not "late: 3"), carries its fix inline (assign, retry, reorder,
+  contact — a value-carrying action), and after the fix shows the handled state with Undo instead
+  of vanishing. No exceptions → one calm line ("Nothing needs you · checked 2 min ago"), not an
+  empty band.
+- Key figures with delta vs the previous period and a 7–30 point series; each opens its members.
 - One main chart with the previous period as a dashed line (see the `dataviz` skill).
 - Ranked bars with thumbnails; live list with status pills. Every number has a comparison.
 
@@ -165,6 +192,8 @@ cascade top-down. Inline edits update instantly, then the header re-counts.
 - [ ] The page's one question is written down, and the first screenful answers it.
 - [ ] Every status, progress, quantity-vs-target and money-owed fact uses a device, not text.
 - [ ] Every number has a comparison (target, previous period, par, total).
+- [ ] Every count/KPI opens its members, and the members list's total equals the headline.
+- [ ] Overview and ops pages lead with a "needs attention" band: consequence in words, inline fix, handled state.
 - [ ] The primary action names its effect and its number.
 - [ ] Devices come from the kit; a missing one is added to the kit, not hand-rolled in the page.
 - [ ] The API contract for each device is listed ([data-for-visuals.md](data-for-visuals.md)).
