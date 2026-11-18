@@ -127,14 +127,20 @@ Question: *what runs out or overloads first, and is it handled?*
 Question: *is anything off today, compared with usual?*
 - **A "needs attention" panel in the first screenful, beside the main chart** (a side column of
   the chart row on desktop; directly under the key figures on a phone), never a full-width list
-  that pushes the chart below the fold. Compact: 4–6 rows, then "Show all N". One row per open
+  that pushes the chart below the fold. Compact: 4–6 rows, then "Show all N". It fills its column:
+  if items remain hidden, show as many as fit the panel's height (no more than a third of the
+  panel empty while "Show all" has more); with fewer items, the panel shrinks rather than stretching
+  to the chart's height. One row per open
   exception (late, below par, failed, unassigned, stale), worst first. Each row says the consequence in words
   ("3 orders miss today's cut-off", not "late: 3"), carries its fix inline (assign, retry, reorder,
   contact — a value-carrying action), and after the fix shows the handled state with Undo instead
   of vanishing. No exceptions → one calm line ("Nothing needs you · checked 2 min ago"), not an
   empty band.
 - Key figures with delta vs the previous period and a 7–30 point series; each opens its members.
-  One of them may be the hero (inverted or larger) when it is the page's answer.
+  One of them may be the hero (inverted or larger) when it is the page's answer. One headline total
+  per measure on the first screen: if the chart's figure and a key figure are different measures
+  (paid vs sales after refunds), they differ in label *and* size, or the chart shows the key figure's
+  measure — two near-identical totals side by side read as a bug.
 - One main chart with the previous period as a dashed line (see the `dataviz` skill), visible in
   the first screenful at 1440×900.
 - Controls (date range, filters) are compact and sit in the header row, not a card of their own

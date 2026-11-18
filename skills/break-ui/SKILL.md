@@ -74,6 +74,7 @@ Look for each signature below:
 | Price row and stars collide or clip on a narrow card | Flex row with no wrap and nothing allowed to yield | `flex-wrap: wrap`, or decide what yields (`min-width: 0` + ellipsis on the secondary item) |
 | Prices/buttons at different heights across a row of cards | Footer follows its own content | Card is a flex column; footer `margin-top: auto`; clamp the name |
 | Truncated name with no way to read it | `line-clamp`/ellipsis and nothing else | `title` / `v-tooltip`, and the full value on the detail page |
+| A sticky/fixed button, bar or toast covers card content (a pill, a total, a row's action) at some scroll position | Fixed element placed with no reserved space | Reserve its height (`padding-bottom` / `scroll-padding` on the scroller), or dock it in the layout instead of floating; check by scrolling to each section with it visible: `document.elementFromPoint` at its corners must be the element itself, not hide another's text |
 | Empty bold line, raw `12.5`, `NaN`, `undefined` where a price should be | Fallback renders `''` or a raw value | Guard null; one formatter; explicit "price on request" or hide the buy action |
 | `(10000)`, Latin digits beside Arabic-formatted prices | Raw number rendered | `Intl.NumberFormat(locale)` for every number; one numbering system per screen |
 | "1 reviews", "0 item" | Hardcoded plural | vue-i18n pluralization (`t('x', n)`) with Arabic's six plural forms, or `Intl.PluralRules` |
