@@ -18,3 +18,6 @@ skills/synced/
 
 # machine-local pointers (real repo paths) — never published
 *.local.md
+
+# motion-pass recordings (default output dir is the cwd)
+motion-pass-out/
