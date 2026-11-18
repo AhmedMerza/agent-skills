@@ -99,11 +99,16 @@ On yes:
 
 ```bash
 glab api --method PUT "projects/<id>/issues/<n>" \
-  -f "assignee_ids[]=<your-id>" \
+  -f "assignee_id=<your-id>" \
   -f "add_labels=In Progress"
+
+# re-read: a dropped assignee still returns HTTP 200
+glab api "projects/<id>/issues/<n>" | jq -c '{assignees: [.assignees[].username], labels}'
 ```
 
-Confirm with the issue URL and the resulting assignee/labels.
+Use the singular `assignee_id`. With `glab api -f`, both `assignee_ids[]=<id>` and `assignee_ids=<id>` have returned 200 while leaving `assignees: []`, and the labels from the same call still apply, so a partial success looks like a full one. If the singular form is dropped too, send a JSON body: `echo '{"assignee_ids":[<id>]}' | glab api --method PUT "projects/<id>/issues/<n>" -H "Content-Type: application/json" --input -`.
+
+Confirm with the issue URL and the assignee/labels **from the re-read**, never from the PUT response alone.
 
 ### `--release`
 
