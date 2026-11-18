@@ -272,8 +272,8 @@ Output a summary table, then detail each finding:
 | Level | Meaning | Examples |
 |-------|---------|---------|
 | **P0** | Broken/inaccessible | No keyboard nav, broken on mobile, fails WCAG A |
-| **P1** | Major UX problem | No loading state, layout property animations, no error handling |
-| **P2** | Quality gap | Hard-coded colors, untouched framework defaults, missing hover/press states |
+| **P1** | Major UX problem | No loading state, layout property animations, no error handling; on a screen the diff built or changed: missing hover/press, block-fade or no entrance, a dead-end count/KPI, untouched framework defaults |
+| **P2** | Quality gap | Hard-coded colors; the same P1 gaps on screens the diff only touched in passing |
 | **P3** | Polish opportunity | Could add stagger animation, tooltip delay grouping, reduced motion |
 
 ### 7. AI Slop & Design Quality

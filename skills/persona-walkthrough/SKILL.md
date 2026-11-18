@@ -136,6 +136,7 @@ When the user wants trackable work, turn blockers into issues (one per blocker: 
 - Wishes: at most 3, each quoting the moment a persona tried something the app doesn't offer. Never generic (dark mode, AI, an onboarding tour) unless a persona hit that exact wall. Zero is a valid result.
 - `hidden` and `cant-get-in` count only if the persona actually looked and failed, same gate as all confusion.
 - Pixel-level taste is `ui-audit`'s. Do report design that cost understanding, progress or trust, or that made someone feel something strongly (good or bad).
+- **Look-and-understand check on comprehension pages** (overview, dashboard, report, insights, status): after the 5-second glance, each persona says in one sentence what the page tells them is wrong or fine, and names one record behind a number they care about (by opening it). Can't say it, says it wrong, or the number opens nothing → `unclear`, at least **Major**, with the screenshot and the number they tried.
 - Don't fix anything. Hand blockers to `root-cause` or a fix branch. Separately, gather Minor `polish` and `layout` findings, persona-reported or measured by `sibling-sizes`, into one **Quick fixes** list (screenshot + file:line + measured numbers). A layout failure that blocks the task keeps its Blocker or Major severity and stays in the main findings.
 - Dev artefacts (debug banner, seeded OTP in logs, LAN slowness, test data you can clean) go under `env`/`data`, not product findings — except test data customers can *see*, which really does cost trust.
 
