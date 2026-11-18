@@ -239,7 +239,7 @@
       const hit = moved.filter(p => PMAP[p].test(c.vars)).length; if (moved.length && !hit) return null;
       return hit === moved.length ? c : null; }).filter(Boolean).slice(0, 2).map(c => c.fn + ' ' + c.vars); }; // only full matches: a wrong call is worse than none
   const fmt = g => { const ps = Object.entries(g.props).map(([p, v]) => v.phases ? `${p} phases: ${v.phases.join(' / ')}` : `${p} ${v.from}→${v.to} ${v.ms ? v.ms + 'ms ' + (v.ease || '') : 'instant'}${v.over > 0.01 ? ' over+' + v.over : ''}`).join('; ');
-    return `+${g.start}ms ${g.d}${g.n > 1 ? ' ×' + g.n + ' stagger ' + g.stagger + 'ms' : ''} | ${ps}${g.replays ? ' | REPLAY' : ''}`; };
+    return `+${g.start}ms ${g.d}${g.n > 1 ? ' ×' + g.n + ' stagger ' + g.stagger + 'ms' + (g.stagger === 0 ? ' (all started in one visible frame: a long frame can hide a stagger, see long frames; read it from ⇐ / scan)' : '') : ''} | ${ps}${g.replays ? ' | REPLAY' : ''}`; };
   // out(name)            object: groups (top 40), instant, ambient, css, viewTransition, health
   // out(name, 'table')   readable lines, one per group, then health — the default way to look at a recording
   // out(name, 'full')    everything, all groups
