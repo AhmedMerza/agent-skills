@@ -16,8 +16,9 @@ This is the runtime counterpart to the static passes: `ui-audit` judges whether 
 
 Anything that can navigate, click, fill, screenshot and read the console works. In preference order:
 
-1. **`an available interactive browser connector`** — use it when available. Best when available: real browser, real session, interactive.
-2. **Playwright direct** — always available in this project and already authenticated. Resolve it from the project's own install and reuse the saved session:
+1. **agent-browser CLI** — default driver for Chrome. Run `agent-browser skills get core` and `agent-browser skills get dogfood`, create a worktree-scoped session, and use its snapshots, refs, console/errors, network controls, screenshots, and saved state. Keep evidence in `/tmp` or the run's external artifact location, never in the repository. Use `--restore` or load the project's existing auth state when compatible.
+2. **`an available interactive browser connector`** — prefer it when the task specifically needs a human's already-open, signed-in browser session.
+3. **Playwright direct** — use when the scope requires Firefox/WebKit, an existing Playwright-only auth state or route hook, or a project harness already provides the exact setup. Resolve it from the project's own install and reuse the saved session:
 
 ```js
 import { createRequire } from 'node:module'
@@ -27,7 +28,9 @@ const b = await chromium.launch({ channel: 'chrome', headless: true })
 const ctx = await b.newContext({ storageState: '<repo>/storage/playwright/auth-state.json' })
 ```
 
-Write throwaway driver scripts to the scratchpad, never into the repo. Screenshots go to gitignored `storage/playwright/qa/`. If the session is genuinely dead (a real page redirects to `/login`), refresh it with `the project's authenticated browser setup` — but verify against a *real route* first: a bare prefix like `/admin` may 301 to a non-page and 403, which is not an auth failure.
+Write throwaway driver scripts to the scratchpad, never into the repo. Screenshots and other review evidence stay outside the repository and are uploaded directly when a reviewer needs them. If the session is genuinely dead (a real page redirects to `/login`), refresh it with `the project's authenticated browser setup` — but verify against a *real route* first: a bare prefix like `/admin` may 301 to a non-page and 403, which is not an auth failure.
+
+Playwright MCP waits 500 ms after actions by default. Keep that settle delay for asynchronous apps unless the flow has explicit waits for its expected state and a measured run shows the delay is unnecessary; `--timeout-settle 0` is a speed tuning option, not a global default.
 
 ## The passes
 
@@ -65,6 +68,11 @@ Load the app, note which org and user you're authenticated as (findings can be t
 Per page: does it render, and then —
 
 - **Interactive elements** — click the buttons, links and menu items. Does each do what its label says, or nothing at all?
+- **Async feedback** — for actions that wait on an API or integration, inspect the immediate,
+  pending, success, and failure states. Does the clicked control acknowledge the action, block
+  conflicting repeat submissions, and then show the real outcome? On failure, is the error
+  visible and actionable, with entered data preserved? Check a slow or failed response when
+  the browser driver can safely simulate one.
 - **Forms** — submit empty, submit invalid, submit a valid edge case. Check the error is *shown to the user*, not just logged. Confirm the success path actually persists.
 - **States** — empty, loading, error, and overflow (long strings, many rows). Empty states are the most commonly unbuilt.
 - **Navigation** — every route in, every route out, plus browser back.

@@ -78,6 +78,7 @@ html:has(.v-application.v-theme--dark),
 :root {
   --house-r-card: 24px;
   --house-r-tile: 18px;
+  --house-r-control: 12px;
   --house-r-field: 14px;
   --house-r-modal: 28px;
   --house-blur: 18px;                 /* top bar, tab bar and overlays only */
@@ -199,17 +200,24 @@ body { margin: 0; background: transparent; }
 
 /* ---- Segmented nav / filter pill ---- */
 .house-seg {
-  display: inline-flex; gap: 2px; padding: 5px; border-radius: 999px; max-width: 100%;
+  display: inline-flex; gap: 2px; padding: 5px; border-radius: 14px; max-width: 100%;
+  position: relative;
   background: var(--house-card); box-shadow: var(--house-rim); overflow-x: auto; scrollbar-width: none;
 }
 .house-seg > * {
   display: inline-flex; align-items: center; gap: 7px; height: 38px; padding-inline: 16px; flex: none;
-  border: 0; border-radius: 999px; background: none; color: var(--house-muted); cursor: pointer;
+  border: 0; border-radius: 11px; background: none; color: var(--house-muted); cursor: pointer;
+  position: relative; z-index: 1;
   font: inherit; font-size: 13.5px; font-weight: 600; text-decoration: none; white-space: nowrap;
 }
 .house-seg > :hover { color: var(--house-ink); }
 .house-seg > .is-active, .house-seg > [aria-current='page'], .house-seg > [aria-pressed='true'] {
-  background: var(--house-feature); color: var(--house-on-feature);
+  background: transparent; color: var(--house-on-feature);
+}
+.house-nav-selection {
+  position: absolute; inset-block-start: 0; inset-inline-start: 0; z-index: 0; height: 38px;
+  border-radius: 11px; background: var(--house-feature); pointer-events: none; opacity: 0;
+  transition: transform 360ms cubic-bezier(.22,.61,.36,1), width 550ms cubic-bezier(.16,1,.3,1), height 550ms cubic-bezier(.16,1,.3,1), opacity 120ms ease-out;
 }
 .house-seg > :focus-visible { outline: 2px solid var(--house-accent); outline-offset: 2px; }
 
@@ -218,7 +226,9 @@ body { margin: 0; background: transparent; }
   .house-nav {
     position: fixed; inset-inline: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 6; height: 64px; padding: 7px;
     background: var(--house-solid); box-shadow: var(--house-rim), var(--house-shadow-pop);
+    border-radius: 999px;
   }
+  .house-nav-selection { border-radius: 999px; }
   .house-nav > * { flex: 1; justify-content: center; height: 100%; }
   .house-page { padding-bottom: calc(64px + 10px + 16px + env(safe-area-inset-bottom)); }   /* clears the floating nav */
 }
@@ -240,7 +250,7 @@ body { margin: 0; background: transparent; }
   background: var(--house-accent); color: var(--house-on-accent); font-size: 20px;
 }
 .house-icon-btn {
-  display: grid; place-items: center; width: 42px; height: 42px; border: 0; border-radius: 999px; cursor: pointer;
+  display: grid; place-items: center; width: 42px; height: 42px; border: 0; border-radius: var(--house-r-control); cursor: pointer;
   background: var(--house-card); color: var(--house-ink); box-shadow: var(--house-rim); font: inherit; font-weight: 700; font-size: 13px;
 }
 .house-avatar {

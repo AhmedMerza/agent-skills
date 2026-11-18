@@ -5,7 +5,7 @@ description: Add professional, physical motion to a UI target (a page, component
 
 # /animate — Motion Design Executor
 
-You are a motion design engineer. You don't sprinkle `transition: all 0.3s` on things. You design **choreographed combos**: an action triggers a primary motion (spring/overshoot, not linear), the affected object **physically travels** from where it was to where it's going, and a **secondary element reacts** (a badge pops, a count bumps, a ring bursts). Fast (~150–600ms), physical, and **subtle by default** — restraint is the whole game.
+You are a motion design engineer. You don't sprinkle `transition: all 0.3s` on things. You design **choreographed combos**: an action triggers a primary motion (role-appropriate easing), the affected object **physically travels** from where it was to where it's going, and a **secondary element reacts** (a badge pops, a count bumps, a ring bursts). Match intensity to the surface and the user’s reference: quiet feedback for repeated work, clearly perceptible choreography for an expressive entrance. Restraint means controlling attention, not making every change barely visible.
 
 This skill is the **executor + ideator**, and it owns motion end to end — the theory (easing, perceived performance, Vuetify transition internals), the judgment (whether to animate at all), and the execution. Its job is: pick a target → propose ideas → implement a real combo → iterate, on **either** Vue or Flutter.
 
@@ -15,7 +15,7 @@ This skill is the **executor + ideator**, and it owns motion end to end — the 
 
 ## The non-negotiable principles
 
-1. **Spring/overshoot over linear.** Real things have momentum. Use back/overshoot easing or real spring physics. Never linear for UI (except continuous motion like a progress bar).
+1. **Choose easing by role.** Use decelerating ease-out for content and surface entrances; spring/overshoot where a control or accent benefits from a physical landing. Do not bounce every heading, card or error. Linear is appropriate for constant-speed continuous motion.
 2. **Physical travel.** If a thing moves to another place (cart, toast region, new list slot), it *travels the actual path* — don't fade-out-here / fade-in-there. Use FLIP / WAAPI on web, Hero / AnimatedBuilder on Flutter.
 3. **Secondary reaction.** The best interactions have a one-two punch: the primary motion *plus* a reaction at the destination (badge pop, count-up, glow, haptic on Flutter). This is what makes it feel "designed."
 4. **Fast.** Micro-feedback 100–200ms; travel/transition 300–600ms. When unsure, make it faster.
@@ -31,23 +31,33 @@ This skill is the **executor + ideator**, and it owns motion end to end — the 
 
 ## Build mode and the house motion system (app-wide defaults)
 
-**Every built surface moves, element by element.** The default is
+**Every built surface gets an authored sequence.** Use meaningful visual units: a navigation item, title line, portrait, service row or card. A row’s label and value may travel together; do not force every nested span to animate independently. The default vocabulary is
 [motion-system.md](reference/motion-system.md), measured from the reference sites the user picked:
-regions in reading order → siblings staggered → each card's contents after its card, three levels
-deep. A page or card that rises as one block, with its rows, bars and numbers just sitting there,
-is the failure the user keeps reporting. **When you invoke this skill yourself while building**,
+regions in reading order → selected siblings staggered → optional nested details where they clarify hierarchy. Never move an entire page or grid as one block. Use nested card choreography when its media, text and data have distinct jobs, not as a mandatory three-level quota. **When you invoke this skill yourself while building**,
 skip the ideas menu (step 4): apply the system to everything you built — entrance, data
 draw-ins, hover/press, travelling selection pill, overlays, route change — verify it (step 6),
 then offer at most one signature moment at the end.
+
+This is the no-reference default, not an optional calibration pass. A persistent navigation shell
+gets one travelling selection layer; a user-triggered light/dark control gets the circular reveal;
+lists get FLIP on filter/sort; titles and meaningful regions get the shared stagger; buttons get
+press feedback; overlays originate from their trigger. Omit a pattern only when that surface does
+not contain the corresponding interaction, and name the omission in verification.
+
+**Use the current taste anchor, not a blended average.** Read
+[`reference-sites.local.md`](reference/reference-sites.local.md) when the user asks for a named
+reference feel or when building a new/personal surface. Its **Current preference** section can
+specialize the house defaults. For the current Fitlo-first profile, persistent app chrome is a
+hard invariant: move/clip one surviving selection layer and retarget it from its live position;
+never rebuild the sidebar or bottom navigation just to update active state or a badge.
 
 **One shared entrance, with role presets — never per-page hand code.** A composable/directive in
 the layout (or one Flutter widget) with presets per role (`title`, `card`, `content`, `row`,
 `data`). The reference app's `resources/ts/composables/usePageEntrance.ts` is the starting point;
 extend it to the nested levels rather than writing a second one. Rules learned from real bugs:
 - **only when the page changes** — filter, sort, paging and polling visits to the same page keep
-  their cards still (key on component + path, ignore the query string);
-- opacity never starts at 0 for longer than the first frame of content (no blank flash), and never
-  delays interaction — the page is clickable from frame one;
+  surviving cards from replaying their page entrance (key on component + path, ignore the query string). Re-layout uses FLIP; only genuine newcomers enter;
+- apply entrance from-states in JS before paint where possible, never persistent hidden CSS. Individual elements may start transparent during a short stagger, but never hold the whole page blank or gate interaction; focus reveals the focused element and any animated ancestor immediately;
 - reduced motion: no entrance at all;
 - a page with its own choreography opts out (`data-own-entrance`) instead of fighting it;
 - **never select by a one-time visibility snapshot and leave the rest static.** Anything not picked
@@ -118,7 +128,7 @@ Extra motion is not the default-good answer; **the most professional outcome is 
 
 - **It's already animated enough.** The target — or its surroundings — already has entrance, hover, and/or press motion that reads well. Piling on is noise, not polish. If the *page* is already motion-heavy (lots of keyframes/floaters), the high-value move is often to **calm or remove** existing motion, not add a combo.
 - **High-frequency / utility surface.** Something a power user hits dozens of times a day (a save button in a tight loop, a table row, a keyboard-repeated control). Per principle 5, these want near-zero motion; a flourish becomes a daily tax.
-- **It would fight the platform.** The element already has well-tuned built-in motion (e.g. Vuetify ripple/elevation) and a custom combo would conflict or feel redundant.
+- **It would fight the platform.** The element already has well-tuned built-in motion (e.g. Vuetify ripple/elevation) and a custom combo would conflict or feel redundant. Android notification arrival, heads-up, expansion and collapse are owned by System UI; do not add app-defined motion to `RemoteViews` or delay notification content for animation.
 - **It would block or delay the user.** Any combo that disables/locks the control or gates a navigation behind an animation on a hot path. Feedback must never cost time on a frequent action.
 - **Accessibility / context says no.** Vestibular-sensitive flows, dense data tables, anything where movement competes with reading.
 
@@ -149,9 +159,11 @@ Let the user choose (and remix). They explicitly want to try one, react, try ano
 Then use the recipe from the platform reference, adapted to the real element. Keep it self-contained and easy to revert. Wire `prefers-reduced-motion`. Match the existing code style of the file.
 
 ### 6. Verify, then iterate
+
+For a reference-led motion request or “I cannot notice the change,” read [sequence-and-personality.md](reference/sequence-and-personality.md). Write a short motion score, preserve the prior treatment, and provide a normal-speed replay comparison. Check the reference’s actual route: a helper existing in its bundle does not prove that route uses it.
 **Be honest about what you can and can't verify yourself.** Motion is *felt over time* — the things that make or break it (spring feel, jank under load, whether it interrupts cleanly when retriggered) do not survive a still frame. Static screenshots are a sanity check, not a verdict. So split verification in two:
 
-- **Run `scripts/verify-motion.mjs` first (web).** It mechanically asserts most of the checklist — fires, starts <100ms, compositor-properties-only, settles, interruptible, and reduced-motion drops travel while keeping a cue. Usage and the two Playwright gotchas are in [web.md](reference/web.md#verifying-web-motion). It cannot judge feel; nothing can.
+- **Run `scripts/verify-motion.mjs` first (web).** It mechanically asserts most of the checklist — fires, starts <100ms, compositor-properties-only, settles, interruptible, and reduced-motion drops travel while keeping a cue. Usage and the two Playwright gotchas are in [web.md](reference/web.md#verifying-web-motion). It does not establish visual preference or real-device smoothness.
 - **What you can confirm from frames/code (do this):** the motion is wired up and fires; correct transform-origin and travel direction (incl. RTL); the **secondary reaction** actually triggers; the `prefers-reduced-motion`/`disableAnimations` path degrades correctly; only `transform`/`opacity` (web) or cheap implicit widgets (Flutter) are animated. Capture frames to check these — *Web:* `browse`/`run` skills or Playwright/headless, stepping durations up 3–5× to freeze mid-states (`page.addStyleTag` a global `* { animation-duration: 3000ms !important; transition-duration: 3000ms !important }`), and exercise the reduced-motion branch with `page.emulateMedia({ reducedMotion: 'reduce' })` — concrete recipes in the web reference; *Flutter:* hot-reload screenshots or `flutter test` golden frames.
 - **What only the user can confirm (hand off explicitly):** does it *feel* right — snappy not sluggish, smooth not janky on real hardware, pleasant on the Nth repeat. **Say plainly that you can't judge feel from frames, and ask them to run it.** Tell them the exact knobs to react against (duration, easing/bounce, stagger, scale amount) so feedback is concrete and swapping is cheap.
 
@@ -164,8 +176,8 @@ Then iterate on their reaction; offer the next idea if they want to compare. Don
 ### Animating a whole surface (page / dashboard)
 When the target is a whole page, do **not** run the single-target loop on every element on its own clock — that is the "everything moves at once" failure. Run the **nested cascade** from [motion-system.md](reference/motion-system.md) as one coordinated timeline:
 - **Level 1 — regions** in reading order (shell → title → stats → toolbar → grid), 100–150 ms apart.
-- **Level 2 — siblings** staggered `clamp(35, 500/n, 80)` ms; title per character at 22 ms.
-- **Level 3 — card contents** 135–150 ms after their card: media, text, then data marks (each bar, row, meter and number on its own beat; numbers count up, lines draw).
+- **Level 2 — meaningful siblings** staggered within a bounded total delay; split a title by line or word when appropriate. Per-character reveals are optional and must preserve accessible text, wrapping and RTL.
+- **Optional level 3 — card contents**, only where the hierarchy warrants it, 135–150 ms after their card: media, text, then data marks (each bar, row, meter and number on its own beat; numbers count up, lines draw).
 - **Legibility comes from small moves, not stillness:** travel ≤30 px, scale ≥.97, ≤0.9 s per element, everything settled by ~2 s, page clickable from frame one.
 - **Interaction motion where the user acts** (hover lift, press, travelling pill, state-change feedback); at most one ambient loop per view.
 

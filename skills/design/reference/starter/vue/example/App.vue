@@ -32,7 +32,7 @@ function toggleTheme(e) {
         <span>{{ t('app.name') }}</span>
       </div>
       <v-spacer />
-      <nav class="house-seg house-nav" :aria-label="t('nav.label')">
+      <nav v-travel-nav class="house-seg house-nav" :aria-label="t('nav.label')">
         <router-link v-for="n in nav" :key="n.to" :to="n.to" exact-active-class="is-active">
           <v-icon :icon="n.icon" size="18" />{{ t(n.key) }}
         </router-link>

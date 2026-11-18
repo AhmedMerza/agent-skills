@@ -86,6 +86,42 @@ export const vEnter = {
   },
 }
 
+/** One persistent selection layer that travels between nav items instead of re-rendering. */
+export const vTravelNav = {
+  mounted(root) {
+    const layer = document.createElement('span')
+    layer.className = 'house-nav-selection'
+    layer.ariaHidden = 'true'
+    root.prepend(layer)
+    const move = () => requestAnimationFrame(() => {
+      const active = root.querySelector('.is-active,[aria-current="page"],[aria-pressed="true"]')
+      if (!active) return
+      const rr = root.getBoundingClientRect()
+      const ar = active.getBoundingClientRect()
+      layer.style.width = `${ar.width}px`
+      layer.style.height = `${ar.height}px`
+      layer.style.transform = `translate3d(${ar.left - rr.left + root.scrollLeft}px,${ar.top - rr.top + root.scrollTop}px,0)`
+      layer.style.opacity = '1'
+    })
+    const mutation = new MutationObserver(move)
+    mutation.observe(root, { subtree: true, attributes: true, attributeFilter: ['class', 'aria-current', 'aria-pressed'] })
+    const resize = new ResizeObserver(move)
+    resize.observe(root)
+    root.addEventListener('click', move)
+    root._houseTravelNav = { layer, move, mutation, resize }
+    move()
+  },
+  unmounted(root) {
+    const state = root._houseTravelNav
+    if (!state) return
+    state.mutation.disconnect()
+    state.resize.disconnect()
+    root.removeEventListener('click', state.move)
+    state.layer.remove()
+    delete root._houseTravelNav
+  },
+}
+
 /** Light/dark or accent change: circular reveal from the control the user touched. */
 export function switchTheme(apply, trigger) {
   if (!document.startViewTransition || reduced()) return apply()

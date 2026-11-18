@@ -1,6 +1,6 @@
 ---
 name: explore-site
-description: "Build a premium site the visitor drives with the POINTER, not the scroll wheel: (A) a real-time 3D object showcase they drag, swing, turn and customise (three.js — jerseys on a rail, a sneaker on a plinth, a bottle they spin, live name/number painted on), or (B) a click-to-explore world (hotspots on a hero photo → transition clip → cutaway / floorplan → room-by-room tour, like luxury real-estate and hotel sites). Invoke with /explore-site, or when the user says \"make a site like this\" about an interactive 3D or explorable reference (a URL or a reel), \"make it like garuda / the jersey rail\", \"hotspots on the building\", \"let people walk through the apartment\", \"3D product they can play with\". Reverse-engineers the reference first (bundles for a URL, frames via /video-teardown for a reel), picks the mode, builds a Vite project, and verifies it with GPU screenshots. Restraint-gated: if the reference is scroll-driven (a page that plays as you scroll, a product that builds itself) hand off to story-site / scroll-craft instead; if nothing needs to be touched, build a strong static page."
+description: "Build a premium pointer-driven site: (A) a real-time 3D product showcase visitors drag, turn, and customise, or (B) a click-to-explore world with hotspots and transitions. Invoke with /explore-site, or for an interactive 3D or explorable reference such as a jersey rail, a rotatable product, or a room tour. Inspect the reference, pick the mode, build the scene, and verify it with GPU screenshots. For scroll-driven pages, hand off to story-site or scroll-craft; for a page with nothing to touch, use a static design."
 ---
 
 # /explore-site — a site you play with, not scroll past
@@ -11,6 +11,8 @@ Two kinds of reference land here, and they are built differently:
 |---|---|---|---|
 | **A — Live object** | drags, swings, spins, flips, customises one thing (or a row of them) | three.js scene, procedural motion, canvas-painted textures | garuda2026.offwg.com/rail (kit rail), the Bahrain kit rail (`/srv/dev/projects/private/bahrain-kit-rail`) |
 | **B — Explorable world** | clicks hotspots and travels between fixed views | stills + short transition clips (AI image-to-video or renders) driven by a state graph, HTML overlays on top | Real-estate tower → residence → cutaway floorplan → rooms → rooftop |
+
+**Set the mode expectation before building.** If the user asks for 3D objects, a rotatable product, or a model, deliver Mode A with a usable all-angle asset. Mode B is a different experience: clickable views are not 3D. When the available assets cannot support a credible Mode A, say so before switching modes and let the user decide whether Mode B meets the goal. Never describe photos on planes, CSS perspective, or a camera zoom as a 360° object.
 
 ## Restraint gate — run first
 
@@ -42,17 +44,28 @@ what the one "touch moment" is (swing a shirt, turn the bottle, open the apartme
 should live. Build in a **new project directory**, never inside an unrelated repo. Default: a
 sibling under the user's projects dir.
 
+Plan the **arrival** alongside the touch moment. Unless the user asks for a static opening, the first view should have one short, purposeful entrance tied to the object or world: a product turns into its resting pose, a room opens, or the explorable objects arrive and settle. Let the primary assets load before starting; keep the scene usable if an asset fails. The entrance runs once, does not block a click or drag, and finishes in roughly a second. Show the complete resting scene immediately under reduced motion. Avoid a blanket fade on every UI element or a loop that never settles.
+
 ## 2A. Mode A — Live object (three.js)
 
 Stack: **Vite + vanilla JS + three** (pin versions). `WebGLRenderer` unless the reference needs
 WebGPU/TSL. React only if the user's app is already React (`@react-three/fiber` + `drei`).
 
-**Asset ladder — stop at the first rung you have:**
-1. A real `.glb` of the object → `gltf-transform optimize in.glb out.glb --texture-compress ktx2`.
-2. Only photos (front/back) → a **subdivided plane (64×64) per face**: pillow depth from a blurred
-   silhouette height map, front mesh + back mesh back-to-back. Honest limit: edge-on it is a thin
-   lens — say so, and say a `.glb` fixes it.
-3. Nothing → ask for photos; don't invent the product.
+**Asset ladder — choose the first route that survives an all-angle preview:**
+1. An exact, usable `.glb` from the brand or owner → inspect its licence and front, side, and back;
+   optimise for the web if a suitable tool is available.
+2. Photos but no exact model → find a **licensed base mesh of the same kind of product** (a fitted
+   shirt for a jersey, a pouch for coffee beans, a bottle for a drink). Check the asset's own
+   licence; a public repository alone does not grant reuse. Project the real product art onto its
+   UVs, test seams and hidden sides, and keep required credit. A good base shape can be reused with
+   different artwork and live canvas-painted labels. Keep a standalone textured GLB when the user
+   needs the model outside the site.
+3. No suitable base → optionally test multi-view reconstruction from consistent front, back, and
+   side images. Treat its output as a candidate: reject broken openings, malformed sleeves or
+   sides, bad textures, and excessive mesh size. One product photo cannot establish hidden geometry.
+4. No acceptable 3D shape → use the photo cutout plane and state that its side view is thin. Do
+   not present it as a full 360° garment or product.
+5. No product imagery → request the real photos or artwork before inventing a specific product.
 
 **Photo cutouts:** key the background out with ImageMagick (floodfill ~2% fuzz from the edges,
 erode the mask 1–2 px, feather), then **fill transparent texels with the edge colour** so
@@ -114,8 +127,9 @@ Model it as a **graph of views**: each node is a still (or a looping clip), each
   Headless SwiftShader runs at ~2 fps and makes motion look frozen. That's an artefact of the test
   environment, not proof the motion is fine.
 - Keep a small `tools/shots.cjs` + a `window.__app` test hook, and shoot desktop 1440×900 and phone
-  390×844: loading, idle, **mid-interaction** (~140 ms after a simulated drag/click), focused, the
+  390×844: opening, mid-entrance, settled idle, **mid-interaction** (~140 ms after a simulated drag/click), focused, the
   turned/back or each node of the graph, and after-unfocus. Log console errors to `console.log`.
+- Record the entrance or inspect time-separated frames. Check that it visibly starts, settles, and can be interrupted by the first interaction; verify that reduced motion shows the complete scene without the travel.
 - **Look at every shot** and read it for defects: halos, mirrored text, z-fighting, clipping,
   geometry behind UI, stiff motion, hard horizons, grey rims. Fix and re-shoot. Report what you
   fixed and what remains, honestly.

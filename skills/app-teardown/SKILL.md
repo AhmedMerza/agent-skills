@@ -1,6 +1,6 @@
 ---
 name: app-teardown
-description: "Reverse-engineer a competitor's WEB APP (signed in by the user; works with any browser driver: Chrome extension, chrome-devtools MCP, REA, or Playwright for agents with only a shell) into a parity record: every screen, rule, message, design value and animation, set against our own code with a 'which is better' verdict and the owning issue. It combines runtime evidence (route tables, network calls, stylesheets and computed styles, read REA-style) with behaviour that is only observable by saving test data. Invoke with /app-teardown, or when the user says 'go to <app> and get everything', 'what are we missing compared with X', 'check if we missed anything in X', 'how does X handle double booking / <rule>', or 'copy X's design and behaviour'. It is the web-app sibling of /video-teardown (videos) and different from /browse (our own app). Output: dated docs in the repo plus issue comments, NOT code. Restraint-gated: if the docs already cover the area, do a delta pass only."
+description: "Reverse-engineer a competitor's WEB APP (signed in by the user; works with an interactive connector, agent-browser, or a project Playwright harness) into a parity record: every screen, rule, message, design value and animation, set against our own code with a 'which is better' verdict and the owning issue. It combines runtime evidence (route tables, network calls, stylesheets and computed styles, read REA-style) with behaviour that is only observable by saving test data. Invoke with /app-teardown, or when the user asks to inspect an app completely, find what is missing compared with it, verify how it handles a rule, or copy its design and behaviour. It is the web-app sibling of /video-teardown (videos) and different from /browse (our own app). Output: dated docs in the repo plus issue comments, NOT code. Restraint-gated: if the docs already cover the area, do a delta pass only."
 ---
 
 # /app-teardown: a competitor's web app, turned into a parity record
@@ -19,21 +19,24 @@ What this produces is **evidence plus a verdict**: what the app does, what we do
 
 ## 1. Pick the browser driver (the method doesn't depend on Chrome)
 
-The technique comes down to two things: run `probes.js` (next to this file) in the signed-in page, and click through the app. Use the first driver below that this agent has:
+The technique comes down to two things: run `probes.js` (next to this file) in the signed-in page, and click through the app. Use agent-browser by default for Chrome. Prefer an interactive connector when the task specifically needs the human's already-open signed-in session, and Playwright when its existing profile or instrumentation is required.
 
 | Driver | Run the probe | Network | Click / save tests |
 |---|---|---|---|
+| **agent-browser (preferred shell driver for Chrome)** | `agent-browser eval --stdin < probes.js` | `network requests` / HAR | snapshot refs + `click` / `fill` |
 | Claude in Chrome extension | `javascript_tool` with the file's contents | `read_network_requests` | `computer` / `find` |
 | chrome-devtools MCP, or REA attached to a debug-port Chrome | `evaluate_script` / REA page capture | `list_network_requests` / REA network evidence | `click` / `fill` |
-| **Playwright (any agent with a shell: Codex, Cursor, Gemini, Claude Code in CI)** | `page.evaluate(fs.readFileSync(probes,'utf8'))` | `page.on('request')` | `page.click` / `page.fill` |
+| **Playwright** | `page.evaluate(fs.readFileSync(probes,'utf8'))` | `page.on('request')` | `page.click` / `page.fill` |
 | None (no browser at all) | — | — | see the fallback below |
 
-**Playwright, using `teardown-pw.mjs` (next to this file):**
+**agent-browser:** run `agent-browser skills get core`, create a task-specific session, and pass it on every command. Open the login page headed and let the user sign in themselves; keep using that session for the probe and click-through. Clear the request log before each measured flow. Use a Chrome profile or `--restore` only when the user has authorized persisting that session. Close the session when the pass ends.
+
+**Playwright fallback, using `teardown-pw.mjs` (next to this file):**
 - `node teardown-pw.mjs login <profileDir> <url>` opens **plain Chrome, not under Playwright's control**. The human signs in, then closes the window.
   - Google and other single-sign-on providers reject a Playwright-driven browser with *"Couldn't sign you in. This browser or app may not be secure"*. That is why the login step must not use Playwright.
 - `node teardown-pw.mjs probe <profileDir> <url> [out.json]` runs headless on the same Chrome binary and profile, so the cookies stay readable. It runs the probe and also records the app's own API calls.
 - Set `PLAYWRIGHT_DIR` to a folder with `node_modules/playwright`, and `CHROME_PATH` if Chrome is not at `/opt/google/chrome/google-chrome`. `SETTLE_MS` (default 6000) is the wait after load, because apps that poll never go idle.
-- Tested 2026-11-08 on polsia.com: Claude, and **Codex (`codex exec -s workspace-write -c sandbox_workspace_write.network_access=true`)**, each probed the signed-in dashboard on their own. They found about 67 API calls, 42 keyframes and 158 routes. The credentials were never handled by an agent.
+- Use this fallback when SSO rejects controlled Chrome, when an existing profile was created through this helper, or when the probe needs Playwright-specific instrumentation. Tested 2026-11-08 on polsia.com: Claude, and **Codex (`codex exec -s workspace-write -c sandbox_workspace_write.network_access=true`)**, each probed the signed-in dashboard on their own. They found about 67 API calls, 42 keyframes and 158 routes. The credentials were never handled by an agent.
 
 **No-browser fallback** (still useful, label it lower confidence):
 - the app's public help centre, read with WebFetch or the web-fetch agent (that is how `jane-admin-behaviour.md` was built)

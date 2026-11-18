@@ -1,6 +1,6 @@
 ---
 name: ui-polish
-description: Visual and interaction craft for Vue 3 / Vuetify and Flutter UI — typography, color and contrast, spacing and hierarchy, interaction states, responsive behaviour, UX copy, and the invisible details that make interfaces feel considered. Use on your own, without being asked, BEFORE writing markup whenever you build a new screen or change the layout of an existing one (web or mobile) — it makes you match the app's sibling screens and kit first, hands the motion layer to `animate`, and makes you look at the result at phone, tablet and desktop width before calling it done. Also use on your own whenever you touch, read or review a page that shows data as plain text, numbers or tables — then propose the visual upgrades (quantity → meter, status → pill or stepper, owed → paid/balance bar, dates → words) with the data each needs. Also use when reviewing UI that looks generic, unbalanced, or unfinished, or when choosing type scales, palettes, spacing systems, focus/hover/disabled states, or button and error copy. Motion itself (animation, transitions, springs, gestures, scroll/pointer effects) belongs to the `animate` skill, which build mode invokes. Adapted from Emil Kowalski's design engineering philosophy.
+description: Visual and interaction craft for Vue 3 / Vuetify, Flutter, and Android system notifications. Use before building a screen or changing its layout to match sibling screens, components, tokens, and platform-owned surfaces; design clear action feedback, loading, success, and error states; and inspect phone, tablet, desktop, and RTL results. Also use when reviewing UI that looks generic or unfinished, or when presenting plain data as text or tables that could communicate better visually. Motion belongs to `animate`; app-wide visual identity belongs to `design`.
 ---
 
 # Design Engineering
@@ -43,6 +43,12 @@ uses, hand-rolled widgets beside a kit that already has them. Before writing mar
    `DESIGN.md`)? The app has no deliberate identity: run the **`design`** skill (critique, then
    directions shown on this screen) and tell the user, rather than inventing a look. For a
    one-off page, or while they decide, start from the [house style](reference/house-style.md).
+   The house style is a complete authored default—composition, imagery, density, rounding and
+   surfaces—not a temporary theme or a reason to wait for the user to supply a reference.
+   For a new/personal surface or when the user asks for a named reference feel, also read
+   `../animate/reference/reference-sites.local.md`: its current primary preference sets the
+   composition, imagery, density, and surface hierarchy; the house style only fills gaps. An
+   existing app `DESIGN.md` still outranks this personal default.
 3. **Keep different kinds of content apart.** Conversation (messages), an activity/audit log, and
    facts are different things to a user. Don't interleave them in one feed with only a section
    label between; separate them the way the sibling screen does (tab, sheet, or clearly distinct
@@ -50,12 +56,19 @@ uses, hand-rolled widgets beside a kit that already has them. Before writing mar
 4. **Parity across variants.** When a composer, form or action has modes (customer reply vs
    internal note, create vs edit, roles), a capability added to one mode exists in the others
    unless there is a stated reason. Check the backend accepts it before gating it in the UI.
+   For actions that await an API or other integration, trace the whole click-to-result path:
+   acknowledge the tap immediately on the acted-on control, show a clear pending state while
+   waiting, confirm the actual result, and show an actionable error if it fails. Do not leave
+   an enabled button that appears to do nothing or imply success before the result is known.
 5. **Answer the page's question with devices, and say what data they need.** Write the one
    question the screen answers, pick its archetype in [screen patterns](reference/screen-patterns.md),
    and replace text with devices (stepper, threshold meter, split well, key figure with comparison,
    value-carrying action). Then list each device's fields per
    [data for visuals](reference/data-for-visuals.md), mark what the API already sends, and **propose
    the backend change** with the UI. Missing devices go into the kit (web and Flutter), not inline.
+   Use the house style's composition rules when no sibling establishes the page: imagery stays
+   attached to the thing it represents, dashboards have a purposeful information sequence, and
+   products, orders and customers never share one generic table/card treatment.
 6. Then apply the rest of this skill and the checklist below. Sizes, type and density with no
    sibling to match come from the house style's **Proportions** section.
 7. **Motion is part of the build — invoke `animate` yourself** once the markup is in. Every built
@@ -63,10 +76,24 @@ uses, hand-rolled widgets beside a kit that already has them. Before writing mar
    overlays); the user should never have to ask for it.
 8. **Look at it before you say done.** Screenshot the screen at 390, 834 and 1440 wide, and in
    Arabic/RTL (web: the `browse` skill or Playwright; Flutter: emulator or golden screenshots).
-   Compare against the sibling screen and the house-style proportions, and fix what a glance
-   shows: overlap, misalignment, cramped or half-empty areas, touch targets under 44px on touch,
-   fallback icons where a photo belongs. If you cannot capture, say so — never claim it looks right
-   unseen.
+   Scan the whole frame once before focusing on the changed element. Compare against the sibling
+   screen and the house-style proportions, and fix overlap, misalignment, cramped or half-empty
+   areas, touch targets under 44px on touch, and fallback icons where a photo belongs. For every
+   changed region, measure its boundary against its immediate visual neighbours at each required
+   viewport and in RTL (`getBoundingClientRect` on web; widget bounds or golden comparison on
+   Flutter), and record the gap and any overlap. A 0px visual gap between distinct surfaces or
+   control groups is a finding unless the design deliberately joins them. If you cannot capture or
+   measure, say so — never claim it looks right unseen.
+   For a reference-led build or correction, reproduce the **same visible state** on both sides:
+   route, viewport, theme, locale, scroll position, data, and interaction state (rest, hover,
+   focus-visible, active, open, loading, or selected). Put same-scale crops side by side and inspect
+   the painted control, not only its DOM or hit target. Verify geometry and computed styles, then
+   verify the screenshot; neither is sufficient alone. Do not say “matched”, “fixed”, or “parity”
+   while any criticized state lacks this paired evidence.
+9. **For Android custom notifications**, the notification shade is the sibling surface and System UI
+   owns its card, header, expansion and motion. Read
+   [Android native notifications](reference/android-notifications.md) before editing `RemoteViews`;
+   verify the actual collapsed, expanded and heads-up notification on at least one target OEM device.
 
 ## Reference Documents
 
@@ -79,7 +106,8 @@ examples show Vue 3 / Vuetify and Flutter side by side, so read the pair that ma
 - [Responsive Design](reference/responsive-design.md) — mobile-first, breakpoints, input detection, safe areas
 - [UX Writing](reference/ux-writing.md) — button labels, error messages, empty states, terminology
 - [Anti-Patterns](reference/anti-patterns.md) — AI slop detection, generic patterns to avoid, missing elements checklist
-- [House style](reference/house-style.md) — the default Glass look (from the reference app) for apps with no system of their own: tokens, glass legibility rules, bilingual type stack, Vuetify defaults
+- [Android native notifications](reference/android-notifications.md) — system-owned surfaces, compact hierarchy, `RemoteViews`, adaptive light/dark styling, journey rails, preview parity and OEM-device verification
+- [House style](reference/house-style.md) — the complete warm editorial default for apps with no system of their own: composition, imagery, proportions, tokens, restrained glass, bilingual type and component defaults
 - [Screen patterns](reference/screen-patterns.md) — archetypes (board, record drawer, stock list, overview, catalog) and the visual devices that replace text, web + Flutter + mobile layout
 - [Data for visuals](reference/data-for-visuals.md) — the API contract each device needs; server-decided severity, next action, status history, list summaries
 - Motion → **the `animate` skill** (its `reference/motion-system.md` is the house default), not a reference here.
@@ -141,8 +169,13 @@ Pick the rows that fit what you actually found — don't pad the table to look t
 - [ ] Touch targets are ≥44px (web/iOS) or ≥48dp (Material), even where the visual affordance is smaller.
 - [ ] Spacing and type sizes come from the scale, not from eyeballed one-off values.
 - [ ] Empty, loading, and error states exist and say something useful.
+- [ ] Every meaningful async action gives immediate, local feedback; stays understandable while
+      pending; prevents accidental duplicate submissions; then shows the real success or failure.
+      A failure keeps the user's input and offers the next useful action, such as retrying.
 - [ ] Copy names outcomes, not mechanisms; errors say what to do next.
 - [ ] Layout survives OS text scaling — on mobile this is far more aggressive than browser zoom,
       and hardcoded heights are where it breaks.
 - [ ] Directional padding is direction-safe if the app ships an RTL locale.
+- [ ] Every changed region was measured against its immediate visual neighbours at phone, tablet, desktop, and RTL widths; no distinct controls or surfaces touch at 0px unless the design intentionally joins them.
+- [ ] Reference-led work has paired, same-state evidence for every criticized element; both the computed values and the visible crop agree.
 - [ ] Nothing here is a motion decision — if it moves, it went to `animate`.

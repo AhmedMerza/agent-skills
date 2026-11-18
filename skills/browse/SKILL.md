@@ -1,15 +1,31 @@
 ---
 name: browse
-description: "View app pages via Playwright — authenticated, scrolling screenshots"
+description: "View and inspect app pages through agent-browser, including authenticated sessions and full-page screenshots; use the project's Playwright helper only when its existing auth harness is required."
 ---
 
-# /browse - View App Pages via Playwright
+# /browse - View app pages
 
-Take authenticated, scrolling screenshots of a running app's page and describe them.
+Open a running app, inspect its rendered content, capture visual evidence when useful, and describe what is actually on the page.
+
+## Default driver: agent-browser
+
+Use the `agent-browser` skill and CLI for ordinary Chrome work. It is globally installed, does not require a project Playwright dependency, and keeps one isolated browser session alive across commands.
+
+1. Run `agent-browser skills get core` and follow it.
+2. Create a worktree-scoped session with `agent-browser session id --scope worktree --prefix browse` and pass it on every command.
+3. Apply `--restore` when the task needs saved login state. For sensitive login, use the auth vault instructions rather than command-line passwords.
+4. Open the page, wait for the expected rendered content, and inspect it with `snapshot -i` or a scoped/full snapshot. Check `console` and `errors` when the request involves runtime behavior.
+5. Capture a full-page screenshot to a temporary path when the user needs a visual description or evidence: `agent-browser --session <name> screenshot --full`. Inspect the returned image, then close the session when the task is complete.
+
+For `--mobile`, set a mobile device or viewport before opening the page. Treat `--wait <ms>` as an upper bound and wait for the expected element, text, URL, or app condition instead of sleeping for the whole duration.
+
+## Project Playwright helper fallback
+
+Use the existing Playwright helper only when a project's `.claude/browse-config.json`, `auth-state.json`, custom login selectors, or Playwright-specific behavior is the reason the page is reachable. This fallback remains project-agnostic but requires a local Playwright install.
 
 ## Project-agnostic resolution
 
-This command works in **any** repo that has Playwright installed locally. App-specifics
+The fallback works in **any** repo that has Playwright installed locally. App-specifics
 (base URL, login flow, default user) come from an optional `<repo>/.claude/browse-config.json`;
 credentials are **never** stored — they come from `PW_EMAIL` / `PW_PASS` env at run time.
 
@@ -19,7 +35,8 @@ credentials are **never** stored — they come from `PW_EMAIL` / `PW_PASS` env a
   If absent, the helper falls back to sensible defaults (`http://localhost:8080`, `/login`,
   `input[type=email]` / `input[type=password]`, submit button named "Login").
 - **Playwright** is resolved from the project's own install (`playwrightDir`, else
-  `storage/playwright`, else repo root). If a repo has no Playwright, `/browse` can't run there.
+  `storage/playwright`, else repo root). If it is absent, continue with agent-browser unless the
+  requested page specifically depends on the helper's saved Playwright state.
 
 ## Arguments
 
@@ -28,7 +45,7 @@ credentials are **never** stored — they come from `PW_EMAIL` / `PW_PASS` env a
 `--wait <ms>` (raise the settle cap, default 15000 — see Notes).
 Examples: `/admin/welcome`, `--mobile /admin/welcome`, `--login --user ops@example.com /admin/orders`.
 
-## Instructions
+## Playwright fallback instructions
 
 1. **Ensure credentials.** Login needs `PW_PASS` (and an email via `--user`, `PW_EMAIL`, or
    config `defaultUser`). If `PW_PASS` isn't set in the environment, **ask the user for the

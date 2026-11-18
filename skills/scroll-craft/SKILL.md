@@ -313,6 +313,8 @@ Checks before you build:
 
 Full pipeline, prompt scaffolds and model notes: [references/assets.md](references/assets.md).
 
+If the page includes a freely rotatable 3D product, use `explore-site` Mode A's asset ladder to source, license, and check the model from every angle. Keep the scroll journey and pacing in this skill.
+
 Short version:
 
 ```bash
@@ -338,6 +340,8 @@ Four things that decide whether this looks premium or generated:
   [references/devices.md](references/devices.md).
 
 ## Step 4: Build the page
+
+**Entrance choreography is a separate layer from scroll effects.** When the user supplies a motion reference, apply `animate` and its `reference/sequence-and-personality.md`: record direction, scale, opacity, easing and the order of meaningful groups. Use one entrance driver with explicit section beats; keep it off nodes whose transforms the scroll engine owns (animate an inner wrapper instead). A pin, scrub or parallax does not substitute for a readable first arrival. Preserve the previous treatment and provide replay when iterating on feel. Use 3D only when the page’s concept benefits from it; it is not a prerequisite for good entrances.
 
 Write real HTML. Real `<h1>`, real `<p>`, real links, real reading order. The
 engine reads `data-sc-*` attributes off your markup and drives it; it never

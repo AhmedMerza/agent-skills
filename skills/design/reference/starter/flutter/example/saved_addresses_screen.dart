@@ -1,6 +1,6 @@
 // Example list screen on the house starter (saved addresses). Shows the minimum house look:
 // fixed ground, big title, one feature card, glass cards, a status pill with an icon,
-// sentence-case pill buttons and the entrance cascade. Fix the three imports for your app.
+// sentence-case rounded buttons and the entrance cascade. Fix the three imports for your app.
 import 'package:flutter/material.dart';
 
 import '../data/addresses.dart';

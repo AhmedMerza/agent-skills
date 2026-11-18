@@ -48,8 +48,8 @@ export const houseTheme = {
 const field = { variant: 'outlined', density: 'comfortable', color: 'primary', hideDetails: 'auto' }
 
 export const houseDefaults = {
-  VBtn: { rounded: 'pill', elevation: 0, height: 42 },          // sentence case comes from tokens.css
-  VBtnToggle: { rounded: 'pill', density: 'comfortable' },
+  VBtn: { rounded: 'lg', elevation: 0, height: 42 },            // 12px rounded rectangle
+  VBtnToggle: { rounded: 'lg', density: 'comfortable' },
   VChip: { rounded: 'pill', variant: 'tonal', size: 'small' },  // status uses <StatusPill>, not a raw chip
   VCard: { rounded: 'xl', elevation: 0 },                       // tokens.css draws the surface
   VSheet: { rounded: 'xl' },

@@ -22,7 +22,7 @@ description: Strict commit and merge-request workflow for fork-based GitLab proj
 3. Run changed-file quality checks.
 4. Run targeted tests.
 5. Stage and commit with conventional message.
-6. Push branch to the repository-defined fork remote.
+6. Push branch to the verified, authorized source remote. Do not infer a fork from its name or from a configured Git remote.
 7. Create MR using repository-defined workflow (CLI/API/helper), defaulting to the repository-defined target branch.
 
 ## Safety

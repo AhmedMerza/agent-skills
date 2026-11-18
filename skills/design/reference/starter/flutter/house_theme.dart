@@ -121,6 +121,7 @@ ThemeData houseTheme(Brightness brightness) {
   TextStyle s(double size, FontWeight w, {double h = 1.4, Color? c}) =>
       TextStyle(fontSize: size, fontWeight: w, height: h, color: c ?? t.ink, letterSpacing: 0, fontFeatures: tnum);
   const pill = StadiumBorder();
+  final control = RoundedRectangleBorder(borderRadius: BorderRadius.circular(12));
   final field = OutlineInputBorder(
     borderRadius: BorderRadius.circular(HouseTokens.rField),
     borderSide: BorderSide(color: t.line, width: 1.2),
@@ -184,7 +185,7 @@ ThemeData houseTheme(Brightness brightness) {
         foregroundColor: t.onAccent,
         minimumSize: const Size(0, 46),
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        shape: pill,
+        shape: control,
         elevation: 0,
       ),
     ),
@@ -194,7 +195,7 @@ ThemeData houseTheme(Brightness brightness) {
         foregroundColor: t.onFeature,
         minimumSize: const Size(0, 46),
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        shape: pill,
+        shape: control,
         elevation: 0,
       ),
     ),
@@ -202,13 +203,13 @@ ThemeData houseTheme(Brightness brightness) {
       style: OutlinedButton.styleFrom(
         foregroundColor: t.ink,
         minimumSize: const Size(0, 46),
-        shape: pill,
+        shape: control,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         side: BorderSide(color: t.rim, width: 1.2),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(foregroundColor: t.accentText, shape: pill, minimumSize: const Size(0, 44)),
+      style: TextButton.styleFrom(foregroundColor: t.accentText, shape: control, minimumSize: const Size(0, 44)),
     ),
     iconButtonTheme: IconButtonThemeData(style: IconButton.styleFrom(foregroundColor: t.ink)),
     floatingActionButtonTheme: FloatingActionButtonThemeData(

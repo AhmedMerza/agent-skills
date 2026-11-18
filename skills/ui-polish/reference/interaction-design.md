@@ -65,6 +65,22 @@ Flutter draws no focus ring by default on most custom widgets — you opt in exp
 
 ## Loading States
 
+### Feedback for actions
+
+For each button, form, toggle, or menu action that waits on a request, follow the state from
+tap to settled result. The user should see an immediate response on the control or affected
+item; if work continues, label the pending action (for example, "Saving…") and prevent a
+second conflicting submission. Keep unrelated controls usable. When the request resolves,
+show the changed value or a specific confirmation. On failure, restore the actionable state,
+keep entered data, explain what failed in plain language, and offer retry or the relevant next
+step. Surface integration errors in the UI, not only in logs or the console.
+
+Use feedback proportional to the action: a fast local toggle may need only its changed state;
+a save or payment needs explicit pending and final status. Do not show a success toast for a
+request that has not succeeded. If using an optimistic update, roll it back visibly on failure.
+Make status text available to assistive technology, and do not rely on a spinner or color alone
+to explain what is happening.
+
 **Optimistic updates**: Show success immediately, rollback on failure. Use for low-stakes actions, not payments.
 **Skeleton screens > spinners**—they preview content shape and feel faster. The skeleton has the
 *same shape as the devices* it stands for (a pill-sized block, a meter-height bar, a stepper of

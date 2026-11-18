@@ -8,14 +8,13 @@ motion system of its own; an app that already has a consistent one keeps it.
 A surface without this is **unfinished**, the same way a surface without spacing is. The user's
 words: "if animation is missing then it is dull".
 
-## The rule — per element, three levels deep, never a block
+## The rule — meaningful units in a coordinated sequence
 
-1. **Regions in reading order:** shell (nav items, top bar) → page title → header stats →
-   toolbar → content grid. Regions start 100–150 ms apart.
+1. **Regions with explicit beats:** shell and first content begin together; later supporting regions may start 100–150 ms apart. Write these offsets down rather than letting independent observers accidentally start every region at zero.
 2. **Siblings staggered:** `stagger = clamp(35, 500 / n, 80)` ms — so 3 stats get 80 ms and 20
-   cards get 35 ms, and no cascade runs past ~700 ms. Title characters 22 ms; table/list rows
+   cards get 35 ms, and no cascade runs past ~700 ms. Optional title characters 22 ms (line/word reveals are also valid); table/list rows
    30–40 ms (cap ~24 rows, the rest arrive together).
-3. **Inside each card:** the surface arrives first, its contents 135–150 ms later — media, then
+3. **Inside complex cards, when useful:** the surface arrives first, selected contents 135–150 ms later — media, then
    the text block, then data marks (each bar, row, meter, number staggered on its own beat).
 
 **Chrome never gates content.** The shell (sidebar/nav items, top bar) and the page regions start
@@ -117,7 +116,7 @@ bumps (`scale 1.06, y −4`) and flashes the accent for ~900 ms. Error: shake `x
   Flutter: `MediaQuery.disableAnimations`.
 - Below the fold: the same presets on first viewport entry (IntersectionObserver /
   `ScrollTrigger.batch`), once. No parallax or scrub on working UI.
-- Page is clickable from frame one; opacity 0 never outlasts the first frame of content.
+- Page is interactive from frame one. A short transparent stagger per element is allowed; never hold the whole view blank. Keyboard focus cancels entrance motion on the focused element and its animated ancestors.
 - **Real `backdrop-filter` blur is expensive** — one reference with 22 blurred surfaces rendered at
   ~6 fps headless (16 ms/frame without). Real blur only on the top bar, tab bar and overlays;
   cards fake the glass with an alpha gradient + 1 px rim. Profile on a mid-range Android.
@@ -139,3 +138,7 @@ bumps (`scale 1.06, y −4`) and flashes the accent for ~900 ms. Error: shake `x
   `Interval`s for the stagger (or keyed `TweenAnimationBuilder`s so a rebuild doesn't replay);
   `AnimatedPositioned` / implicit animations for FLIP. Dispose controllers.
 - RTL: horizontal travel mirrors; meters grow from the start edge.
+
+## Reference-led calibration
+
+Use [sequence-and-personality.md](sequence-and-personality.md) when matching a reference’s entrance feel. It separates observed behavior, a proposed motion score, runtime checks and user preference. The optional native driver there implements directional roles and explicit region beats; it does not replace an app’s existing motion system.

@@ -1,6 +1,6 @@
 ---
 name: design
-description: Art direction for an app's visual identity — judge whether the palette, type, surfaces, imagery and density are actually nice, say plainly when they are not and why (with measured contrast and hue numbers), then propose 2–3 complete directions SHOWN on the app's real screens (phone + desktop, light + dark, en + ar) and write the chosen one into the app's theme tokens and a DESIGN.md. Use on your own, without being asked, whenever the user says an app or screen looks bad, generic, cheap, dull, dated, "not nice", "like a template" or "like every AI app", dislikes its colours or theme, or asks for a better palette, a rebrand, a new look or a colour template; and whenever `ui-polish` build mode finds the app has no deliberate identity (no theme tokens beyond framework defaults, no DESIGN.md). Also on /design, and when starting a new product that needs a look. Not for one screen's spacing or states (ui-polish), motion (animate), or whether an existing system is being followed (design-drift). Restraint-gated — "the identity is good, keep it" is a valid verdict.
+description: Art direction for an app's visual identity — judge its palette, type, surfaces, imagery and density with measured evidence, then show 2–3 complete directions on real screens (phone + desktop, light + dark, en + ar) and write the chosen one into theme tokens and DESIGN.md. Use when the user says an app looks bad, generic, cheap, dull, dated, "not nice" or "like a template"; dislikes its colours or theme; asks for a rebrand, palette or new look; or when `ui-polish` finds no deliberate identity. Also use on /design and for a new product that needs a look. Not for one screen's spacing or states (`ui-polish`), motion (`animate`), or adherence to an existing system (`design-drift`). Restraint-gated — "the identity is good, keep it" is valid.
 ---
 
 # Design — art direction
@@ -25,6 +25,9 @@ Not generic taste, and not the CSV stock. Judge and propose against these, in th
    critique drift from it rather than re-litigating it, unless the user is unhappy with it.
 2. **The user's reference sites** — `../animate/reference/reference-sites.local.md` (gitignored;
    if missing, ask the user for 3–4 sites or apps they love and tear them down with `app-teardown`).
+   Read its **Current preference** section before proposing a direction. A reference explicitly
+   marked primary outranks the family average; translate its design grammar to the product rather
+   than averaging it back into the generic house look or copying its retail content literally.
    What they share: warm paper or near-monochrome surfaces; colour reserved for data and for the
    consequence of an action; pastel accent gradients carrying dark same-hue text; one variable
    sans doing all the hierarchy by weight; soft long negative-spread shadows instead of borders;
@@ -96,7 +99,9 @@ Full checklist with thresholds: [reference/critique-checklist.md](reference/crit
    name the two or three things that make it good — do not manufacture findings.
 6. **Separate identity from execution.** Findings that are one screen's problem go to
    `ui-polish`; findings that tokens exist but are ignored go to `design-drift`. Only identity
-   findings feed Direction.
+   findings feed Direction. A custom Android notification that paints a branded card inside the
+   system notification card is execution drift, not an identity problem: keep the system surface
+   and send it to `ui-polish`'s Android notification guidance.
 
 Output: the one-sentence verdict, the eight-row table, the screenshots it is based on, and
 either "keep it" or "worth redirecting — directions next".

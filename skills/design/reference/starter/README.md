@@ -2,8 +2,9 @@
 
 Tested theme files for an app with no identity (design skill, Default mode). Copy, swap the
 accent, satisfy the checklist. The look: warm paper ground, one accent, pastel status pills with
-dark same-hue text, Urbanist + IBM Plex Sans Arabic, rim + long soft shadow instead of borders,
-warm glass in dark mode, per-element entrance. Sources: ui-polish `house-style.md`, animate
+dark same-hue text, Urbanist + IBM Plex Sans Arabic, rounded-rectangle controls, rim + long soft
+shadow instead of borders, solid working surfaces with glass reserved for chrome, and the complete
+house motion system. Sources: ui-polish `house-style.md`, animate
 `motion-system.md`.
 
 ## Vue 3 + Vuetify — copy from `vue/`
@@ -13,7 +14,7 @@ warm glass in dark mode, per-element entrance. Sources: ui-polish `house-style.m
 | `fonts.css`, `tokens.css` | `src/styles/` | import both in the entry, after `vuetify/styles` |
 | `../fonts/web/` (folder) | `src/styles/fonts/` | the woff2 files `fonts.css` points at; nothing to install |
 | `house.js` | `src/plugins/` | `createVuetify({ theme: houseTheme, defaults: houseDefaults })`; `money()`; `checkHouseFonts()` |
-| `entrance.js` | `src/motion/` | `app.directive('enter', vEnter)`; `switchTheme()` for the theme toggle |
+| `entrance.js` | `src/motion/` | `app.directive('enter', vEnter)` and `app.directive('travel-nav', vTravelNav)`; `switchTheme()` for the theme toggle |
 | `StatusPill.vue`, `Money.vue` | `src/components/` | `<StatusPill tone="good" icon="…">`, `<Money :value :currency :locale>` (Urbanist has no tabular figures; this aligns digits) |
 | `example/` | read, then adapt | shell (`App.vue`) and a list page (`OrdersPage.vue`) built on the kit |
 
@@ -63,10 +64,13 @@ Check each on a screenshot (phone and desktop, light and dark, en and ar), not i
 5. **Money** shows the app's configured currency, in tabular figures (`Money` / `MoneyText`),
    end-aligned in columns. No currency in the data, config or locale settings → show the number
    alone, locale-formatted, and list "currency not known" in the final message. Never invent one.
-6. **Buttons** are sentence-case pills; no uppercase anywhere.
+6. **Buttons** are sentence-case rounded rectangles (12–14px); chips, avatars and mobile navigation
+   may be pills. No uppercase anywhere.
 7. **One signature detail** per screen: the inverted feature tile/card for the number or item
    that matters most (or a per-character title, or a travelling nav pill).
-8. **Entrance motion** on every region: title, toolbar, cards, then rows — never one block fade.
+8. **House motion** is complete: per-region entrance, travelling navigation selection, FLIP list
+   changes, press feedback, trigger-origin overlays, and circular user-triggered theme reveal where
+   those interactions exist—never one block fade.
 9. **User data wraps, never truncates** in a card or list row (names, addresses: `DataText`,
    `.house-wrap`). Ellipsis only in a dense table cell, with the full text in a tooltip/`title`.
 10. **Nothing floats over the last row.** A list under a floating action or floating nav ends

@@ -1,36 +1,34 @@
-# House style — Glass (from the reference app)
+# House style — warm editorial glass
 
-The default look for a **new** Vue/Vuetify app, or one with no kit or tokens of its own. An app
-that already has a consistent system keeps it (Build mode wins). This file sets the direction; the
-canonical implementation is the reference app on `dev` — read it, don't re-derive values from memory.
-Where the reference app lives on this machine is in `reference-app.local.md` next to this file
-(gitignored; if it's missing, ask the user):
+The complete default look for a **new** app, or one with no deliberate kit or tokens of its own.
+It does not need a user-supplied reference. An app that already has a consistent system keeps it
+(Build mode wins). The starter in the `design` skill is the canonical implementation; copy it
+instead of improvising from framework defaults.
 
-| Layer | the reference app file |
+| Layer | starter source |
 | --- | --- |
-| Vuetify palettes (light + dark) | `resources/ts/plugins/vuetify/theme.ts` |
-| Alpha tokens, radii, blur, backdrop, motion curve | `resources/styles/_design-tokens.scss` |
-| Component defaults (pill buttons, flat cards, outlined fields) | `resources/ts/plugins/vuetify/defaults.ts` |
-| Component skin (~30 partials) | `resources/styles/@core/template/libs/vuetify/components/` |
-| Page entrance | `resources/ts/composables/usePageEntrance.ts` |
-| Spec and reference shots | `storage/design-system/SPEC.md`, `storage/design-system/shots/` |
+| Vue palettes + component defaults | `../../design/reference/starter/vue/house.js` |
+| Vue tokens, radii, surfaces and component skin | `../../design/reference/starter/vue/tokens.css` |
+| Vue entrance, travelling navigation and theme reveal | `../../design/reference/starter/vue/entrance.js` |
+| Flutter theme + component defaults | `../../design/reference/starter/flutter/house_theme.dart` |
+| Flutter surfaces and entrance widgets | `../../design/reference/starter/flutter/house_widgets.dart` |
 
 
 ## The look in one paragraph
 
-Translucent frosted cards (`backdrop-filter`, 1px light rim) over one fixed, soft, CSS-only
-gradient backdrop; generous radii (card 22, tile 18, field 14, modal 26) and pill controls; one
-accent (the reference app purple `#7367F0`) for primary actions and focus, plus a small tone set (sky, lime,
-coral) that carries meaning only (info, success, danger); one variable sans for Latin with an Arabic
-companion in the same stack; tabular numerals on every figure; comfortable density; light and dark
-both first-class.
+Warm paper in light mode and warm deep glass in dark; near-white, mostly solid working surfaces
+with a fine inset rim and long soft shadow; translucent blur only in persistent chrome, drawers and
+overlays. Controls are rounded rectangles (12–14px), cards 20–24px, campaign media 24–26px, and only
+chips, avatars and floating mobile navigation are full pills. One teal accent (`#0b7a73` light,
+`#3cc2b5` dark) carries selection and consequence. One variable sans does hierarchy by weight,
+figures are tabular, real imagery is structural, and operational pages are composed for their job
+rather than poured into identical cards.
 
 ## Rules that make glass work (these are what separate it from glass-as-slop)
 
 1. **Tokens first.** Glass fills, rims, lines, text tones and shadows are CSS custom properties keyed
    on `.v-theme--light` / `.v-theme--dark` — Vuetify theme colours can't carry alpha. No literal
-   `rgba()`/hex in pages; the reference app's own adoption gap (hundreds of literal hex in `pages/`) is the
-   warning.
+   `rgba()`/hex in pages; a page full of literal values cannot follow the system when the theme changes.
 2. **One backdrop, one blur value.** The gradient lives once, on a fixed layer behind the app
    (`.v-application::before`), never per section. One `--blur` token.
 3. **Contrast against the worst backdrop pixel**, not against the token. Light glass at ~22% white
@@ -56,8 +54,10 @@ both first-class.
 5. **No glass on glass.** A card inside a card uses a well (`--well`) or nothing, never a second blur.
    A **solid** surface (sheet, dialog) gives its children a solid sub-palette (`--well`, `--line`):
    glass card tokens (22% fill, white rim) inside a solid sheet have no visible edge.
-6. **Pills are for controls** (buttons, tabs, chips, toggles). Containers get the radius scale; nested
-   radius = outer minus padding.
+6. **Use radius to express role.** Buttons, fields and desktop navigation use 12–14px rounded
+   rectangles. Status chips, avatars, compact toggles and the floating mobile navigation may be
+   pills. Containers use the card scale; nested radius = outer minus padding. Making every control
+   a pill erases hierarchy and reads like a generic component demo.
 7. **Tones mean something.** Lime = success, coral = danger, sky = info. Never decorative. **Zero
    values are neutral ink** — "0 failed" in red is a false alarm. A **non-zero** count keeps its
    category hue in that hue's per-theme *text* tone (dark green, dark cyan…), so it is both
@@ -80,8 +80,9 @@ both first-class.
 
 ## Vuetify defaults (author once, in `defaults.ts`)
 
-`VBtn { rounded: 'pill' }`, `VCard { rounded: 'lg', elevation: 0 }` (the skin draws the glass, not
-elevation), fields `variant: 'outlined'`, density comfortable, one icon set (the reference app: Tabler). Set it
+`VBtn { rounded: 'lg' }`, `VChip { rounded: 'pill' }`, `VCard { rounded: 'xl', elevation: 0 }`
+(the skin draws the surface, not elevation), fields `variant: 'outlined'`, density comfortable,
+one outline icon set. Set it
 here rather than per component so pages can't drift.
 
 ## Proportions (measured from the user's reference sites, 2026-11-14)
@@ -95,7 +96,8 @@ Use when there is no sibling screen to match. Four sites the user picked share t
   negative-spread shadow (`0 22–30px 44–60px -30px`). Real blur only on top bar, tab bar and
   overlays; cards fake glass with an alpha gradient (blur is a frame-rate cost — see the Glass
   rules above). Overlays are opaque.
-- **Radii:** controls 999; cards 22–26 (20 on phones); modals/drawers 26–28; fields 14; media
+- **Radii:** buttons and desktop selection 12–14; chips/avatars/mobile nav 999; cards 20–24;
+  campaign cards and modals/drawers 26–28; fields 14; media
   inside a card = card radius − card padding.
 - **Spacing:** grid gap 16 (10–12 on phones); card padding 18–24; page gutter 20–32 desktop,
   14–18 tablet, 12–14 phone.
@@ -111,6 +113,19 @@ Use when there is no sibling screen to match. Four sites the user picked share t
 - **Colour:** near-monochrome surfaces; colour is reserved for data and for the consequence of an
   action; status = saturated text on a 13–17% tint of the same hue.
 
+## Composition — never a generic card dump
+
+- Start with the question the page answers, then choose devices that answer it. Equal rounded cards
+  are not a layout strategy.
+- Commerce/catalogue pages are image-led: consistent portrait product crops, name, variant, price,
+  stock and action stay semantically attached. Orders show product thumbnails in the piece summary.
+- Operational dashboards begin with four readable KPIs, then a trend, ranking, recent work and
+  exceptions. Colour explains data or urgency; it does not decorate every panel.
+- Use one asymmetric editorial or feature moment where imagery belongs, balanced by calm working
+  lists. Glass belongs to persistent chrome and depth moments, not every row.
+- Empty image slots receive a deliberate placeholder with the same crop and tone. A generic icon in
+  a product-photo slot reads as broken.
+
 ## Motion
 
 Owned by the `animate` skill — its `reference/motion-system.md` is the house motion system, and
@@ -124,8 +139,8 @@ light-mode text tone of each.
 
 | Variant | Light bg / text / accent | Dark bg / accent | Surface |
 | --- | --- | --- | --- |
-| the reference app (default) | `#E9ECE7` / ink / `#7367F0` | `#111513` / `#7367F0` | glass |
+| Teal editorial (default) | `#f7f6f2` / `#161a19` / `#0b7a73` | `#111514` / `#3cc2b5` | solid work surfaces, glass chrome |
 | Terracotta (warm, retail) | `#e7e0d6` / `#1d1a16` / `#ad4622` | `#1c1916` / `#f0a07a` | glass over a photo |
 | Navy pastel (ops, stock) | `#e8ecf6` / `#121a2e` / ember `#c21f37` | `#0a1222` / `#eeb2a3` | glass, pastel status gradients |
-| Teal editorial (storefront) | `#f7f6f2` / `#161a19` / `#0b7a73` | `#111514` / `#3cc2b5` | solid, hairlines, no glass |
+| Violet glass | `#E9ECE7` / ink / `#7367F0` | `#111513` / `#7367F0` | glass |
 | Mono (ERP, dense) | `#efefec` / `#111` / black primary | `#0b0b0b` / white primary | glass cards, solid drawer |
