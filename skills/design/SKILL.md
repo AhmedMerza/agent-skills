@@ -1,6 +1,6 @@
 ---
 name: design
-description: Art direction for an app's visual identity — judge its palette, type, surfaces, imagery and density with measured evidence, then show 2–3 complete directions on real screens (phone + desktop, light + dark, en + ar) and write the chosen one into theme tokens and DESIGN.md. Use when the user says an app looks bad, generic, cheap, dull, dated, "not nice" or "like a template"; dislikes its colours or theme; asks for a rebrand, palette or new look; or when `ui-polish` finds no deliberate identity. Also use on /design and for a new product that needs a look. Not for one screen's spacing or states (`ui-polish`), motion (`animate`), or adherence to an existing system (`design-drift`). Restraint-gated — "the identity is good, keep it" is valid.
+description: Art direction for an app's visual identity — judge its palette, type, surfaces, imagery and density with measured evidence, then show 2–3 complete directions on real screens (phone + desktop, light + dark, en + ar) and write the chosen one into theme tokens and DESIGN.md. Use when the user says an app looks bad, generic, cheap, dull, dated, "not nice" or "like a template"; dislikes its colours or theme; asks for a rebrand, palette or new look; or when `ui-polish` finds no deliberate identity, and as a measured Critique before every screen build in an existing app (a weak verdict puts the new page on the house look, page-scoped). Also use on /design and for a new product that needs a look. Not for one screen's spacing or states (`ui-polish`), motion (`animate`), or adherence to an existing system (`design-drift`). Restraint-gated — "the identity is good, keep it" is valid.
 ---
 
 # Design — art direction
@@ -22,7 +22,10 @@ that judgement. It has opinions, backs them with measurements, and proves them w
 Not generic taste, and not the CSV stock. Judge and propose against these, in this order:
 
 1. **The app's own `DESIGN.md`**, if a previous run wrote one. It is the standing decision;
-   critique drift from it rather than re-litigating it, unless the user is unhappy with it.
+   critique drift from it rather than re-litigating it, unless the user is unhappy with it. A
+   `DESIGN.md` headed "House default — not chosen by the user yet" is not a decision: critique it
+   like any other look. A user-chosen one that now measures `weak` on two or more rows is flagged
+   in "needs your yes" (one line, the rows that failed); it is not overridden page by page.
 2. **The user's reference sites** — `../animate/reference/reference-sites.local.md` (gitignored;
    if missing, ask the user for 3–4 sites or apps they love and tear them down with `app-teardown`).
    Read its **Current preference** section before proposing a direction. A reference explicitly
@@ -70,9 +73,17 @@ Do it before writing the screen's markup, so the screen is built on the look it 
   In the final message, one line: the starter kit and accent applied, anything the checklist
   could not settle (e.g. "currency not known"), and that 2–3 directions are available on request.
 - **Established app** (many screens, other contributors): do not change global tokens inside a
-  feature branch. Run **Critique** (measured, not a suggestion), build the screen on the house
-  proportions and motion against the existing tokens, and put "design: <one-sentence verdict> —
-  directions on your yes" first in the final message's "needs your yes" list.
+  feature branch. Run **Critique** (measured, not a suggestion) on every screen build, not only
+  when there are no tokens. Then:
+  - **"keep it"** — build on the house proportions and motion against the existing tokens.
+  - **"worth redirecting"** — build the new screen on the house look *scoped to that page*: the
+    starter's tokens under a page-root class (web: `.house-page { --…: … }` on the page wrapper,
+    Vuetify `v-theme-provider` with a house theme registered beside the app's) or a `Theme`
+    wrapper around the route (Flutter). Siblings and shared layout keep the old tokens. Reuse kit
+    components whose structure is fine; re-skin them through the scoped tokens, not by forking.
+  Either way put "design: <one-sentence verdict> — directions on your yes" first in the final
+  message's "needs your yes" list; on "worth redirecting" add "global restyle to match the new
+  page" as its own item.
 
 ## 1. Critique — is it nice, and if not, why
 

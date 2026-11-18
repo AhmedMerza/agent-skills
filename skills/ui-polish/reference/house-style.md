@@ -2,7 +2,8 @@
 
 The complete default look for a **new** app, or one with no deliberate kit or tokens of its own.
 It does not need a user-supplied reference. An app that already has a consistent system keeps it
-(Build mode wins). The starter in the `design` skill is the canonical implementation; copy it
+only when the `design` Critique says "keep it"; a consistent but weak system gets this look on
+each newly built page (page-scoped tokens) plus a "needs your yes" for the global change. The starter in the `design` skill is the canonical implementation; copy it
 instead of improvising from framework defaults.
 
 | Layer | starter source |

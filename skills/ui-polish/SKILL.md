@@ -27,18 +27,30 @@ The boundary is simple: **if it changes over time, it's `animate`. If it's true 
 
 One more hand-off: whether the app's **identity** (palette, typeface, surface recipe, the look as a whole) is any good, and what should replace it, belongs to the **`design`** skill. This skill makes a screen right *within* an identity; when the user says the whole look is generic or not nice, go there.
 
-## Build mode — match the app before you write a widget
+## Build mode — meet the quality bar, reuse the kit where the kit is good
 
-A screen in an existing app is judged against its neighbours first, not against taste. Most ugly
-agent-built screens are not badly styled; they are *foreign*: a layout the rest of the app never
-uses, hand-rolled widgets beside a kit that already has them. Before writing markup:
+A screen is judged against the house quality bar first, then against its neighbours. Ugly
+agent-built screens come in two kinds: *foreign* (a layout the rest of the app never uses,
+hand-rolled widgets beside a kit that already has them) and *faithful to a weak app* (a perfect
+copy of neighbours that are themselves flat, generic or unexplained). Matching a weak sibling is
+not a pass. Before writing markup, in an existing app, run the **`design`** Critique (measured,
+from screenshots of the closest siblings). Its verdict decides what "the kit" means for this
+screen:
+
+- **"keep it"** — the app's look is the bar. Conform to it, steps 1–2 below.
+- **"worth redirecting"** — build this screen on the [house style](reference/house-style.md),
+  scoped to the page (see `design` Default → Established app), keep the siblings' *structure*
+  (step 1) and reuse kit components that render well, and put the global restyle in the final
+  message's "needs your yes" list. Never restyle the whole app inside a feature branch.
+
+Then:
 
 1. **Open the closest sibling screen** (same kind: detail, list, form, thread) and note its
    structure — section order, cards, how secondary content (history, remarks, logs) is reached
    (inline, tab, sheet), where actions sit. Reuse that structure unless the user asked for a new one.
 2. **Use the kit and tokens.** Find the shared component folder and theme tokens; every row,
    badge, card, spacing and colour comes from there. A hand-rolled widget needs a reason the kit
-   can't meet. The app's `DESIGN.md`, if it has one, outranks the house style. **No kit or
+   can't meet. The app's `DESIGN.md`, if the user chose it, outranks the house style. **No kit or
    tokens yet** (new app, a page outside any system, or only framework defaults and no
    `DESIGN.md`)? The app has no deliberate identity: run the **`design`** skill (critique, then
    directions shown on this screen) and tell the user, rather than inventing a look. For a
