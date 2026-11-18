@@ -215,9 +215,9 @@ body { margin: 0; background: transparent; }
   background: transparent; color: var(--house-on-feature);
 }
 .house-nav-selection {
-  position: absolute; inset-block-start: 0; inset-inline-start: 0; z-index: 0; height: 38px;
+  position: absolute; top: 0; left: 0; z-index: 0; height: 38px;   /* physical: vTravelNav measures from the left in both directions */
   border-radius: 11px; background: var(--house-feature); pointer-events: none; opacity: 0;
-  transition: transform 360ms cubic-bezier(.22,.61,.36,1), width 550ms cubic-bezier(.16,1,.3,1), height 550ms cubic-bezier(.16,1,.3,1), opacity 120ms ease-out;
+  transition: opacity 120ms ease-out;   /* travel and stretch are GSAP (entrance.js vTravelNav) */
 }
 .house-seg > :focus-visible { outline: 2px solid var(--house-accent); outline-offset: 2px; }
 

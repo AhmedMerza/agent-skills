@@ -77,9 +77,12 @@ Do it before writing the screen's markup, so the screen is built on the look it 
   when there are no tokens. Then:
   - **"keep it"** — build on the house proportions and motion against the existing tokens.
   - **"worth redirecting"** — build the new screen on the house look *scoped to that page*: the
-    starter's tokens under a page-root class (web: `.house-page { --…: … }` on the page wrapper,
-    Vuetify `v-theme-provider` with a house theme registered beside the app's) or a `Theme`
-    wrapper around the route (Flutter). Siblings and shared layout keep the old tokens. Reuse kit
+    starter's tokens under a page-root class or a `Theme` wrapper around the route (Flutter). Web
+    recipe: rewrite the starter `tokens.css` selectors so every `:root` / `.v-theme--light` /
+    `.v-theme--dark` / `.v-application` rule becomes `.house-page`, `.house-page .v-theme--light`,
+    `.house-page .v-theme--dark` (Vuetify puts a theme class on each component, so the descendant
+    forms are needed), and set `--v-theme-primary` (space-separated RGB) inside `.house-page` so
+    Vuetify buttons there take the accent. `fonts.css` and `entrance.js` need no scoping. Siblings and shared layout keep the old tokens. Reuse kit
     components whose structure is fine; re-skin them through the scoped tokens, not by forking.
   Either way put "design: <one-sentence verdict> — directions on your yes" first in the final
   message's "needs your yes" list; on "worth redirecting" add "global restyle to match the new

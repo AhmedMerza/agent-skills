@@ -37,7 +37,7 @@ per-page audit is structurally blind to duplication and absence.
 
 ## Diagnostic Scan
 
-Run checks across 7 dimensions. Score each **0-4** (0=critical failures, 4=excellent).
+Run checks across 8 dimensions (8 applies to data screens; score it n/a elsewhere). Score each **0-4** (0=critical failures, 4=excellent).
 
 ### 1. Accessibility (A11y)
 

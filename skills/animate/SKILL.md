@@ -80,12 +80,10 @@ pages additionally follow `showcase.md`.
 | Engine | Use for | Why |
 | --- | --- | --- |
 | CSS transitions / `@keyframes`, Vuetify `v-*-transition` | hover, press, focus, state toggles, enter/leave of one element, one-shot bursts | zero JS, runs on the compositor (stays smooth while the main thread is busy mounting a page), reduced-motion via one media query |
-| WAAPI (`el.animate`) | FLIP travel, retargetable motion, staggers over a dynamic list, the page entrance in an app with no GSAP | native and interruptible, returns a promise, no dependency, also compositor-backed for `transform`/`opacity` |
-| GSAP (only if already installed) | multi-step timelines with overlap and labels (boot sequence, delete/send/pay button choreography), sequences that must reverse or scrub | timeline sugar and cross-browser robustness; cost: ~25KB+, runs on the main thread via rAF so it can jank during heavy mounts, and needs `clearProps` cleanup |
+| GSAP 3 + Flip (**required on web**, install if missing) | page entrance, staggers, Flip travel (nav pill, reorders, card → drawer), tweened numbers, multi-step timelines, anything retargetable | interruptible (`overwrite: 'auto'`), one ease vocabulary; cost: ~25KB+, main-thread rAF, so keep heavy mounts short and `clearProps` after entrances; always inside a reverted `gsap.context()` |
+| WAAPI (`el.animate`) | only what GSAP can't target: `::view-transition-*` pseudo-elements (the theme reveal) | native, compositor-backed |
 
-Don't add GSAP to an app for something CSS or WAAPI covers. Where it is already in (the reference app), keep
-it for timelines and reuse the app's shared curves/constants — but a simple hover or press is
-still CSS.
+A simple hover or press is still CSS. Everything that travels, staggers or sequences is GSAP.
 
 **Data devices on entrance.** On a data screen the entrance tells the story of the numbers, inside
 the same shared entrance and only once per page visit (never on refresh or filter): meters and
