@@ -124,7 +124,7 @@ What the recorder knows and doesn't (measured on Fitlo, Cadra and Kerfa against 
   - Measured on Kerfa: 6% off, 2% on, which is noise.
 
   Compare `over34pct`, not raw counts, and say "headless, software GPU" next to fps numbers.
-- **Flutter web draws to a canvas.** The recorder sees no elements there; for Flutter use video plus the code's own animation values.
+- **Flutter web draws to a canvas.** The browser recorder sees no elements there. Flutter has its own recorder: see §5b, "Our copy is Flutter".
 
 Write it as a **motion inventory**, one row per element kind × trigger: `Element | Trigger | Props from→to | Declared duration / ease (scan) | Visible duration (rec) | Stagger | Notes`. Group it by page and by interaction class, plus a short "system" summary (enter/exit durations, ease families, stagger range, what overshoots). Also record the reference's **own** defects the health block shows; they are not to be copied:
 - `flashBeforeEntrance`: painted visible after first paint, then hidden to start its entrance. Example: Tavola's header is static HTML that a deferred module hides about 130 ms later.
@@ -175,6 +175,11 @@ Whoever builds the copy gets the motion inventory as its **acceptance list**, no
   - Read the dip against the noise floor. Measured on Kerfa's theme switch: two reference recordings bottomed at 0.84 SSIM (2 frames under 0.90). A copy with no transition bottomed at 0.66 (7 frames under 0.90, all within the 450 ms reveal), and the sheet shows the circle reveal against an instant snap.
   - SSIM compares pixels, so different content lowers it everywhere; look at where it dips.
   - It works for Flutter too: record the Flutter web build or a device screen the same way.
+- **Our copy is Flutter:** the reference side stays as above. Ours is checked three ways:
+  1. **Motion numbers:** copy `flutter/motion_recorder.dart` into the app's `test/`. In a widget test, `recordMotion(tester, name:, targets:, actions:)` steps the clock one 16 ms frame at a time and reads each target's real opacity, centre position, scale and rotation from the render tree. It prints the same table as the web recorder, with the nearest `Curves.*` and its GSAP twin (`easeOutQuart ≈ power3.out`), plus `flashBeforeEntrance`, `flashOrReplay` and `stuckHidden`. Assert on them in the test.
+     - Self-test: `flutter/motion_recorder_selftest.dart`. Copy it beside the recorder and run `flutter test`. Measured: declared 500 ms / 80 ms stagger / 20 px / `easeOutQuart` recorded as 496 ms / 80 ms / 20 px / `easeOutQuart`; press 100/200 ms as 96/192 ms. All three planted defects were flagged, and breaking the opacity read made two of the three tests fail.
+  2. **Jank:** widget tests use a fake clock, so measure on a device in profile mode. Use `integration_test` with `binding.traceAction(() async { … }, reportKey: 'timeline')` and a `test_driver/perf_driver.dart` that writes `TimelineSummary`. Run `flutter drive --driver=test_driver/perf_driver.dart --target=integration_test/<x>.dart --profile`. Read `missed_frame_build_budget_count`, `missed_frame_rasterizer_budget_count` and `worst_frame_*_time_millis`. On web, `SchedulerBinding.instance.addTimingsCallback` gives per-frame build and raster times. (Not yet run on a device in this skill; label results with the device.)
+  3. **Side by side:** record the Flutter web build (or a device screen) with `agent-browser record` and run `motion-diff.sh` against the reference clip.
 - **Report it as a table:** reference | ours | pass/fail per row, plus the health block for both. The contact sheet (and the video pair) goes in the MR.
 
 ## 6. Report to the user
