@@ -132,8 +132,9 @@ bumps (`scale 1.06, y −4`) and flashes the accent for ~900 ms. Error: shake `x
 ## Implementation shape
 
 - **Vue:** one shared entrance — a composable or directive mounted in the layout with role presets
-  (`v-enter="'title' | 'card' | 'content' | 'row' | 'data'"`), driving WAAPI, or GSAP if the app
-  already has it. Not per-page hand code. `<TransitionGroup>` with a move class for FLIP.
+  (`v-enter="'title' | 'card' | 'content' | 'row' | 'data'"`), driving **GSAP** timelines inside a
+  `gsap.context()` reverted on unmount (required on web; install it if missing). Not per-page hand
+  code. GSAP `Flip` for reorders, the nav pill and card → drawer.
 - **Flutter:** one entrance widget with the same roles; per region one `AnimationController` with
   `Interval`s for the stagger (or keyed `TweenAnimationBuilder`s so a rebuild doesn't replay);
   `AnimatedPositioned` / implicit animations for FLIP. Dispose controllers.
