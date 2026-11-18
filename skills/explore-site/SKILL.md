@@ -34,7 +34,10 @@ Two kinds of reference land here, and they are built differently:
 - **Reel / video:** run `/video-teardown` in its single-clip mode: frames, then one contact sheet per
   clip (`ffmpeg … -vf "fps=2,scale=320:-1,tile=6x4"`). Describe the states and transitions, not the
   thumbnail.
-- Report in a few lines: stack, asset types, how the motion is made, which mode (A/B). Reproduce
+- **UI motion (not the 3D scene):** run the `app-teardown` §3b motion pass on the URL — recorded
+  entrance, hover, press and route motion with durations, eases and staggers, plus its defect flags
+  (copy the motion, never the reference's defects).
+- Report: stack, asset types, how the motion is made (the §3b table for UI motion), which mode (A/B). Reproduce
   the **technique**, never their code, models or brand.
 
 ## 1. Brief (keep it short — ask only what blocks the build)

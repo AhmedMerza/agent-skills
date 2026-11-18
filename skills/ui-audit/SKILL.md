@@ -216,6 +216,7 @@ Consult [interaction-design reference](../ui-polish/reference/interaction-design
 - **Expensive computed in templates**: Complex calculations inline instead of cached `computed`
 - **Missing `will-change` on animating elements** (or worse, `will-change` on everything)
 - **Layout thrashing**: Reading + writing layout properties in loops
+- **Runtime health (measured, when the app runs):** `../app-teardown/motion-pass.sh <s> open <url>` (twice per page; flags vary with startup timing) and, in a never-used session, `… perf <url>`. Any `flash-before-entrance`, `stuck-hidden` or replay flag, a long frame ≥100 ms during load or an interaction, or CLS > 0.1 on a changed page is **P1**; cite the flag and its clip. Code reading cannot find these.
 
 **Flutter — check for:**
 - **Missing `const` constructors** on static subtrees. This is the highest-leverage perf lever

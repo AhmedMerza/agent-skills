@@ -102,6 +102,8 @@ Then:
    the painted control, not only its DOM or hit target. Verify geometry and computed styles, then
    verify the screenshot; neither is sufficient alone. Do not say “matched”, “fixed”, or “parity”
    while any criticized state lacks this paired evidence.
+   Then the runtime pass on the built page: `../app-teardown/motion-pass.sh <s> open <url>` (twice per page; flags vary with startup timing) and, in a never-used session, `… perf <url>`. Any defect flag (flash, stuck-hidden,
+   replay, long frame, CLS > 0.1) is unfinished work, not a test-environment quirk.
 9. **For Android custom notifications**, the notification shade is the sibling surface and System UI
    owns its card, header, expansion and motion. Read
    [Android native notifications](reference/android-notifications.md) before editing `RemoteViews`;
