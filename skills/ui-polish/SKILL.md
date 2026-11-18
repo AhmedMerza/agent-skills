@@ -48,6 +48,14 @@ Then:
 1. **Open the closest sibling screen** (same kind: detail, list, form, thread) and note its
    structure — section order, cards, how secondary content (history, remarks, logs) is reached
    (inline, tab, sheet), where actions sit. Reuse that structure unless the user asked for a new one.
+   **When the user names a reference** ("make it like <site>"), its first screenful is the
+   structure to reuse instead: screenshot it at 1440×900 and 390×844 and write its skeleton down
+   before any markup — the grid (columns and their widths), what sits in the first screenful and
+   where (hero figure, chart, side list, tiles), the relative sizes (title vs body, hero figure vs
+   other figures), and what is pushed below the fold. Build to that skeleton with your data; depart
+   only where your data can't fill a slot, and say which. In step 8, put your first screenful beside
+   the reference's at the same widths and check the skeleton slot by slot. Colours still come from
+   the user's palette, not the reference.
 2. **Use the kit and tokens.** Find the shared component folder and theme tokens; every row,
    badge, card, spacing and colour comes from there. A hand-rolled widget needs a reason the kit
    can't meet. The app's `DESIGN.md`, if the user chose it, outranks the house style. **No kit or
@@ -102,6 +110,11 @@ Then:
    the painted control, not only its DOM or hit target. Verify geometry and computed styles, then
    verify the screenshot; neither is sufficient alone. Do not say “matched”, “fixed”, or “parity”
    while any criticized state lacks this paired evidence.
+   Tests: when you rewrite a page, find the browser specs that visit it (`grep -rl '<route>' tests/`),
+   run them, and update the ones that assert the old markup in the same change.
+   Fonts: a layout shift on font load is fixed with a preload plus a metric-matched fallback face
+   (the starter's `Urbanist Fallback` in `fonts.css`), never `font-display: optional`, which shows
+   the fallback for the whole first visit.
    Then the runtime pass on the built page: `../app-teardown/motion-pass.sh <s> open <url>` (twice per page; flags vary with startup timing) and, in a never-used session, `… perf <url>`. Any defect flag (flash, stuck-hidden,
    replay, long frame, CLS > 0.1) is unfinished work, not a test-environment quirk.
 9. **For Android custom notifications**, the notification shade is the sibling surface and System UI

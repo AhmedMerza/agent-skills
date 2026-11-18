@@ -85,7 +85,7 @@ html:has(.v-application.v-theme--dark),
   --house-gap: 16px;
   --house-pad: 22px;
   --house-gutter: 32px;
-  --house-font: 'Urbanist', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --house-font: 'Urbanist', 'Urbanist Fallback', 'IBM Plex Sans Arabic', system-ui, sans-serif;
 }
 @media (max-width: 834px) { :root { --house-gutter: 16px; --house-pad: 18px; --house-r-card: 20px; } }
 @media (max-width: 480px) { :root { --house-gutter: 14px; --house-gap: 12px; --house-pad: 16px; } }

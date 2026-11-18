@@ -125,14 +125,20 @@ Question: *what runs out or overloads first, and is it handled?*
 
 ### 4. Overview / dashboard
 Question: *is anything off today, compared with usual?*
-- **A "needs attention" band first**, above the key figures: one row per open exception (late,
-  below par, failed, unassigned, stale), worst first. Each row says the consequence in words
+- **A "needs attention" panel in the first screenful, beside the main chart** (a side column of
+  the chart row on desktop; directly under the key figures on a phone), never a full-width list
+  that pushes the chart below the fold. Compact: 4–6 rows, then "Show all N". One row per open
+  exception (late, below par, failed, unassigned, stale), worst first. Each row says the consequence in words
   ("3 orders miss today's cut-off", not "late: 3"), carries its fix inline (assign, retry, reorder,
   contact — a value-carrying action), and after the fix shows the handled state with Undo instead
   of vanishing. No exceptions → one calm line ("Nothing needs you · checked 2 min ago"), not an
   empty band.
 - Key figures with delta vs the previous period and a 7–30 point series; each opens its members.
-- One main chart with the previous period as a dashed line (see the `dataviz` skill).
+  One of them may be the hero (inverted or larger) when it is the page's answer.
+- One main chart with the previous period as a dashed line (see the `dataviz` skill), visible in
+  the first screenful at 1440×900.
+- Controls (date range, filters) are compact and sit in the header row, not a card of their own
+  above the content; explanatory text goes behind a disclosure.
 - Ranked bars with thumbnails; live list with status pills. Every number has a comparison.
 
 ### 5. Catalog / gallery (products, looks, listings)
@@ -193,7 +199,7 @@ cascade top-down. Inline edits update instantly, then the header re-counts.
 - [ ] Every status, progress, quantity-vs-target and money-owed fact uses a device, not text.
 - [ ] Every number has a comparison (target, previous period, par, total).
 - [ ] Every count/KPI opens its members, and the members list's total equals the headline.
-- [ ] Overview and ops pages lead with a "needs attention" band: consequence in words, inline fix, handled state.
+- [ ] Overview and ops pages show a compact "needs attention" panel beside the main chart, in the first screenful: consequence in words, inline fix, handled state.
 - [ ] The primary action names its effect and its number.
 - [ ] Devices come from the kit; a missing one is added to the kit, not hand-rolled in the page.
 - [ ] The API contract for each device is listed ([data-for-visuals.md](data-for-visuals.md)).
