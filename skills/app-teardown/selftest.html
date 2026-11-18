@@ -1,0 +1,36 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>motion-probe self-test</title>
+<!-- Run: motion-pass.sh <session> selftest. Every line below must show up in the probe's output; if one doesn't,
+     the probe or the driver is broken on this machine and "nothing recorded" on a real site can't be trusted. -->
+<style>
+  body { font: 16px system-ui; padding: 40px; }
+  .box { width: 260px; height: 56px; margin: 12px 0; background: #4a7; color: #fff; display: flex; align-items: center; padding-left: 12px; }
+  .hov, .prs { background: #357; transition: transform .2s cubic-bezier(.2,.8,.2,1), background-color .2s; }
+  @media (hover: hover) { .hov:hover { transform: translateY(-4px); background: #468; } } /* headless reports hover:none — the probe forces it */
+  .prs:active { transform: scale(.95); transition-duration: .1s; }
+</style>
+<div class="box good">good: JS tween, enters once</div>
+<div class="box flash">flash: painted visible, then reset, then enters</div>
+<div class="box replay">replay: enters twice (re-render)</div>
+<div class="box stuck">stuck: hidden, never enters</div>
+<div class="box hov">hover me: lifts 4 px</div>
+<div class="box prs">press me: scales to 0.95</div>
+<script>
+  // Inline-style tween per frame, the way GSAP writes it. Ease = 1-(1-x)^4 = GSAP power3.out.
+  const tween = (el, ms, delay = 0) => new Promise(res => setTimeout(() => {
+    const t0 = performance.now();
+    const step = now => { const x = Math.min(1, (now - t0) / ms), e = 1 - (1 - x) ** 4;
+      el.style.opacity = e; el.style.transform = `translateY(${(1 - e) * 20}px)`;
+      x < 1 ? requestAnimationFrame(step) : res(); };
+    requestAnimationFrame(step);
+  }, delay));
+  const hide = el => { el.style.opacity = 0; el.style.transform = 'translateY(20px)'; };
+  const q = s => document.querySelector(s);
+  hide(q('.good')); hide(q('.replay')); hide(q('.stuck'));
+  addEventListener('load', async () => {
+    tween(q('.good'), 500, 100);
+    setTimeout(() => { hide(q('.flash')); tween(q('.flash'), 500); }, 300);
+    await tween(q('.replay'), 500, 100); hide(q('.replay')); tween(q('.replay'), 500, 100);
+  });
+</script>

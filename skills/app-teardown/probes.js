@@ -2,6 +2,7 @@
 // (Chrome extension javascript_tool, Playwright page.evaluate, CDP Runtime.evaluate,
 // chrome-devtools MCP evaluate_script, or the DevTools console by hand).
 // The whole file is one expression returning a Promise of JSON (await it). Set PROBE_SELECTORS before it to measure more.
+// It does NOT capture motion on JS-driven sites (GSAP, Motion, WAAPI) or any hover/press/route motion: use motion-probe.js for that.
 (async () => {
   const out = { url: location.href, title: document.title };
 
@@ -47,11 +48,11 @@
     'box-shadow', 'padding', 'height', 'transition', 'animation', 'position', 'z-index'];
   out.styles = {};
   for (const q of sel) { const el = document.querySelector(q); if (!el) continue;
-    const cs = getComputedStyle(el); out.styles[q] = Object.fromEntries(props.map(p => [p, cs.getPropertyValue(p)]).filter(([, v]) => v && v !== 'none' && v !== 'normal')); }
+    const cs = getComputedStyle(el); out.styles[q] = Object.fromEntries(props.map(p => [p, cs.getPropertyValue(p)]).filter(([, v]) => v && v !== 'none' && v !== 'normal' && !/^(all|none)(\s+0s.*)?$/.test(v))); } // 'all 0s ease 0s' is the browser default, not motion
 
   // 4. Network resources so far (paths only; ids collapsed, query values dropped)
   out.api = [...new Set(performance.getEntriesByType('resource')
-    .filter(e => ['fetch', 'xmlhttprequest'].includes(e.initiatorType))
+    .filter(e => ['fetch', 'xmlhttprequest'].includes(e.initiatorType) && !/\.(m?js|css|map|woff2?|png|svg|jpe?g|webp)(\?|$)/.test(e.name)) // module preloads are fetches too
     .map(e => { const u = new URL(e.name); return u.host + u.pathname.replace(/[0-9a-f-]{8,}|\d+/g, ':id') + (u.search ? '?' + [...u.searchParams.keys()].join('&') : ''); }))].sort();
 
   return JSON.stringify(out);
