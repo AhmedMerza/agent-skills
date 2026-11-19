@@ -94,7 +94,8 @@ Then:
 7. **Motion is part of the build — invoke `animate` yourself** once the markup is in. Every built
    screen ships with the house motion system (per-element entrance, data draw-ins, hover/press,
    overlays); the user should never have to ask for it.
-8. **Look at it before you say done.** Screenshot the screen at 390, 834 and 1440 wide, and in
+8. **Look at it before you say done.** Screenshot the screen at 390, 834, 1440 and 2560 wide
+   (2560 checks the house-style **Ultra-wide** rule), and in
    Arabic/RTL (web: the `browse` skill or Playwright; Flutter: emulator or golden screenshots).
    Scan the whole frame once before focusing on the changed element. Compare against the sibling
    screen and the house-style proportions, and fix overlap, misalignment, cramped or half-empty

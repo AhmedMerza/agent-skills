@@ -126,7 +126,7 @@ Full checklist with thresholds: [reference/critique-checklist.md](reference/crit
 1. **Read the identity as declared.** Theme file, design tokens, font loading, icon set, logo
    assets, any `DESIGN.md`. List every colour the theme declares, light and dark.
 2. **Capture it yourself.** Run the app and screenshot 3–5 representative screens (the landing
-   or home screen, one list, one detail, one form, one overlay) at phone and desktop width, light
+   or home screen, one list, one detail, one form, one overlay) at phone, desktop and ultra-wide (2560) width, light
    and dark, en and ar. Web: the `browse` skill or the repo's Playwright. Flutter: the app's own
    driver, emulator screencap, or a web build. Do not critique from code alone — a palette is
    only ugly or fine on a screen. If the app cannot run, say so and mark the critique provisional.

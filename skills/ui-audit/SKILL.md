@@ -169,7 +169,7 @@ Consult [responsive-design reference](../ui-polish/reference/responsive-design.m
 **Measure sibling sizes (required for web screens; Flutter when a device or emulator is connected).**
 Eyes skim past a card 20px taller than its row; on app !3895 (2026-11-09) five stat tiles rendered
 106/106/126px and this audit missed it from screenshots. Run
-`node ~/agent-skills/scripts/sibling-sizes.mjs <url> --widths 1440,1000,700,390 [--storage-state <file>] [--wait-text <heading>]`
+`node ~/agent-skills/scripts/sibling-sizes.mjs <url> --widths 2560,1440,1000,700,390 [--storage-state <file>] [--wait-text <heading>]`
 (Flutter: `--android --serial <device>` on each audited screen). It reports rows of repeated siblings
 (cards, tiles, buttons, tabs) whose heights differ by more than 2px, siblings out of line, and a grid's
 last row left with a lone part-width item. Every finding is at least **P2** under Responsive, with the
