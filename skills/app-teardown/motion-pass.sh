@@ -33,10 +33,33 @@ clips() { # $1 recording name, $2 video file, $3 label
   [[ $VIDEO == 1 ]] || return 0; mkdir -p "$OUTD/defects"; ab eval "__mp.defects('$1')" > "$OUTD/defects/$3.json"
   python3 -I "$DIR/defect-clips.py" "$2" "$OUTD/defects/$3.json" "$OUTD/defects" "$3"; }
 
+# Registering an init script relaunches the session's browser, which drops its cookies (and so any login).
+# Carry them across: dump before, restore each one by domain + path after (bulk JSON restore fails on about:blank).
+relaunch() {
+  local ck; ck=$(mktemp); trap 'rm -f "$ck"' RETURN
+  agent-browser --session "$S" cookies get --json > "$ck" 2>/dev/null || true
+  agent-browser --session "$S" "$@" open about:blank >/dev/null 2>&1
+  python3 -I - "$S" "$ck" <<'PY' || true
+import json, subprocess, sys
+s, f = sys.argv[1], sys.argv[2]
+try: cookies = json.load(open(f))["data"]["cookies"]
+except Exception: cookies = []
+for c in cookies:
+    # --domain keeps a parent-domain scope (.example.com reaches app.example.com); --url would make it host-only
+    args = ["agent-browser", "--session", s, "cookies", "set", c["name"], c["value"], "--domain", c["domain"], "--path", c.get("path", "/")]
+    if c.get("sameSite"): args += ["--same-site", c["sameSite"]]
+    if c.get("httpOnly"): args.append("--http-only")
+    if c.get("secure"): args.append("--secure")
+    if c.get("expires", -1) > 0: args += ["--expires", str(int(c["expires"]))]
+    r = subprocess.run(args, capture_output=True, text=True)
+    if r.returncode: print(f"motion-pass: could not restore cookie {c['name']}: {r.stdout.strip() or r.stderr.strip()}", file=sys.stderr)
+PY
+  }
+
 case $1 in
   open)
     [[ $# -ge 2 ]] || usage
-    agent-browser --session "$S" --init-script "$DIR/motion-probe.js" open about:blank >/dev/null 2>&1
+    relaunch --init-script "$DIR/motion-probe.js"
     if [[ $VIDEO == 1 ]]; then L=$(slug "$2")-load; mkdir -p "$OUTD"; ab record start "$OUTD/$L.webm" "$2" >/dev/null; show load; sleep 0.3; ab record stop >/dev/null
       echo "video: $OUTD/$L.webm"; clips load "$OUTD/$L.webm" "$L"
     else ab open "$2" >/dev/null; show load; fi; exit ;;
@@ -44,7 +67,7 @@ case $1 in
   targets) ab eval "__mp.targets()"; exit ;;
   perf)
     [[ $# -ge 2 ]] || usage
-    agent-browser --session "$S" --init-script "$DIR/perf-only.js" --init-script "$DIR/motion-probe.js" open about:blank >/dev/null 2>&1
+    relaunch --init-script "$DIR/perf-only.js" --init-script "$DIR/motion-probe.js"
     ab open "$2" >/dev/null; ab eval "(async()=>{const o=await __mp.out('load');return {perfOnly: !!window.__mpPerfOnly, settled: 'n/a (recorder off)', health: o.health}})()"; exit ;;
   selftest)
     agent-browser --session "$S" --init-script "$DIR/motion-probe.js" open about:blank >/dev/null 2>&1

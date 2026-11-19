@@ -41,7 +41,7 @@ What keeps this calm is small travel and long decelerating eases, not stillness.
 | `move` (FLIP) | 550 ms, `cubic-bezier(.645,.045,.355,1)` (power3.inOut) | `Curves.easeInOutCubic` | re-layout after filter/sort/reorder |
 
 **Data** (starts 150–500 ms after its card):
-- numbers count up 1.2–1.4 s `enter-content` ease, tabular numerals, width locked so layout doesn't jump;
+- numbers count up 1.2–1.4 s `enter-content` ease, tabular numerals, width locked so layout doesn't jump. **Money never counts up**: balances, cash, revenue and totals owed appear at their final value (a fade or rise is fine). Measured: two blind personas on a finance dashboard both read a counting cash figure as the balance changing by itself. Counts of things (orders, tasks) may count up;
 - lines and sparklines draw their stroke 1.0–1.2 s ease-in-out;
 - bars, columns and meters scale from their baseline 0.7–1.0 s `enter-surface` ease, 35–40 ms apart
   (from the start edge — mirrored in RTL);
@@ -132,8 +132,9 @@ bumps (`scale 1.06, y −4`) and flashes the accent for ~900 ms. Error: shake `x
 ## Implementation shape
 
 - **Vue:** one shared entrance — a composable or directive mounted in the layout with role presets
-  (`v-enter="'title' | 'card' | 'content' | 'row' | 'data'"`), driving WAAPI, or GSAP if the app
-  already has it. Not per-page hand code. `<TransitionGroup>` with a move class for FLIP.
+  (`v-enter="'title' | 'card' | 'content' | 'row' | 'data'"`), driving **GSAP** timelines inside a
+  `gsap.context()` reverted on unmount (required on web; install it if missing). Not per-page hand
+  code. GSAP `Flip` for reorders, the nav pill and card → drawer.
 - **Flutter:** one entrance widget with the same roles; per region one `AnimationController` with
   `Interval`s for the stagger (or keyed `TweenAnimationBuilder`s so a rebuild doesn't replay);
   `AnimatedPositioned` / implicit animations for FLIP. Dispose controllers.

@@ -18,7 +18,6 @@
 // Jank is NOT measured here (widget tests use a fake clock): use integration_test + traceAction (see SKILL.md §5b).
 import 'dart:math' as math;
 
-import 'package:flutter/animation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -78,7 +77,8 @@ class MotionReport {
       ];
 }
 
-Map<String, double>? _read(Element e) {
+/// One element's current opacity (through Opacity/FadeTransition ancestors), centre, scale, rotation and size, or null.
+Map<String, double>? readMotion(Element e) {
   final ro = e.renderObject;
   if (ro is! RenderBox || !ro.attached || !ro.hasSize) return null;
   final m = ro.getTransformTo(null);
@@ -161,7 +161,7 @@ Future<MotionReport> recordMotion(
   final pending = actions.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
   void sample(int t) {
     for (final e in targets.evaluate()) {
-      final v = _read(e);
+      final v = readMotion(e);
       if (v != null) (tracks[e] ??= []).add(MapEntry(t, v));
     }
   }

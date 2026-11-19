@@ -1,6 +1,6 @@
 # Vue 3 / Vuetify motion recipes
 
-Zero-dependency by default (WAAPI + CSS + Vue `<Transition>`). Where real spring physics or auto-FLIP helps, an optional lib is noted. Adapt selectors/refs to the real component. All examples assume `<script setup lang="ts">`.
+GSAP 3 + Flip is the required motion library on web (see SKILL.md, step 1). Recipes below written in WAAPI or CSS show the *technique* (keyframes, timing, choreography): port travel, staggers and sequences to `gsap.to/from` + `Flip` inside a reverted `gsap.context()`; keep CSS for hover/press, and WAAPI only for `::view-transition-*` pseudo-elements. Adapt selectors/refs to the real component. All examples assume `<script setup lang="ts">`.
 
 > **Reach for Vuetify's built-in transitions first.** Before hand-rolling any `<Transition>` below, check whether a Vuetify component already does it: `v-expand-transition` (height reveals), `v-fade-transition`, `v-scroll-x/y-transition`, and the `transition` prop on `v-dialog`/`v-menu`/`v-snackbar`/`v-expansion-panel`/etc. They keep motion consistent with the app and handle reduced-motion for you. Hand-roll only when the built-in can't express the choreography (overshoot, real travel, a secondary reaction) — then the recipes here apply.
 >

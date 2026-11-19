@@ -36,6 +36,16 @@ the UI. This is a suggestion to the user, not a silent backend edit.
    previous value or a revert endpoint.
 10. **Money is minor units + currency**, formatted by the client (`Intl.NumberFormat` /
     `NumberFormat`), one numbering system per screen.
+11. **Every aggregate has a members endpoint.** For each count or KPI the page shows, the API can
+    return the rows behind it: `GET …/<metric>/members?<same filters and period>` →
+    `{total, items: [{id, name, avatar|thumb, value, status, url}], next_cursor}`, sorted by
+    contribution. It reuses the **same query builder / scope** as the aggregate (one function,
+    two terminals: `count()` and `paginate()`), so `total` equals the headline by construction.
+    A separate hand-written query for the list is how "20" and a list of 18 happen.
+12. **Exceptions come ranked with their fix.** The overview's attention feed is
+    `[{kind, severity, consequence_key, params, subject {id, name, url}, fix {label_key, action,
+    amount?}, since}]`, worst first, from the server; the client never decides what is an
+    exception.
 
 ## Output when building a screen
 

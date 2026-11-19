@@ -1,6 +1,6 @@
 ---
 name: design
-description: Art direction for an app's visual identity — judge its palette, type, surfaces, imagery and density with measured evidence, then show 2–3 complete directions on real screens (phone + desktop, light + dark, en + ar) and write the chosen one into theme tokens and DESIGN.md. Use when the user says an app looks bad, generic, cheap, dull, dated, "not nice" or "like a template"; dislikes its colours or theme; asks for a rebrand, palette or new look; or when `ui-polish` finds no deliberate identity. Also use on /design and for a new product that needs a look. Not for one screen's spacing or states (`ui-polish`), motion (`animate`), or adherence to an existing system (`design-drift`). Restraint-gated — "the identity is good, keep it" is valid.
+description: Art direction for an app's visual identity — judge its palette, type, surfaces, imagery and density with measured evidence, then show 2–3 complete directions on real screens (phone + desktop, light + dark, en + ar) and write the chosen one into theme tokens and DESIGN.md. Use when the user says an app looks bad, generic, cheap, dull, dated, "not nice" or "like a template"; dislikes its colours or theme; asks for a rebrand, palette or new look; or when `ui-polish` finds no deliberate identity, and as a measured Critique before every screen build in an existing app (a weak verdict puts the new page on the house look, page-scoped). Also use on /design and for a new product that needs a look. Not for one screen's spacing or states (`ui-polish`), motion (`animate`), or adherence to an existing system (`design-drift`). Restraint-gated — "the identity is good, keep it" is valid.
 ---
 
 # Design — art direction
@@ -22,7 +22,10 @@ that judgement. It has opinions, backs them with measurements, and proves them w
 Not generic taste, and not the CSV stock. Judge and propose against these, in this order:
 
 1. **The app's own `DESIGN.md`**, if a previous run wrote one. It is the standing decision;
-   critique drift from it rather than re-litigating it, unless the user is unhappy with it.
+   critique drift from it rather than re-litigating it, unless the user is unhappy with it. A
+   `DESIGN.md` headed "House default — not chosen by the user yet" is not a decision: critique it
+   like any other look. A user-chosen one that now measures `weak` on two or more rows is flagged
+   in "needs your yes" (one line, the rows that failed); it is not overridden page by page.
 2. **The user's reference sites** — `../animate/reference/reference-sites.local.md` (gitignored;
    if missing, ask the user for 3–4 sites or apps they love and tear them down with `app-teardown`).
    Read its **Current preference** section before proposing a direction. A reference explicitly
@@ -70,9 +73,51 @@ Do it before writing the screen's markup, so the screen is built on the look it 
   In the final message, one line: the starter kit and accent applied, anything the checklist
   could not settle (e.g. "currency not known"), and that 2–3 directions are available on request.
 - **Established app** (many screens, other contributors): do not change global tokens inside a
-  feature branch. Run **Critique** (measured, not a suggestion), build the screen on the house
-  proportions and motion against the existing tokens, and put "design: <one-sentence verdict> —
-  directions on your yes" first in the final message's "needs your yes" list.
+  feature branch. Run **Critique** (measured, not a suggestion) on every screen build, not only
+  when there are no tokens. Then:
+  - **"keep it"** — build on the house proportions and motion against the existing tokens.
+  - **Redirect only what failed.** A dimension the Critique scored `good` stays the app's own.
+    The usual case is a deliberate material: glass, a signature gradient, a brand surface. The
+    scoped page keeps that material and takes from the house only the failed rows, such as layout
+    and first-screen skeleton, proportions, type scale, data colour and motion. Measured
+    2026-11-19 on an admin dashboard: the user preferred the app's own glass to the house
+    surfaces, yet judged the house layout much better than the old one. Replacing a liked
+    material with the house's is a regression, even when the new page is better overall.
+  - **"worth redirecting"** — build the new screen on the house look *scoped to that page*: the
+    starter's tokens under a page-root `.house-scope` class or a `Theme` wrapper around the route (Flutter). Web
+    recipe — scope class `.house-scope` (not `.house-page`, which is the starter's layout class):
+    - token blocks: `:root` → `.house-scope`; `.v-theme--light` / `.v-theme--dark` →
+      `.house-scope .v-theme--light, .house-scope.v-theme--light` (and dark): Vuetify puts a theme
+      class on each component, so the descendant forms are needed;
+    - every other global rule in `tokens.css` gets the `.house-scope` prefix or is dropped:
+      `html { background }` and `html:has(.v-application.v-theme--dark)` move onto `.house-scope`
+      itself (the page root paints its own ground); `.v-application::before` (the backdrop) becomes
+      `.house-scope::before`; `.v-card`, `.v-overlay__content > …`, `.v-dialog > …` become
+      `.house-scope .v-card` etc. After editing, grep the file: no selector may start without
+      `.house-scope` except `@font-face`;
+    - overlays are teleported out of the page: give every `v-dialog` / `v-menu` / `v-tooltip` on the
+      page `content-class="house-scope"` so they get the tokens;
+    - set `--v-theme-primary` (space-separated RGB) inside `.house-scope` so Vuetify buttons take
+      the accent. `fonts.css` and `entrance.js` need no scoping.
+    Flutter recipe (a bare `Theme` wrapper is not enough):
+    - scope with whatever the kit actually reads. If widgets read an app theme carrier (an
+      InheritedWidget of its own, or a `ThemeExtension`) and not only `Theme.of`,
+      wrap the route in that carrier with the derived page data, plus a `Theme` for Material
+      widgets. Derive the page data from the app's (`copyWith`), memoised per brightness, so
+      light/dark and motion-off still follow the app;
+    - overlays are pushed onto the root Navigator's overlay, above the page and outside its
+      scope: `showModalBottomSheet`, `showDialog`, `showGeneralDialog`, menus, tooltips and the
+      kit's own sheet helper. Capture the scope at the call site and wrap the overlay's builder in
+      it (`final t = PageScope.of(context)` → `builder: (_) => PageScope(data: t, child: …)`).
+      When the kit's sheet helper builds the chrome itself, give it an optional theme parameter
+      instead of forking it;
+    - test it: a widget test that opens each overlay from the page and asserts the scoped colour,
+      plus one sibling page asserting the app colour is unchanged.
+    Check a sibling page after the change: its cards, dialogs and background must be unchanged. Siblings and shared layout keep the old tokens. Reuse kit
+    components whose structure is fine; re-skin them through the scoped tokens, not by forking.
+  Either way put "design: <one-sentence verdict> — directions on your yes" first in the final
+  message's "needs your yes" list; on "worth redirecting" add "global restyle to match the new
+  page" as its own item.
 
 ## 1. Critique — is it nice, and if not, why
 
@@ -81,7 +126,7 @@ Full checklist with thresholds: [reference/critique-checklist.md](reference/crit
 1. **Read the identity as declared.** Theme file, design tokens, font loading, icon set, logo
    assets, any `DESIGN.md`. List every colour the theme declares, light and dark.
 2. **Capture it yourself.** Run the app and screenshot 3–5 representative screens (the landing
-   or home screen, one list, one detail, one form, one overlay) at phone and desktop width, light
+   or home screen, one list, one detail, one form, one overlay) at phone, desktop and ultra-wide (2560) width, light
    and dark, en and ar. Web: the `browse` skill or the repo's Playwright. Flutter: the app's own
    driver, emulator screencap, or a web build. Do not critique from code alone — a palette is
    only ugly or fine on a screen. If the app cannot run, say so and mark the critique provisional.

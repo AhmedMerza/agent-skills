@@ -87,6 +87,8 @@ Report the outermost offenders with how far each sticks out. Children inherit th
 
 Ultra-wide is a separate question: at 2560 the objective failure is still overflow or content that becomes unreachable — a layout that merely *looks* sparse or over-stretched is a judgement call and belongs in `ui-audit`, not here.
 
+**Runtime health per in-scope page:** `../app-teardown/motion-pass.sh <s> open <url>` (twice per page; flags vary with startup timing) and, in a never-used session, `… perf <url>`. A flash before entrance, an element left hidden, an entrance that replays on re-render, a long frame ≥100 ms or CLS > 0.1 is a bug (Major; Blocker if content stays hidden), reported with the clip `defect-clips.py` writes. Run `perf` first if a long frame might be the probe, not the site. Flutter: `../app-teardown/flutter/motion_pass.dart` in a widget test, `perf_test.dart` for frames; same severities.
+
 **Filter dev-server noise.** Under Vite dev the console carries HMR chatter, `[vite] connected`, and source-map warnings — none are bugs. Unbundled modules and `transferSize: 0` are dev-mode artifacts, not performance findings. Report only errors originating in application code.
 
 **Verify computed state, not appearance.** For anything style- or visibility-related, probe `getComputedStyle` rather than judging a screenshot. Screenshots are evidence for a human, not your basis for a claim.

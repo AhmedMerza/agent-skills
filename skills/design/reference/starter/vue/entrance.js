@@ -2,17 +2,16 @@
 //   app.directive('enter', vEnter)
 //   <h1 v-enter="'title'">  <article v-enter="'card'">  <p v-enter="'content'">  <tr v-enter="'row'">
 // Siblings with the same role stagger by themselves; anything inside a v-enter card starts 140 ms
-// after that card. Pass { role, i, n, delay } to override. From-states live in the animation
-// (fill: backwards), never in CSS: if this script fails, everything is simply visible.
+// after that card. Pass { role, i, n, delay } to override. From-states live in the tween, never in
+// CSS: if this script fails, everything is simply visible. GSAP 3 (required on web, house rule);
+// every tween lives in a gsap.context() that is reverted on unmount. Register Flip where the app
+// uses it (reorders, card -> drawer); nothing here needs it, so it isn't imported.
+import { gsap } from 'gsap'
 
-const EASE = {
-  surface: 'cubic-bezier(.16,1,.3,1)',
-  content: 'cubic-bezier(.22,.61,.36,1)',
-  title: 'cubic-bezier(.165,.84,.44,1)',
-}
+const EASE = { surface: 'expo.out', content: 'power3.out', title: 'power4.out' }
 const REGION = { title: 0, content: 110, card: 150, row: 260, data: 300 }   // reading order
 const delays = new WeakMap()
-const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
+const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches   // the one switch
 const clamp = (lo, v, hi) => Math.min(hi, Math.max(lo, v))
 
 function timing(el, { role, i, n, delay }) {
@@ -21,22 +20,26 @@ function timing(el, { role, i, n, delay }) {
   n ??= sibs.length
   const step = role === 'row' ? 35 : clamp(35, 500 / n, 80)
   const parent = el.parentElement.closest('[data-enter]')
-  const base = delay ?? (parent ? (delays.get(parent) ?? 0) + 140 : REGION[role] ?? 0)
+  // Vue mounts children before their parent, so the parent's delay may not be stored yet: compute it
+  if (parent && !delays.has(parent)) delays.set(parent, timing(parent, parent._houseEnterOpts ?? { role: parent.dataset.enter }))
+  const base = delay ?? (parent ? delays.get(parent) + 140 : REGION[role] ?? 0)
   return base + Math.min(i, 24) * step
 }
 
-function play(el, role, delay) {
-  const opt = (duration, easing) => ({ duration, delay, easing, fill: 'backwards' })
+function play(el, role, ms) {
+  const delay = ms / 1000
+  const base = { delay, overwrite: 'auto', clearProps: 'transform,opacity' }
   if (role === 'card') {   // opacity is done in ~250 ms; the long ease is on the travel
-    el.animate([{ opacity: 0 }, { opacity: 1 }], opt(250, 'ease-out'))
-    return el.animate([{ transform: 'translateY(24px) scale(.98)' }, { transform: 'none' }], opt(850, EASE.surface))
+    gsap.from(el, { opacity: 0, duration: 0.25, ease: 'power1.out', delay, clearProps: 'opacity' })
+    return gsap.from(el, { ...base, y: 24, scale: 0.98, duration: 0.85, ease: EASE.surface, clearProps: 'transform' })
   }
   if (role === 'title' && !/[֐-ࣿ]/.test(el.textContent) && el.children.length === 0)
     return title(el, delay)
-  if (role === 'data')   // bars and meters grow from the start edge
-    return el.animate([{ transform: 'scaleX(0)', transformOrigin: 'inline-start' }, { transform: 'none', transformOrigin: 'inline-start' }], opt(850, EASE.surface))
-  const y = role === 'title' ? 18 : 12
-  return el.animate([{ opacity: 0, transform: `translateY(${y}px)` }, { opacity: 1, transform: 'none' }], opt(550, EASE.content))
+  if (role === 'data') {   // bars and meters grow from the start edge
+    const origin = getComputedStyle(el).direction === 'rtl' ? 'right center' : 'left center'
+    return gsap.from(el, { ...base, scaleX: 0, transformOrigin: origin, duration: 0.85, ease: EASE.surface })
+  }
+  return gsap.from(el, { ...base, opacity: 0, y: role === 'title' ? 18 : 12, duration: 0.55, ease: EASE.content })
 }
 
 // Per-character rise for a Latin title. Arabic is never split (it would break letter joining).
@@ -52,7 +55,7 @@ function title(el, delay) {
   if (cs.position === 'static') el.style.position = 'relative'
   el.style.color = 'transparent'
   el.appendChild(overlay)
-  const anims = [...text].map((ch, i) => {
+  const chars = [...text].map(ch => {
     const clip = document.createElement('span')
     clip.ariaHidden = 'true'
     clip.style.cssText = 'display:inline-block;overflow:hidden;vertical-align:bottom;padding-block:.08em;margin-block:-.08em'
@@ -60,29 +63,40 @@ function title(el, delay) {
     s.style.cssText = 'display:inline-block;white-space:pre'
     s.textContent = ch
     overlay.appendChild(clip)
-    return s.animate([{ transform: 'translateY(115%) rotate(6deg)' }, { transform: 'none' }],
-      { duration: 850, delay: delay + i * 22, easing: EASE.title, fill: 'backwards' })
+    return s
   })
   const done = () => { overlay.remove(); el.style.position = prev.position; el.style.color = prev.color }
-  Promise.all(anims.map(a => a.finished)).then(done, done)
+  el._houseTitleDone = done
+  gsap.from(chars, { yPercent: 115, rotate: 6, duration: 0.85, ease: EASE.title, delay, stagger: 0.022, onComplete: done })
 }
 
 export const vEnter = {
   beforeMount(el, { value }) {
-    el.dataset.enter = typeof value === 'string' ? value : value?.role ?? 'content'
+    el._houseEnterOpts = typeof value === 'string' ? { role: value } : { role: 'content', ...value }
+    el.dataset.enter = el._houseEnterOpts.role
   },
-  mounted(el, { value }) {
-    if (reduced() || !el.animate) return
-    const o = typeof value === 'string' ? { role: value } : { role: 'content', ...value }
-    const delay = timing(el, o)
+  mounted(el) {
+    const o = el._houseEnterOpts
+    if (reduced()) {   // keep a cue, drop the travel: a short fade only
+      el._houseEnter = gsap.context(() => gsap.from(el, { opacity: 0, duration: 0.2, clearProps: 'opacity' }))
+      return
+    }
+    const delay = delays.get(el) ?? timing(el, o)
     delays.set(el, delay)
-    if (el.getBoundingClientRect().top < innerHeight) return void play(el, o.role, delay)
-    const io = new IntersectionObserver(([e]) => {      // below the fold: once, on first entry
+    el._houseEnter = gsap.context(() => {})
+    const run = ms => el._houseEnter.add(() => play(el, o.role, ms))
+    if (el.getBoundingClientRect().top < innerHeight) return void run(delay)
+    el._houseIo = new IntersectionObserver(([e]) => {   // below the fold: once, on first entry
       if (!e.isIntersecting) return
-      io.disconnect()
-      play(el, o.role, 60)
+      el._houseIo.disconnect()
+      run(60)
     }, { rootMargin: '0px 0px -8% 0px' })
-    io.observe(el)
+    el._houseIo.observe(el)
+  },
+  unmounted(el) {   // no pile-up on re-render, HMR or route revisit
+    el._houseIo?.disconnect()
+    el._houseEnter?.revert()
+    el._houseTitleDone?.()
   },
 }
 
@@ -98,10 +112,12 @@ export const vTravelNav = {
       if (!active) return
       const rr = root.getBoundingClientRect()
       const ar = active.getBoundingClientRect()
-      layer.style.width = `${ar.width}px`
-      layer.style.height = `${ar.height}px`
-      layer.style.transform = `translate3d(${ar.left - rr.left + root.scrollLeft}px,${ar.top - rr.top + root.scrollTop}px,0)`
-      layer.style.opacity = '1'
+      const to = { x: ar.left - rr.left + root.scrollLeft, y: ar.top - rr.top + root.scrollTop, width: ar.width, height: ar.height }
+      if (layer._placed && !reduced()) {   // stretchy: position lands in 0.36 s, the size catches up in 0.55 s
+        gsap.to(layer, { x: to.x, y: to.y, duration: 0.36, ease: 'power3.out', overwrite: 'auto' })
+        gsap.to(layer, { width: to.width, height: to.height, duration: 0.55, ease: 'expo.out', overwrite: 'auto' })
+      } else gsap.set(layer, { ...to, opacity: 1 })
+      layer._placed = true
     })
     const mutation = new MutationObserver(move)
     mutation.observe(root, { subtree: true, attributes: true, attributeFilter: ['class', 'aria-current', 'aria-pressed'] })
@@ -117,12 +133,14 @@ export const vTravelNav = {
     state.mutation.disconnect()
     state.resize.disconnect()
     root.removeEventListener('click', state.move)
+    gsap.killTweensOf(state.layer)
     state.layer.remove()
     delete root._houseTravelNav
   },
 }
 
-/** Light/dark or accent change: circular reveal from the control the user touched. */
+/** Light/dark or accent change: circular reveal from the control the user touched.
+ *  WAAPI on purpose: GSAP cannot target the ::view-transition-new pseudo-element. */
 export function switchTheme(apply, trigger) {
   if (!document.startViewTransition || reduced()) return apply()
   const r = trigger?.getBoundingClientRect()
