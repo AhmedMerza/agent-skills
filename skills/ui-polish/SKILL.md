@@ -98,7 +98,7 @@ Then:
    Arabic/RTL (web: the `browse` skill or Playwright; Flutter: emulator or golden screenshots).
    Scan the whole frame once before focusing on the changed element. Compare against the sibling
    screen and the house-style proportions, and fix overlap, misalignment, cramped or half-empty
-   areas, touch targets under 44px on touch, and fallback icons where a photo belongs. For every
+   areas, touch targets under 44 CSS px (web) or 48 dp (Flutter), and fallback icons where a photo belongs. For every
    changed region, measure its boundary against its immediate visual neighbours at each required
    viewport and in RTL (`getBoundingClientRect` on web; widget bounds or golden comparison on
    Flutter), and record the gap and any overlap. A 0px visual gap between distinct surfaces or
@@ -115,7 +115,7 @@ Then:
    Fonts: a layout shift on font load is fixed with a preload plus a metric-matched fallback face
    (the starter's `Urbanist Fallback` in `fonts.css`), never `font-display: optional`, which shows
    the fallback for the whole first visit.
-   Then the runtime pass on the built page: `../app-teardown/motion-pass.sh <s> open <url>` (twice per page; flags vary with startup timing) and, in a never-used session, `… perf <url>`. Any defect flag (flash, stuck-hidden,
+   Then the runtime pass on the built page: `../app-teardown/motion-pass.sh <s> open <url>` (twice per page; flags vary with startup timing) and, in a never-used session, `… perf <url>`. Flutter: `../app-teardown/flutter/motion_pass.dart` in a widget test (motionless, flash, stuck, replay, press response, 48 dp targets) and `flutter/perf_test.dart` for frames. Any defect flag (flash, stuck-hidden,
    replay, long frame, CLS > 0.1) is unfinished work, not a test-environment quirk.
 9. **For Android custom notifications**, the notification shade is the sibling surface and System UI
    owns its card, header, expansion and motion. Read

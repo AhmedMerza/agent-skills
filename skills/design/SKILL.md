@@ -76,6 +76,13 @@ Do it before writing the screen's markup, so the screen is built on the look it 
   feature branch. Run **Critique** (measured, not a suggestion) on every screen build, not only
   when there are no tokens. Then:
   - **"keep it"** — build on the house proportions and motion against the existing tokens.
+  - **Redirect only what failed.** A dimension the Critique scored `good` stays the app's own.
+    The usual case is a deliberate material: glass, a signature gradient, a brand surface. The
+    scoped page keeps that material and takes from the house only the failed rows, such as layout
+    and first-screen skeleton, proportions, type scale, data colour and motion. Measured
+    2026-11-19 on an admin dashboard: the user preferred the app's own glass to the house
+    surfaces, yet judged the house layout much better than the old one. Replacing a liked
+    material with the house's is a regression, even when the new page is better overall.
   - **"worth redirecting"** — build the new screen on the house look *scoped to that page*: the
     starter's tokens under a page-root `.house-scope` class or a `Theme` wrapper around the route (Flutter). Web
     recipe — scope class `.house-scope` (not `.house-page`, which is the starter's layout class):
@@ -92,6 +99,20 @@ Do it before writing the screen's markup, so the screen is built on the look it 
       page `content-class="house-scope"` so they get the tokens;
     - set `--v-theme-primary` (space-separated RGB) inside `.house-scope` so Vuetify buttons take
       the accent. `fonts.css` and `entrance.js` need no scoping.
+    Flutter recipe (a bare `Theme` wrapper is not enough):
+    - scope with whatever the kit actually reads. If widgets read an app theme carrier (an
+      InheritedWidget of its own, or a `ThemeExtension`) and not only `Theme.of`,
+      wrap the route in that carrier with the derived page data, plus a `Theme` for Material
+      widgets. Derive the page data from the app's (`copyWith`), memoised per brightness, so
+      light/dark and motion-off still follow the app;
+    - overlays are pushed onto the root Navigator's overlay, above the page and outside its
+      scope: `showModalBottomSheet`, `showDialog`, `showGeneralDialog`, menus, tooltips and the
+      kit's own sheet helper. Capture the scope at the call site and wrap the overlay's builder in
+      it (`final t = PageScope.of(context)` → `builder: (_) => PageScope(data: t, child: …)`).
+      When the kit's sheet helper builds the chrome itself, give it an optional theme parameter
+      instead of forking it;
+    - test it: a widget test that opens each overlay from the page and asserts the scoped colour,
+      plus one sibling page asserting the app colour is unchanged.
     Check a sibling page after the change: its cards, dialogs and background must be unchanged. Siblings and shared layout keep the old tokens. Reuse kit
     components whose structure is fine; re-skin them through the scoped tokens, not by forking.
   Either way put "design: <one-sentence verdict> — directions on your yes" first in the final

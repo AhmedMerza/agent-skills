@@ -9,7 +9,7 @@ Two kinds of reference land here, and they are built differently:
 
 | Mode | The visitor… | Built from | Reference examples |
 |---|---|---|---|
-| **A — Live object** | drags, swings, spins, flips, customises one thing (or a row of them) | three.js scene, procedural motion, canvas-painted textures | garuda2026.offwg.com/rail (kit rail), the Bahrain kit rail (`/srv/dev/projects/private/bahrain-kit-rail`) |
+| **A — Live object** | drags, swings, spins, flips, customises one thing (or a row of them) | three.js scene, procedural motion, canvas-painted textures | garuda2026.offwg.com/rail (kit rail) |
 | **B — Explorable world** | clicks hotspots and travels between fixed views | stills + short transition clips (AI image-to-video or renders) driven by a state graph, HTML overlays on top | Real-estate tower → residence → cutaway floorplan → rooms → rooftop |
 
 **Set the mode expectation before building.** If the user asks for 3D objects, a rotatable product, or a model, deliver Mode A with a usable all-angle asset. Mode B is a different experience: clickable views are not 3D. When the available assets cannot support a credible Mode A, say so before switching modes and let the user decide whether Mode B meets the goal. Never describe photos on planes, CSS perspective, or a camera zoom as a 360° object.
@@ -126,7 +126,7 @@ Model it as a **graph of views**: each node is a still (or a looping clip), each
 
 - Start your own server on a **free port** (`--port 5190 --strictPort --host 127.0.0.1`). Other dev
   servers are usually running. Stop **only the PID you started**; never `pkill -f vite`.
-- Playwright with **GPU Chrome** (`CHROME=/home/amerza/.local/bin/google-chrome`, ANGLE/EGL).
+- Playwright with **GPU Chrome** (`CHROME=<path to a GPU-enabled google-chrome>`, ANGLE/EGL).
   Headless SwiftShader runs at ~2 fps and makes motion look frozen. That's an artefact of the test
   environment, not proof the motion is fine.
 - Keep a small `tools/shots.cjs` + a `window.__app` test hook, and shoot desktop 1440×900 and phone

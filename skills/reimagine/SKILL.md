@@ -71,7 +71,7 @@ a 3D model).
 - **Pour sequence** (coffee reel): AI video of the product transforming, scrubbed frame by frame
   on a canvas by scroll; oversized serif chapter titles; ends on the finished product with
   orbiting info cards → Mode A.
-- **Kit rail** (Garuda, Bahrain): products hanging in a dark room, procedural spring + cloth
+- **Kit rail** (Garuda): products hanging in a dark room, procedural spring + cloth
   bend, drag to browse, click to focus, turn to see the back, live name/number → Mode B.
 - **Tower explorer** (real-estate reel): hotspots on a photo, click → zoom clip → cutaway floor
   plan → room renders → rooftop, with a price card per unit → Mode C.
@@ -84,7 +84,7 @@ Combine and invert them. A rail can be shoes, a scroll story can run backwards
 ## 2. Build
 
 - New project directory, a sibling under the user's projects dir (e.g.
-  `/srv/dev/projects/private/<brand>-showcase/`). Never inside an unrelated repo.
+  `<projects>/<brand>-showcase/`). Never inside an unrelated repo.
 - **Mode A** → follow `scroll-craft` (its brief is already answered by step 1, so skip its interview
   and feed it the concept, harvested assets, palette and fonts).
   **Modes B / C** → follow `explore-site` from its step 2 (the reverse-engineering step is replaced

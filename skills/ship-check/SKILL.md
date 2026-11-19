@@ -68,7 +68,7 @@ Static passes can't tell you a screen is confusing. If the diff touches what a u
 - **UI → the quality bar.** A screen that works but looks or reads poorly is not done. On a UI diff, each of these is a 🔧 gap, cited with its evidence:
   - the `design` Critique said "worth redirecting" and the new page is still on the old look (not page-scoped to the house look, `design` Default → Established app), or no Critique ran;
   - `ui-audit` dimension 7 (design quality) or 8 (at-a-glance) scores 1 or below on a changed screen;
-  - missing house motion: the `animate` coverage pass (`app-teardown/motion-pass.sh` `open` + `targets`) shows a block fade or no per-element entrance, an interactive kind with no response, or any `flash-before-entrance` / `stuck-hidden` / replay / long-frame flag;
+  - missing house motion: the `animate` coverage pass (`app-teardown/motion-pass.sh` `open` + `targets`; Flutter: `app-teardown/flutter/motion_pass.dart` + `perf_test.dart`) shows a block fade or no per-element entrance, an interactive kind with no response, or any `flash-before-entrance` / `stuck-hidden` / replay / long-frame flag;
   - a count or KPI on a changed page that opens nothing, or whose drill-down total differs from the headline;
   - the user named a reference and the first screenful departs from its skeleton (ui-polish Build mode step 1) with no stated reason — e.g. the main chart pushed below the fold;
   - browser/E2E specs that assert the old markup of a rewritten page were left failing (update them in the change; listing them is not enough). *Calibrated 2026-10-11 on a vendor app home screen: personas (6 runs) missed both the ragged tile rows and the 2-tab bottom nav; ui-audit flagged the first and ux-audit the second, unprompted.*

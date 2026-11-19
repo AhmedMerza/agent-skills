@@ -146,7 +146,7 @@ Consult [responsive-design reference](../ui-polish/reference/responsive-design.m
 **Check for:**
 - **Fixed widths**: Hard-coded `width` values that break on mobile
 - **Missing responsive cols**: `v-col` without responsive breakpoint props (`cols="12" md="6"`)
-- **Touch targets**: Interactive elements < 44x44px on mobile
+- **Touch targets**: Interactive elements < 44×44 CSS px on mobile (Flutter: 48 dp, see the Flutter list)
 - **Horizontal overflow**: Content that causes horizontal scroll on narrow viewports
 - **Navigation**: Does the layout adapt? Is `v-navigation-drawer` set to `temporary` on mobile?
 - **Tables**: `v-data-table` without mobile consideration
@@ -216,7 +216,7 @@ Consult [interaction-design reference](../ui-polish/reference/interaction-design
 - **Expensive computed in templates**: Complex calculations inline instead of cached `computed`
 - **Missing `will-change` on animating elements** (or worse, `will-change` on everything)
 - **Layout thrashing**: Reading + writing layout properties in loops
-- **Runtime health (measured, when the app runs):** `../app-teardown/motion-pass.sh <s> open <url>` (twice per page; flags vary with startup timing) and, in a never-used session, `… perf <url>`. Any `flash-before-entrance`, `stuck-hidden` or replay flag, a long frame ≥100 ms during load or an interaction, or CLS > 0.1 on a changed page is **P1**; cite the flag and its clip. Code reading cannot find these.
+- **Runtime health (measured, when the app runs):** `../app-teardown/motion-pass.sh <s> open <url>` (twice per page; flags vary with startup timing) and, in a never-used session, `… perf <url>`. Any `flash-before-entrance`, `stuck-hidden` or replay flag, a long frame ≥100 ms during load or an interaction, or CLS > 0.1 on a changed page is **P1**; cite the flag and its clip. Code reading cannot find these. Flutter: `../app-teardown/flutter/motion_pass.dart` in a widget test (motionless, flash, stuck, replay, press response, 48 dp targets) and `flutter/perf_test.dart` for frames.
 
 **Flutter — check for:**
 - **Missing `const` constructors** on static subtrees. This is the highest-leverage perf lever
