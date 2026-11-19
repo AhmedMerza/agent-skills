@@ -88,7 +88,7 @@ A simple hover or press is still CSS. Everything that travels, staggers or seque
 **Data devices on entrance.** On a data screen the entrance tells the story of the numbers, inside
 the same shared entrance and only once per page visit (never on refresh or filter): meters and
 ribbons grow `scaleX` from the start edge (mirrored in RTL), steppers fill to the current step and
-the current dot pops, key figures count up, a drawer slides in and its sections cascade top-down.
+the current dot pops, key figures count up (counts only; money appears at its final value), a drawer slides in and its sections cascade top-down.
 After an inline edit the row updates at once and the header figures re-count — that's the
 secondary reaction. Flutter: built-in `TweenAnimationBuilder` for rises, fills and count-ups,
 keyed so a rebuild/refresh doesn't replay it (a sibling Flutter app's `RiseIn`/`EntranceProgress` in
@@ -180,7 +180,7 @@ Then iterate on their reaction; offer the next idea if they want to compare. Don
 When the target is a whole page, do **not** run the single-target loop on every element on its own clock — that is the "everything moves at once" failure. Run the **nested cascade** from [motion-system.md](reference/motion-system.md) as one coordinated timeline:
 - **Level 1 — regions** in reading order (shell → title → stats → toolbar → grid), 100–150 ms apart.
 - **Level 2 — meaningful siblings** staggered within a bounded total delay; split a title by line or word when appropriate. Per-character reveals are optional and must preserve accessible text, wrapping and RTL.
-- **Optional level 3 — card contents**, only where the hierarchy warrants it, 135–150 ms after their card: media, text, then data marks (each bar, row, meter and number on its own beat; numbers count up, lines draw).
+- **Optional level 3 — card contents**, only where the hierarchy warrants it, 135–150 ms after their card: media, text, then data marks (each bar, row, meter and number on its own beat; counts count up (never money), lines draw).
 - **Legibility comes from small moves, not stillness:** travel ≤30 px, scale ≥.97, ≤0.9 s per element, everything settled by ~2 s, page clickable from frame one.
 - **Interaction motion where the user acts** (hover lift, press, travelling pill, state-change feedback); at most one ambient loop per view.
 
