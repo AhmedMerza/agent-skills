@@ -104,6 +104,7 @@ Find your **change class** (fact 1) + **relationship** (fact 2). The pattern is 
 | **Ambient / persisting** | a state is *live right now* | `livePulse` → new — dot + looping fading ring, only while live | the loop *is* the information: "this is happening now" | ~1.6–2s period, `--ease-out`, one per view |
 | **Ambient / persisting** | one element needs a first look | `attentionSheen` → new — 2–3 sweeps, then still | draws the eye once without becoming wallpaper | ~1.2s per sweep, bounded |
 | **Continuous / scrubbed** | drag drives position | `dragInertia` → new — pointer delta drives position; velocity decays after release; resistance near bounds | matches the physical expectation of *throwing* something | decay ~0.92/frame; nonlinear damping at bounds |
+| **Live surface** | one persistent surface the user reshapes (pill → banner → panel → player) by tap and drag | `liveSurface` → new — one object, 3–4 usable states; the finger drives the shape, a spring settles it, content arrives after the shape | it never closes and reopens, so the eye never loses it; every state is something you can act on | snappy spring (response .35s, damping .72) growing, critically damped shrinking |
 
 > The **Continuous / scrubbed** rows (`scrollScrub`, `pointerParallax`, `dragInertia`) are all gated by **Step B2's continuous restraint gate** first, and the **Ambient** rows by the ambient rules in Step D. On an operational surface the correct output is "none" — don't route into these rows just because the target happens to scroll.
 
@@ -188,9 +189,49 @@ All three share **one primitive** — a damped follower (law 9). Build that once
 
 #### `dragInertia` — drag with momentum and edges
 - **When:** a pannable/spinnable surface the user is meant to *throw* — a gallery, a canvas, a circular carousel.
-- **Choreography:** accumulate pointer delta into position while dragging; on release, carry the last velocity and decay it (~0.92/frame) until it falls below a threshold; near bounds apply **nonlinear** resistance (displacement past the edge scales down sharply) and spring back on release.
+- **Choreography:** accumulate pointer delta into position while dragging; on release, carry the velocity of the finger's last ~100 ms of pointer events (not the last frame's delta, which is 0 on the release frame) and decay it (~0.92/frame) until it falls below a threshold; near bounds apply **nonlinear** resistance (displacement past the edge scales down sharply) and spring back on release.
 - **When NOT:** anything with a small fixed item count where plain buttons are clearer and reachable; **always** keep a non-drag path (buttons/keyboard) — drag-only is an accessibility dead end.
 
+
+#### `liveSurface` — a persistent surface that reshapes between usable states
+Measured, not guessed: a lab prototype ran 9 engine × content-timing combinations and 6 drag/release
+rules through 15 scripted scenarios (tap, slow drag, flick, overdrag, flick-back-to-cancel, interrupt
+mid-morph, 6× CPU throttle, reduced motion, RTL + long Arabic), logging every frame. The winners:
+- **When:** something ongoing the user checks and controls without leaving the screen: an active order
+  or delivery, a timer, an upload, a call, playback. Not for one-off feedback (`originExpand`) or
+  for content that belongs on its own page.
+- **Shape = one spring per dimension (w, h, radius), retargeted, never restarted.** Grow on
+  response .35 s / damping .72 (≈4% overshoot, settles ≈380 ms — a reference reel measured 3–9% and
+  ≈450 ms). **Shrink critically damped:** an undershoot dips the box under its content (clipped frames
+  10 → 1). A fixed-duration ease restarts from zero speed on every interruption: its worst frame-to-frame
+  velocity jump was 10–23 px (46 at 6× CPU throttle) vs ≈5 for the spring.
+- **Content after the shape:** incoming content starts when the shape has covered 90% of its travel
+  (fade + rise 6 px, 260 ms); outgoing fades out 110 ms at once. Fading in alongside the shape showed
+  content in a too-small box for 27–35 frames and reflowed the title; starting at 80% still clipped
+  3 frames. Accept the ≈130 ms empty beat between two large states — it reads as the shape breathing.
+- **Each state's content has a fixed width** (that state's width) and its titles stay on one line with
+  an ellipsis: on collapse it is clipped by the shrinking box instead of reflowing into a squeezed
+  two-line mess. Resizing the box is fine; a clip-path/transform engine measured no better, even
+  throttled.
+- **Drag drives the shape** through a damped follower (≈.35 catch-up per frame, 4–6 px behind the
+  finger): binding it 1:1 passes hand jitter straight through (jump 12–15 vs 4–5). Past the last state,
+  rubber-band: `max + ex·40/(40+ex)`.
+- **Release decides by projection with the FINGER's velocity** — `(y_last − y_first)/(t_last − t_first)`
+  over the last 100 ms of pointer events, zeroed if the finger rested > 60 ms before lifting — and the
+  spring starts with that velocity. Projected end = `h + v·0.18 s`; open if it passes the midpoint.
+  Measured: "past halfway" alone ignores a flick and *opens on a flick back up to cancel*; the last
+  frame's delta is 0 on the release frame, so a tiny flick snaps back. Only finger velocity got all
+  four cases right (tiny flick opens · flick back cancels · stop past half opens · short slow drag
+  closes).
+- **Inside a state:** a carousel uses native scroll-snap with scale/opacity falling off by distance
+  from the centre (gaussian); tapping a side item centres it, tapping the centre item moves the surface
+  to its next state. A media/artwork state glows with the artwork's dominant colour as a blurred radial
+  wash, faded with the state.
+- **Reduced motion:** dims jump, content crossfades 150 ms; every gesture still lands in the right state.
+  Every gesture has a tap path. RTL: counts via i18n with the number isolated (raw "7 songs" renders
+  "songs 7"); media transport controls are not mirrored.
+- **When NOT:** more than one at a time on a screen; anything whose content needs scrolling text.
+- **Reference + harness:** `assets/live-surface-lab/` — `index.html` (defaults = these winners, every variant a query param) and `run.mjs` (the scenarios and per-frame scoring). Rerun it when tuning a new surface.
 ---
 
 ## Step E — Worked examples (the reasoning, end to end)

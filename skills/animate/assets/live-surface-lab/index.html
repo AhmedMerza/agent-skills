@@ -1,0 +1,225 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Live surface lab</title>
+<style>
+  :root { --glow: 120 80 200; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body { font: 15px/1.3 -apple-system, "Inter", "Segoe UI", system-ui, sans-serif; color: #fff; overflow: hidden;
+    background: linear-gradient(160deg, #9fd3e6 0%, #3b6fd8 45%, #1d2f8a 70%, #7fd0c4 100%); }
+  .apps { position: absolute; inset: 120px 22px 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 26px 18px; }
+  .apps i { aspect-ratio: 1; border-radius: 16px; background: rgb(255 255 255 / .55); }
+  #island { position: absolute; top: 11px; left: 50%; background: #000; overflow: hidden; touch-action: none;
+    will-change: width, height; cursor: pointer; z-index: 5; }
+  #island.clip { width: 370px; height: 240px; }
+  #glow { position: absolute; inset: -40%; pointer-events: none; opacity: 0; transition: opacity .4s, background .6s;
+    background: radial-gradient(closest-side at 30% 40%, rgb(var(--glow) / .55), transparent 70%); filter: blur(24px); }
+  .layer { position: absolute; top: 0; left: 50%; transform: translateX(-50%); opacity: 0; pointer-events: none; }
+  .layer.on { pointer-events: auto; }
+  .flow .layer { width: 100%; }
+  .layer > * { will-change: opacity, transform; }
+  /* banner */
+  .banner { height: 72px; display: flex; align-items: center; gap: 12px; padding: 0 18px 0 14px; }
+  .app-ic { width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg,#ff6b81,#f0284a); flex: none; }
+  .banner .txt { min-width: 0; flex: 1; }
+  .t { font-weight: 600; font-size: 15.5px; }
+  .s { color: rgb(255 255 255 / .55); font-size: 13px; }
+  .dots { color: #f0284a; letter-spacing: 2px; font-size: 12px; }
+  /* panel */
+  .panel { height: 240px; padding: 16px 0 0; }
+  .ph { display: flex; justify-content: space-between; padding: 0 20px; }
+  .car { margin-top: 14px; display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory;
+    padding: 10px calc(50% - 50px); scrollbar-width: none; }
+  .car::-webkit-scrollbar { display: none; }
+  .cv { flex: none; width: 100px; height: 100px; border-radius: 50%; scroll-snap-align: center; transform-origin: center; }
+  .cap { text-align: center; margin-top: 6px; }
+  /* player */
+  .player { height: 150px; padding: 18px 20px; }
+  .pr { display: flex; gap: 14px; align-items: center; }
+  .player .pr > div:last-child { min-width: 0; } .player .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .art { width: 58px; height: 58px; border-radius: 14px; flex: none; }
+  .bar { height: 4px; border-radius: 2px; background: rgb(255 255 255 / .2); margin-top: 16px; overflow: hidden; }
+  .bar b { display: block; height: 100%; width: 3%; background: #fff; }
+  .ctl { display: flex; justify-content: center; gap: 44px; margin-top: 14px; font-size: 22px; }
+  [dir=rtl] .ctl { flex-direction: row-reverse; }
+</style></head>
+<body>
+<div class="apps"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+<div id="island">
+  <div id="glow"></div>
+  <div class="layer" data-s="banner" style="--w:370px"><div class="banner">
+    <div class="app-ic"></div>
+    <div class="txt"><div class="t" id="title">Your music is paused</div><div class="s">Golden Hour · Paused at 1:42</div></div>
+    <div class="dots">•••••</div></div></div>
+  <div class="layer" data-s="panel"><div class="panel">
+    <div class="ph"><span class="t">Jump back in</span><span class="s">7 songs</span></div>
+    <div class="car" id="car"></div>
+    <div class="cap"><div class="t" id="capT"></div><div class="s" id="capS"></div></div></div></div>
+  <div class="layer" data-s="player"><div class="player">
+    <div class="pr"><div class="art" id="art"></div><div><div class="t" id="pT"></div><div class="s" id="pS"></div></div></div>
+    <div class="bar"><b></b></div>
+    <div class="ctl"><span>⏮</span><span>⏸</span><span>⏭</span></div></div></div>
+</div>
+<script>
+const P = Object.fromEntries(new URLSearchParams(location.search));
+const ENGINE = P.engine || 'spring';        // ease | spring | clip
+const TIMING = P.timing || 'after';          // together | after | stagger
+const SPRING = P.spring || 'snappy';         // snappy | soft | bouncy
+const DRAG = P.drag || 'follower';           // direct | follower
+const RELEASE = P.release || 'pointer';      // threshold | projection | pointer (winner)
+const FALL = P.falloff || 'gauss';           // linear | gauss
+const GLOW = P.glow !== '0';
+const RTL = P.rtl === '1';
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (RTL) { document.documentElement.dir = 'rtl'; document.documentElement.lang = 'ar'; }
+
+const S = { pill:{w:126,h:37,r:19}, banner:{w:370,h:72,r:36}, panel:{w:370,h:240,r:44}, player:{w:370,h:150,r:40} };
+const SP = { snappy:{resp:.35,z:.72}, soft:{resp:.5,z:.88}, bouncy:{resp:.42,z:.55} }[SPRING];
+const K = (2*Math.PI/SP.resp)**2, C = 4*Math.PI*SP.z/SP.resp;
+
+const isl = document.getElementById('island');
+if (ENGINE === 'clip') isl.classList.add('clip'); else isl.classList.add('flow');
+const layers = Object.fromEntries([...document.querySelectorAll('.layer')].map(l => [l.dataset.s, l]));
+for (const [k,l] of Object.entries(layers)) l.style.width = (ENGINE === 'clip' || (P.fixw || '1') === '1') ? S[k].w + 'px' : '';
+
+// covers: generated gradients, each with a dominant colour
+const songs = [['Golden Hour','Sora Vale',[255,140,60]],['Neon Tides','Lumen Coast',[70,90,255]],['Velvet Static','Kaia Rook',[220,40,90]],
+  ['Afterglow','Nova Park',[190,80,240]],['Low Orbit','Mira Sol',[40,200,170]],['Paper Moon','Ines Halden',[230,200,90]],['Driftwood','Oto Lane',[140,110,80]]];
+if (RTL) songs[0][0] = 'الساعة الذهبية — نسخة ممتدة طويلة جداً', songs[0][1] = 'سورا فال';
+if (P.long === '1') document.getElementById('title').textContent = 'Your music is paused on the kitchen speaker group';
+if (RTL) document.getElementById('title').textContent = 'تم إيقاف الموسيقى مؤقتاً';
+const car = document.getElementById('car');
+songs.forEach(([t,a,c],i) => { const d = document.createElement('div'); d.className='cv'; d.dataset.i=i;
+  d.style.background = `radial-gradient(circle at 35% 30%, rgb(${c.map(x=>Math.min(255,x+80))}), rgb(${c}) 45%, rgb(${c.map(x=>x*.3|0)}))`; car.appendChild(d); });
+let sel = 0;
+function carScale() {
+  const mid = car.scrollLeft + car.clientWidth/2; let best = 0, bd = 1e9;
+  car.querySelectorAll('.cv').forEach((d,i) => { const c = d.offsetLeft + 50, dist = Math.abs(c - mid)/110;
+    const s = FALL === 'gauss' ? .55 + .45*Math.exp(-dist*dist*1.4) : Math.max(.55, 1 - .3*dist);
+    d.style.transform = `scale(${s})`; d.style.opacity = FALL === 'gauss' ? .4 + .6*Math.exp(-dist*dist) : Math.max(.4, 1-.3*dist);
+    if (Math.abs(c-mid) < bd) { bd = Math.abs(c-mid); best = i; } });
+  if (best !== sel) { sel = best; caption(); }
+}
+function caption() { const [t,a,c] = songs[sel]; capT.textContent = t; capS.textContent = a;
+  if (GLOW) document.documentElement.style.setProperty('--glow', c.join(' ')); }
+car.addEventListener('scroll', () => requestAnimationFrame(carScale), {passive:true});
+
+// ---------- surface state machine ----------
+let state = 'pill', cur = {...S.pill}, vel = {w:0,h:0,r:0}, target = {...S.pill};
+let tween = null, from = null, startDims = {...S.pill}, dragging = null, shownLayer = null, fadeIn = null;
+const log = []; window.__log = log; window.__mark = m => log.push({t:performance.now(), mark:m});
+
+function go(next, v0) {
+  if (next === state && !dragging) return;
+  startDims = {...cur}; state = next; target = {...S[next]};
+  if (v0 !== undefined) vel.h = v0;
+  if (ENGINE === 'ease' || RM) tween = { t0: performance.now(), from: {...cur}, dur: RM ? 1 : 250 };
+  hideLayers(next);
+  window.__mark('go:' + next);
+}
+function hideLayers(next) {
+  for (const [k,l] of Object.entries(layers)) if (k !== next) { l.classList.remove('on');
+    l.animate([{opacity: getComputedStyle(l).opacity},{opacity:0}], {duration: RM?150:110, fill:'forwards', easing:'cubic-bezier(.55,.085,.68,.53)'}); }
+  fadeIn = next === 'pill' ? null : { layer: next, started: false };
+  if (GLOW) document.getElementById('glow').style.opacity = next === 'player' ? 1 : next === 'panel' ? .5 : 0;
+  if (TIMING === 'together' || RM) startFade();
+}
+function startFade() {
+  if (!fadeIn || fadeIn.started) return; fadeIn.started = true;
+  const l = layers[fadeIn.layer]; l.classList.add('on');
+  const kids = [...l.firstElementChild.children];
+  l.animate([{opacity:0},{opacity:1}], {duration:1, fill:'forwards'});
+  kids.forEach((k,i) => k.animate(RM ? [{opacity:0},{opacity:1}] : [{opacity:0, transform:'translateY(6px)'},{opacity:1, transform:'none'}],
+    {duration: RM?150:260, delay: TIMING === 'stagger' ? i*40 : 0, fill:'both', easing:'cubic-bezier(.22,.61,.36,1)'}));
+  if (fadeIn.layer === 'panel') { requestAnimationFrame(carScale); caption(); }
+  if (fadeIn.layer === 'player') { const [t,a,c] = songs[sel]; pT.textContent = t; pS.textContent = a; art.style.background = car.children[sel].style.background; }
+  window.__mark('fade:' + fadeIn.layer);
+}
+const ez = t => 1 - Math.pow(1 - t, 3);   // skill's steep ease-out stand-in
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(.05, (now - last)/1000); last = now;
+  if (dragging) {
+    const want = dragTarget();
+    if (DRAG === 'direct') { vel.h = (want - cur.h)/Math.max(dt,1e-3); cur.h = want; }
+    else { const step = (want - cur.h) * (1 - Math.pow(1 - .35, dt*60)); vel.h = step/Math.max(dt,1e-3); cur.h += step; }
+    cur.w = S.panel.w; cur.r = 36 + (cur.h - 72)/(240-72)*8;
+  } else if (tween) {
+    const p = Math.min(1, (now - tween.t0)/tween.dur), e = ez(p);
+    for (const k of ['w','h','r']) cur[k] = tween.from[k] + (target[k]-tween.from[k])*e;
+    if (p >= 1) tween = null;
+  } else {
+    // shrink=crit: a shrinking surface settles without bounce, so it never dips under its content
+    const shrinking = (P.shrink || 'crit') === 'crit' && target.h < startDims.h, c = shrinking ? 4*Math.PI/SP.resp : C;
+    for (const k of ['w','h','r']) { // substepped spring
+      let x = cur[k], v = vel[k]; const n = Math.ceil(dt*1000);
+      for (let i=0;i<n;i++) { const a = -K*(x-target[k]) - c*v; v += a*dt/n; x += v*dt/n; }
+      if (Math.abs(x-target[k]) < .1 && Math.abs(v) < 1) { x = target[k]; v = 0; }
+      cur[k] = x; vel[k] = v; }
+  }
+  // content timing: "after" = once the shape covers 90% of its travel; "stagger" = at 50%
+  if (fadeIn && !fadeIn.started) {
+    const span = Math.abs(target.h - startDims.h) + Math.abs(target.w - startDims.w) || 1;
+    const prog = 1 - (Math.abs(target.h - cur.h) + Math.abs(target.w - cur.w))/span;
+    if (prog >= (TIMING === 'stagger' ? .5 : +(P.at || .9)) && !dragging) startFade();
+  }
+  render(); sample(now);
+  requestAnimationFrame(frame);
+}
+function render() {
+  if (ENGINE === 'clip') {
+    const W = 370, H = 240, ix = (W - cur.w)/2;
+    isl.style.marginLeft = -W/2 + 'px';
+    isl.style.clipPath = `inset(0 ${ix}px ${Math.max(0,H - cur.h)}px ${ix}px round ${cur.r}px)`;
+    isl.style.height = Math.max(H, cur.h) + 'px';
+  } else {
+    isl.style.width = cur.w + 'px'; isl.style.height = cur.h + 'px'; isl.style.borderRadius = cur.r + 'px'; isl.style.marginLeft = -cur.w/2 + 'px';
+  }
+}
+const titleEl = document.getElementById('title');
+function sample(now) {
+  const on = layers[state] ? +getComputedStyle(layers[state]).opacity : 0;
+  let contentH = 0; if (layers[state]) contentH = layers[state].firstElementChild.offsetHeight;
+  log.push({ t: now, w: cur.w, h: cur.h, r: cur.r, state, on, contentH, titleH: titleEl.offsetHeight, titleW: titleEl.scrollWidth > titleEl.clientWidth, drag: dragging ? Math.abs(dragTarget() - cur.h) : null });
+}
+// ---------- input ----------
+let dragY0 = 0;
+function dragTarget() {
+  const raw = S.banner.h + (dragging.y - dragY0);       // finger pulls the bottom edge
+  const max = S.panel.h, min = S.banner.h * .85;
+  if (raw > max) { const ex = raw - max; return max + ex * 40/(40 + ex); }   // rubber band past the end
+  if (raw < min) return min - (min - raw)*.2;
+  return raw;
+}
+isl.addEventListener('pointerdown', e => {
+  if (state === 'banner') { dragging = { y: e.clientY, moved: false }; dragY0 = e.clientY; try { isl.setPointerCapture(e.pointerId) } catch {} tween = null; window.__mark('drag-start'); }
+});
+const hist = [];
+isl.addEventListener('pointermove', e => { if (dragging) { if (Math.abs(e.clientY - dragY0) > 4) dragging.moved = true; dragging.y = e.clientY;
+  hist.push({t: e.timeStamp, y: e.clientY}); while (hist.length && e.timeStamp - hist[0].t > 100) hist.shift(); } });
+isl.addEventListener('pointerup', e => {
+  if (dragging) {
+    const moved = dragging.moved; dragging = null;
+    if (!moved) { go('panel'); return; }
+    // release=pointer: finger speed over the last 100 ms of real input, not the last frame's delta
+    if (RELEASE === 'pointer') { const a = hist[0], b = hist.at(-1);
+      const fresh = b && e.timeStamp - b.t < 60;           // finger stopped before lifting = no fling
+      vel.h = a && b && b.t > a.t && fresh ? (b.y - a.y)/(b.t - a.t)*1000 : 0; }
+    hist.length = 0;
+    const proj = RELEASE !== 'threshold' ? cur.h + vel.h * .18 : cur.h;   // where the fling would land
+    const mid = (S.banner.h + S.panel.h)/2;
+    window.__mark('release v=' + vel.h.toFixed(0));
+    if (proj > mid) { state = 'banner'; go('panel', vel.h); } else { state = 'x'; go('banner', vel.h); }
+    if (ENGINE !== 'ease') vel.h = vel.h; return;
+  }
+});
+isl.addEventListener('click', e => {
+  if (state === 'pill') go('banner');
+  else if (state === 'panel' && e.target.classList.contains('cv')) {
+    if (+e.target.dataset.i !== sel) { car.scrollTo({ left: e.target.offsetLeft + 50 - car.clientWidth/2, behavior: RM ? 'auto' : 'smooth' }); return; }
+    go('player');
+  } else if (state === 'player') go('pill');
+});
+render(); requestAnimationFrame(frame);
+window.__go = go;
+</script></body></html>
