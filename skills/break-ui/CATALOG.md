@@ -103,6 +103,10 @@ Unbreakable strings: they have no spaces, so the browser has nowhere to wrap the
 | 1,000+ items, unpaginated | Scroll performance, render time, memory; also "Showing 40 of 1,284" copy |
 | One item 10× the size of the others | Masonry and grid rows stretching to the tallest item |
 | Items with identical names | Lists where the name is the only distinguishing field |
+| A people list with mixed avatars: photo, no photo, a 404 photo, an Arabic two-word name | Initials fallback size/shape parity, tint stability, Arabic initials from two words |
+| Same data in both densities and both views (Table, Cards) | A field shown in one view but not the other; long names wrapping differently; the compact row clipping a two-line identity |
+| Person with a phone but no email, an email but no phone, neither | The line under the name: phone first, email fallback, nothing (no empty gap) |
+| `+966 50 123 4567` in an RTL row | Phone digits reordered or the `+` jumping to the end without `<bdi dir="ltr">` |
 
 ## Time
 

@@ -59,6 +59,19 @@ What keeps this calm is small travel and long decelerating eases, not stillness.
 travel reduced to ~18 px, starting ≤250 ms after the click. Filtering in place = leaving items
 `exit` together → survivors `move` → newcomers `enter-surface` at 40 ms stagger.
 
+**Collection view changes** — same records, different arrangement:
+- **Density toggle (compact ↔ comfortable):** row padding/height tweens ~300 ms
+  `cubic-bezier(.645,.045,.355,1)`; content never fades or remounts. Keep the row under the pointer
+  (or the first visible row) anchored: measure its `top` before, correct `scrollTop` after. Flutter:
+  `AnimatedPadding`/`AnimatedContainer` on the row, `Curves.easeInOutCubic`.
+- **Table ↔ Cards:** `move` (FLIP) — each row's identity block (avatar + name) travels to its spot in
+  its card while the row's other cells `exit` and the card body `enter-content` at 30 ms stagger;
+  cards past the first screenful just fade in. Web: give the row's and the card's identity block the
+  same `data-flip-id`, then `Flip.getState('[data-flip-id]')` → swap view →
+  `Flip.from(state, { duration: .55, ease: 'power3.inOut', absolute: true })`. Flutter has no
+  cross-layout FLIP: old view `exit`s together, then cards `enter-surface` at 40 ms stagger. The
+  segmented switch's pill travels like any other.
+
 **Theme, look and language changes** — the page stays, only its paint changes:
 - **Light/dark toggle, look/theme picker, accent change (user-triggered): circular reveal from the
   control.** Web, measured from a reference site:

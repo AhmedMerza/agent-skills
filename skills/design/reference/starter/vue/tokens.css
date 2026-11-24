@@ -267,6 +267,12 @@ body { margin: 0; background: transparent; }
 .house-rows .is-end { text-align: end; }
 .house-rows tbody tr { transition: background-color 120ms; }
 .house-rows tbody tr:hover { background: var(--house-well); }
+/* Density toggle: set data-density on the table; the padding transition is the animation. */
+.house-rows td { transition: padding 300ms cubic-bezier(.645,.045,.355,1); }
+.house-rows[data-density="compact"] td { padding-block: 7px; }
+/* Selected = a lighter surface, never an accent tint. */
+.house-rows tbody tr.is-selected { background: var(--house-well); }
+.house-avatar img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
 .house-strong { font-weight: 600; }
 /* User data (names, addresses) wraps in cards and list rows. Clip only in a dense table cell,
    and then put the full text in title="". */
