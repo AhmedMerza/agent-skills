@@ -171,4 +171,4 @@ Host it in a positioned wrapper next to the element, e.g. `<span class="d-inline
 - **Animated theme toggler** → `themeReveal` in `web.md`.
 
 ## Deliberately not ported
-Particles, meteors, globe, retro grid, aurora/animated gradient text, confetti: decoration with no state to explain. If a page genuinely needs one, it's a design decision for the user to make explicitly — don't propose them.
+Particles, meteors, globe, retro grid, aurora/animated gradient text, confetti: decoration with no state to explain (exception: a once-per-transaction success moment, e.g. an order placed — ≤40 particles, never on an error path; 40 cost 2–3 long frames at 6× CPU throttle, 160 cost up to 15). If a page genuinely needs one, it's a design decision for the user to make explicitly — don't propose them.

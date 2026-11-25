@@ -1,0 +1,643 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shop motion lab</title>
+<!-- Five moments of a phone shopping flow. ?m=entrance|search|item|cart|pay  &v=<preset> (A = what the animate
+     skill produces as written, W = measured winner, default)  &rtl=1  &probe=0 (no per-frame probing, for perf runs).
+     Any preset field can be overridden by its own param, e.g. ?m=cart&v=W&count=click. Vanilla JS + WAAPI. -->
+<style>
+:root{--br:#5b3a29;--br2:#4a2e20;--soft:#f3f0ec;--ink:#1d1a17;--mut:#8a817a;--ok:#22a45d;--err:#c93434}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#fff}
+body{font:14px/1.3 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink)}
+button{font:inherit;border:0;background:none;color:inherit;cursor:pointer}
+.scr{position:absolute;inset:0;background:#fff;display:none;overflow:hidden}
+.scr.on{display:block}
+.abs{position:absolute}
+/* home */
+#hHdr{position:absolute;inset:0 0 auto 0;height:262px;background:var(--br);color:#fff}
+.stat{position:absolute;top:14px;inset-inline:22px;display:flex;justify-content:space-between;font-weight:600;font-size:13px}
+.hrow{position:absolute;top:44px;inset-inline:20px;display:flex;justify-content:space-between;align-items:center;height:32px;opacity:.8}
+#hTitle{position:absolute;top:84px;inset-inline-start:20px;width:240px;font-size:28px;line-height:1.1;font-weight:700}
+#hTitle .w{display:inline-block;overflow:hidden;vertical-align:top;padding-bottom:2px}
+#hTitle .c{display:inline-block}
+.field{position:absolute;height:46px;display:flex;align-items:center;gap:10px;padding:0 14px;color:var(--mut)}
+.fbg{position:absolute;inset:0;background:#fff;border-radius:23px}
+.field>*:not(.fbg){position:relative}
+#hField{top:158px;inset-inline:16px}
+.mag{font-size:18px;line-height:1}
+#hChips{position:absolute;top:218px;inset-inline-start:16px;display:flex;gap:8px}
+.chip{height:30px;padding:0 14px;border-radius:15px;background:rgb(255 255 255/.14);display:flex;align-items:center;font-size:12.5px}
+.chip.sel{background:#fff;color:var(--br)}
+#hBody{position:absolute;top:262px;inset-inline:0;bottom:0}
+#hSec{display:flex;justify-content:space-between;padding:14px 16px 10px;font-weight:700}
+#hSec span{color:var(--mut);font-weight:500;font-size:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 16px}
+.card{position:relative;height:200px}
+.card .img{height:120px;border-radius:16px;background:var(--soft);display:grid;place-items:center}
+.card .img svg{width:120px;height:64px}
+.card .txt{padding:8px 4px 0;font-size:12.5px}
+.card .txt b{display:block;font-size:10px;color:var(--mut);letter-spacing:.06em}
+.card .heart{position:absolute;top:8px;inset-inline-end:10px;color:var(--mut)}
+#tabs{position:absolute;bottom:0;inset-inline:0;height:76px;background:#fff;border-top:1px solid #eee;display:flex;justify-content:space-around;padding-top:14px;font-size:20px;color:var(--mut)}
+/* search */
+#search{background:transparent}
+#sBody{position:absolute;inset:104px 0 0 0;background:#fff}
+#sTopBg{position:absolute;inset:0 0 auto 0;height:104px;background:var(--br);transform-origin:top}
+#sField{top:50px;inset-inline-start:16px;width:288px;height:42px}
+#sField .fbg{border-radius:21px}
+#q{border:0;outline:0;background:none;font:inherit;color:var(--ink);width:220px}
+#cancel{position:absolute;top:50px;height:42px;inset-inline-end:14px;color:#fff;font-weight:600}
+#sList{position:absolute;top:118px;inset-inline:0;padding:0 20px}
+.lh{font-weight:700;font-size:13px;margin-bottom:6px}
+#rows{position:relative}
+.row{height:42px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #f1eeea;color:#555;background:#fff}
+.row b{color:var(--ink)}
+#sRes{position:absolute;top:118px;inset-inline:0}
+#kb{position:absolute;bottom:0;inset-inline:0;height:300px;background:#d3d5db;padding:10px 4px;display:grid;grid-template-rows:repeat(4,1fr);gap:10px}
+#kb div{display:flex;gap:6px;justify-content:center}
+#kb i{width:33px;background:#fff;border-radius:6px;box-shadow:0 1px 0 #999}
+/* detail */
+#dHbg{position:absolute;inset:0 0 auto 0;height:400px;background:var(--soft)}
+#hero{position:absolute;top:120px;inset-inline-start:30px;width:330px;height:176px}
+.cb{position:absolute;top:50px;width:40px;height:40px;border-radius:20px;background:#fff;display:grid;place-items:center;font-size:18px;box-shadow:0 1px 4px rgb(0 0 0/.08)}
+#dBack{inset-inline-start:16px}#dHeart{inset-inline-end:64px}#dCart{inset-inline-end:16px}
+.badge{position:absolute;top:-4px;inset-inline-end:-4px;min-width:18px;height:18px;border-radius:9px;background:#e0452e;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 4px}
+.badge.zero{visibility:hidden}
+#dInfo{position:absolute;top:400px;inset-inline:0;padding:20px 20px 0}
+#dR1{display:flex;justify-content:space-between;align-items:flex-end}
+#dR1 small{color:var(--mut);font-size:10px;letter-spacing:.06em}
+#dTitle{font-size:22px}
+#dPrice{font-size:18px}
+#dRate{margin-top:8px;color:var(--mut);font-size:12.5px}
+#dSizeH{margin-top:20px;font-weight:700;font-size:13px}
+.sizes{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.sizes span{width:48px;height:40px;border:1px solid #e5e0da;border-radius:10px;display:grid;place-items:center}
+.cta{position:absolute;bottom:30px;inset-inline:16px;height:54px;border-radius:16px;background:var(--br);color:#fff;font-weight:700;overflow:hidden}
+#addBtn{transition:background-color .24s}
+#addBtn.ok{background:var(--ok)}
+.rip{position:absolute;width:40px;height:40px;border-radius:50%;background:rgb(255 255 255/.35);pointer-events:none;opacity:0}
+.lbl{position:relative}
+#flyLayer{position:fixed;inset:0;pointer-events:none;z-index:50}
+/* cart page */
+.chdr{position:absolute;inset:0 0 auto 0;height:104px;background:var(--br);color:#fff;display:flex;align-items:flex-end;justify-content:center;padding-bottom:22px;font-weight:700;font-size:16px}
+.chdr .cb{top:50px;inset-inline-start:16px;color:var(--ink)}
+#cItem{position:absolute;top:124px;inset-inline:16px;height:96px;border-radius:16px;background:#faf8f6;display:flex;gap:12px;align-items:center;padding:10px}
+#cItem .th{width:76px;height:76px;border-radius:12px;background:var(--soft);display:grid;place-items:center}
+#cItem .th svg{width:66px;height:36px}
+#cSum{position:absolute;top:240px;inset-inline:20px;display:grid;gap:8px;color:var(--mut)}
+#cSum div{display:flex;justify-content:space-between}
+#cSum .tot{color:var(--ink);font-weight:700}
+/* sheet */
+#scrim{position:absolute;inset:0;background:#000;opacity:0;display:none;z-index:20}
+#sheet{position:absolute;inset:auto 0 0 0;height:470px;background:#fff;border-radius:22px 22px 0 0;z-index:21;display:none;padding:18px 20px}
+#sheet h3{font-size:16px;margin-bottom:12px}
+.sr{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f1eeea;color:#555}
+.sr.tot{color:var(--ink);font-weight:700;border:0}
+#proc{position:absolute;bottom:120px;inset-inline:0;text-align:center;color:var(--mut);font-size:12px;opacity:0}
+#payBtn{bottom:44px;background:none}
+#payBg{position:absolute;top:0;bottom:0;left:50%;width:100%;transform:translateX(-50%);border-radius:16px;background:var(--br);transition:background-color .24s}
+#payBg.ok{background:var(--ok)}
+#payBtn>*:not(#payBg){position:absolute;inset:0;display:grid;place-items:center}
+#spin,#chk,#pulse{opacity:0}
+#spin i{width:24px;height:24px;border-radius:50%;border:3px solid rgb(255 255 255/.35);border-top-color:#fff;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#pulse i{width:56px;height:56px;border-radius:50%;border:2px solid var(--br);opacity:.5}
+#chk svg{width:26px;height:26px}
+#chk path{fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:24;stroke-dashoffset:24}
+#err{position:absolute;bottom:106px;inset-inline:20px;text-align:center;color:var(--err);font-weight:600;font-size:13px;opacity:0}
+#sheet small{position:absolute;bottom:18px;inset-inline:0;text-align:center;color:var(--mut);font-size:11px}
+/* success */
+#succ{z-index:30;background:#fff}
+#wave{position:absolute;inset:0;background:var(--br);clip-path:inset(0 0 284px 0)}
+#pill{position:absolute;top:12px;left:50%;margin-left:-70px;width:140px;height:30px;border-radius:15px;background:#111;color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center;z-index:40;opacity:0}
+#bigOk{position:absolute;top:130px;left:50%;margin-left:-44px;width:88px;height:88px;border-radius:50%;background:#fff;color:var(--ok);font-size:44px;font-weight:800;display:grid;place-items:center}
+#ring{position:absolute;inset:-14px;border-radius:50%;border:2px solid rgb(255 255 255/.6);opacity:0}
+#placed{position:absolute;top:240px;inset-inline:0;text-align:center;color:#fff;font-size:24px}
+#placedSub{position:absolute;top:276px;inset-inline:0;text-align:center;color:rgb(255 255 255/.7);font-size:12.5px}
+#ocard{position:absolute;top:330px;inset-inline:20px;height:150px;border-radius:18px;background:#fff;box-shadow:0 8px 30px rgb(0 0 0/.15);padding:16px}
+#ocard .tr{position:relative;height:4px;border-radius:2px;background:#eee;margin:22px 6px 8px}
+#stepFill{position:absolute;inset:0;border-radius:2px;background:var(--br);transform-origin:left;transform:scaleX(.5)}
+[dir=rtl] #stepFill{transform-origin:right}
+#ocard .st{display:flex;justify-content:space-between;font-size:11px;color:var(--mut)}
+#trackBtn{bottom:96px}
+#contBtn{position:absolute;bottom:52px;inset-inline:0;text-align:center;color:var(--br);font-weight:600}
+#conf{position:absolute;inset:0;pointer-events:none;z-index:35}
+@media (prefers-reduced-motion:reduce){*{animation-duration:0s!important;transition-duration:0s!important}}
+</style></head>
+<body>
+<div class="scr on" id="home">
+  <div id="hHdr" data-p="hHdr">
+    <div class="stat"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="hrow" id="hRow"><span id="hHello"></span><span>👜</span></div>
+    <h1 id="hTitle" data-p="hTitle"></h1>
+    <div class="field" id="hField" data-p="hField"><div class="fbg"></div><span class="mag">⌕</span><span id="hPh" data-p="hPh"></span></div>
+    <div id="hChips"></div>
+  </div>
+  <div id="hBody"><div id="hSec" data-p="hSec"></div><div class="grid" id="grid"></div></div>
+  <nav id="tabs"><span>⌂</span><span>♡</span><span>🛍</span><span>☺</span></nav>
+</div>
+<div class="scr" id="search">
+  <div id="sBody" data-p="sBody"></div><div id="sTopBg" data-p="sTopBg"></div>
+  <div class="field" id="sField" data-p="sField"><div class="fbg" id="sFbg" data-p="sFbg"></div><span class="mag">⌕</span><input id="q" data-p="sQ" autocomplete="off"></div>
+  <button id="cancel" data-p="cancel"></button>
+  <div id="sList"><div class="lh" id="sHead" data-p="sHead"></div><div id="rows"></div></div>
+  <div id="sRes" class="grid"></div>
+  <div id="kb" data-p="kb"></div>
+</div>
+<div class="scr" id="detail">
+  <div id="dHbg" data-p="dHbg"></div>
+  <svg id="hero" data-p="shoeH" viewBox="0 0 120 64"></svg>
+  <button class="cb" id="dBack" data-p="dBack">‹</button><button class="cb" id="dHeart" data-p="dHeart">♡</button>
+  <button class="cb" id="dCart" data-p="dCart">🛒<span class="badge zero" id="badge" data-p="badge">0</span></button>
+  <div id="dInfo">
+    <div id="dR1" data-p="dR1"><div><small id="dBrand"></small><h2 id="dTitle" data-p="dTitle"></h2></div><b id="dPrice">$150.00</b></div>
+    <div id="dRate" data-p="dRate"></div><div id="dSizeH" data-p="dSizeH"></div><div class="sizes" id="dSizes"></div>
+  </div>
+  <button class="cta" id="addBtn" data-p="addBtn"><span class="rip" id="rip"></span><span class="lbl" id="addLbl"></span></button>
+</div>
+<div class="scr" id="cartp" data-p="cartp">
+  <div class="chdr"><button class="cb" id="cBack">‹</button><span id="cTitle"></span></div>
+  <div id="cItem" data-p="cItem"><div class="th"><svg viewBox="0 0 120 64" id="cThumb"></svg></div><div><small style="color:#8a817a;font-size:10px">STRIDE</small><div id="cName" style="font-weight:700"></div><div>$150.00</div></div></div>
+  <div id="cSum" data-p="cSum"><div><span id="lSub"></span><span>$150.00</span></div><div><span id="lTax"></span><span>$12.00</span></div><div class="tot"><span id="lTot"></span><span>$162.00</span></div></div>
+  <button class="cta" id="checkout" data-p="checkout"></button>
+</div>
+<div id="scrim" data-p="scrim"></div>
+<div id="sheet" data-p="sheet">
+  <h3 id="shT"></h3>
+  <div class="sr"><span>💳 Visa •••• 4417</span><span>›</span></div><div class="sr"><span id="shShip"></span><span>›</span></div>
+  <div class="sr"><span id="shDel"></span><span>›</span></div>
+  <div class="sr"><span id="shSub"></span><span>$150.00</span></div><div class="sr"><span id="shTax"></span><span>$12.00</span></div>
+  <div class="sr tot"><span id="shTot"></span><span>$162.00</span></div>
+  <div id="proc" data-p="proc"></div><div id="err" data-p="err"></div>
+  <button class="cta" id="payBtn" data-p="payBtn"><span id="payBg" data-p="payBg"></span><span id="pulse"><i></i></span><span id="payLbl" data-p="payLbl"><span class="lbl" id="payTxt" data-p="payTxt"></span></span><span id="spin" data-p="spin"><i></i></span><span id="chk" data-p="chk"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></button>
+  <small id="shSec"></small>
+</div>
+<div class="scr" id="succ">
+  <div id="wave" data-p="wave"></div>
+  <div id="bigOk" data-p="bigOk"><span id="ring"></span>✓</div>
+  <h2 id="placed" data-p="placed"></h2><p id="placedSub" data-p="placedSub"></p>
+  <div id="ocard" data-p="ocard"><div style="display:flex;gap:12px;align-items:center"><svg viewBox="0 0 120 64" style="width:60px;height:32px" id="oThumb"></svg><div><b id="oArr"></b><div style="color:#8a817a;font-size:11px">Order #A7-4021</div></div></div>
+    <div class="tr"><i id="stepFill" data-p="stepFill"></i></div><div class="st" id="oSt"></div></div>
+  <button class="cta" id="trackBtn" data-p="trackBtn"></button><button id="contBtn" data-p="contBtn"></button>
+  <canvas id="conf" width="390" height="844"></canvas>
+</div>
+<div id="pill" data-p="pill"></div>
+<div id="flyLayer"></div>
+<script>
+// ---------------------------------------------------------------- params, tokens
+const P = Object.fromEntries(new URLSearchParams(location.search));
+const M = P.m || 'entrance', RTL = P.rtl === '1', PROBE = P.probe !== '0';
+if (RTL) { document.documentElement.dir = 'rtl'; document.documentElement.lang = 'ar' }
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const D = ms => RM ? 0 : ms;                                    // every duration goes through here
+const E = { surface: 'cubic-bezier(.16,1,.3,1)', content: 'cubic-bezier(.22,.61,.36,1)', title: 'cubic-bezier(.165,.84,.44,1)',
+  exit: 'cubic-bezier(.55,.085,.68,.53)', move: 'cubic-bezier(.645,.045,.355,1)', out: 'cubic-bezier(.23,1,.32,1)',
+  inOut: 'cubic-bezier(.77,0,.175,1)', emph: 'cubic-bezier(.3,0,.1,1)', over: 'cubic-bezier(.34,1.56,.64,1)', iosKb: 'cubic-bezier(.2,.8,.2,1)' };
+const PRESETS = {
+  entrance: { A: { ord: 'index', stg: 80, cdur: 850, img: 140, grid: 120 },
+    B: { ord: 'row' }, C: { ord: 'col' }, D: { img: 0 }, E: { img: 300 }, F: { grid: 320 }, G: { cdur: 550 },
+    W: { ord: 'row', stg: 80, img: 80, grid: 120 } },
+  search: { A: { sx: 'nav', sug: 'stagger', kin: 150, kout: 100, kmove: 200 }, B: { sx: 'flipScale' }, C: { sx: 'flip' },
+    D: { sx: 'flip', sug: 'keyed' }, E: { sx: 'flip', sug: 'instant' }, F: { sx: 'flip', sug: 'remount' },
+    G: { sx: 'flip', sug: 'keyed', kin: 90, kout: 0, kmove: 160 }, H: { sx: 'flip', sug: 'keyed', kin: 120, kout: 60, kmove: 180 },
+    W: { sx: 'flip', sug: 'keyed', kin: 90, kout: 0, kmove: 160 } },
+  item: { A: { it: 'container', sd: 550, se: 'move' }, B: { it: 'clip' }, C: { it: 'shared', sd: 450, se: 'surface' },
+    D: { it: 'fade' }, E: { it: 'vt' }, F: { it: 'shared', sd: 550, se: 'move' }, G: { it: 'shared', sd: 500, se: 'emph' }, H: { it: 'shared', sd: 450, se: 'surface', rt: 'spring' },
+    W: { it: 'shared', sd: 500, se: 'emph', rt: 'spring' } },
+  cart: { A: { src: 'btn', path: 'skill', count: 'click', land: 'skill', cp: 'nav' },
+    B: { src: 'img' }, C: { src: 'img', path: 'arc' }, D: { src: 'img', path: 'line' }, E: { path: 'none' },
+    F: { src: 'img', path: 'arc', count: 'land' }, G: { src: 'img', path: 'arc', count: 'land', land: 'icon' },
+    W: { src: 'img', path: 'arc', count: 'land', land: 'icon', cp: 'slide' } },
+  pay: { A: { spin: 'now', min: 0, morph: 'swap', cel: 'nav', conf: 0, err: 'idle' },
+    B: { min: 600 }, C: { spin: 'delay', min: 600 }, D: { spin: 'delay', min: 600, morph: 'shrinkNaive' },
+    E: { spin: 'delay', min: 600, morph: 'shrink' }, F: { spin: 'delay', min: 600, morph: 'shrink', err: 'show' },
+    G: { spin: 'delay', min: 600, morph: 'shrink', err: 'show', cel: 'wave', conf: 40 },
+    H: { spin: 'delay', min: 600, morph: 'shrink', err: 'show', cel: 'wave', conf: 160 },
+    W: { spin: 'delay', min: 600, morph: 'shrink', err: 'show', cel: 'wave', conf: 40 } } };
+const VN = P.v || 'W';
+const V = { ...PRESETS[M].A, ...PRESETS[M][VN] };
+for (const k of Object.keys(V)) if (P[k] != null) V[k] = isNaN(+P[k]) ? P[k] : +P[k];
+window.__V = V; window.__sugFor = q => sugFor(q);
+
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const A = (el, kf, o = {}) => el.animate(kf, { duration: D(o.d ?? 300), delay: D(o.delay ?? 0), easing: o.e ?? E.out, fill: o.fill ?? 'backwards' });
+const surf = (el, delay = 0, d = 850, y = 26, s = .98) => { A(el, { opacity: [0, 1] }, { d: 250, delay, e: 'ease-out' });
+  return A(el, { transform: [`translateY(${y}px) scale(${s})`, 'none'] }, { d, delay, e: E.surface }) };
+const content = (el, delay = 0, d = 550, y = 12) => A(el, { opacity: [0, 1], transform: [`translateY(${y}px)`, 'none'] }, { d, delay, e: E.content });
+const fadeIn = (el, delay = 0, d = 250) => A(el, { opacity: [0, 1] }, { d, delay, e: 'ease-out' });
+const exit = (el, delay = 0, d = 200, y = -8) => A(el, { opacity: 0, transform: `translateY(${y}px)` }, { d, delay, e: E.exit, fill: 'forwards' });
+const stop = el => el.getAnimations({ subtree: true }).forEach(a => a.cancel());
+const on = (id, v = true) => $(id).classList.toggle('on', v);
+const rect = el => el.getBoundingClientRect();
+const dirX = RTL ? -1 : 1;
+
+// ---------------------------------------------------------------- content
+const T = RTL ? { hello: 'مرحباً سارة', title: 'اعثر على زوجك القادم', ph: 'ابحث عن الأحذية…', chips: ['الكل', 'جري', 'يومي', 'تمرين'], pop: 'الأكثر رواجاً', all: 'عرض الكل',
+  names: ['عداء إيرو', 'كلاود جلايد', 'كورت كلاسيك', 'تريل جريب', 'فولت سبرنت', 'ستريت لو'], brand: 'سترايد', cancel: 'إلغاء', recent: 'عمليات البحث الأخيرة', sugg: 'اقتراحات',
+  recents: ['حذاء أبيض', 'حذاء جري وردي', 'مدرب صالة'], corpus: ['حذاء جري', 'حذاء تدريب', 'حذاء تنس', 'حذاء مشي', 'حذاء جبلي', 'حقيبة رياضية', 'حزام جري', 'حذاء أطفال'], typed: 'حذاء ت',
+  rate: '★★★★★ 4.8 · 1,326 مراجعة', size: 'اختر المقاس', add: 'أضف إلى السلة', added: '✓ أضيفت إلى السلة', cart: 'سلتي', sub: 'المجموع الفرعي', tax: 'الضريبة', tot: 'الإجمالي',
+  checkout: 'إتمام الشراء', payment: 'الدفع', ship: 'المنزل · شارع الملك فهد', del: 'سريع · الخميس', pay: '🔒 ادفع ‎$162.00', proc: 'جارٍ معالجة الدفع…', done: 'تم الدفع', sec: 'محمي بتشفير كامل',
+  fail: 'رُفض الدفع — جرّب بطاقة أخرى', paid: '✓ تم دفع ‎$162.00', placed: 'تم تأكيد الطلب!', placedSub: 'طلبك في الطريق', arr: 'يصل الخميس', steps: ['تم الطلب', 'تم الشحن', 'تم التسليم'], track: 'تتبع الطلب', cont: 'متابعة التسوق' }
+ : { hello: 'Hello, Sam', title: 'Find your next pair', ph: 'Search shoes, styles…', chips: ['All', 'Running', 'Lifestyle', 'Training'], pop: 'Popular picks', all: 'See all',
+  names: ['Aero Runner', 'Cloud Glide', 'Court Classic', 'Trail Grip', 'Volt Sprint', 'Street Low'], brand: 'STRIDE', cancel: 'Cancel', recent: 'Recent searches', sugg: 'Suggestions',
+  recents: ['white sneakers', 'pink running', 'gym trainers'], corpus: ['trail runners', 'training shoes', 'track spikes', 'travel sneakers', 'trainers white', 'training women', 'tennis court', 'trail waterproof', 'trainers kids', 'trainer socks'], typed: 'train',
+  rate: '★★★★★ 4.8 · 1,326 reviews', size: 'Select size (EU)', add: 'Add to Cart', added: '✓ Added to Cart', cart: 'My Cart', sub: 'Subtotal', tax: 'Tax', tot: 'Total',
+  checkout: 'Checkout', payment: 'Payment', ship: 'Home · 221 Market St', del: 'Express · Thu, Oct 15', pay: '🔒 Pay $162.00', proc: 'Processing payment…', done: 'Payment complete', sec: 'Secured with end-to-end encryption',
+  fail: 'Payment declined — try another card', paid: '✓ Paid $162.00', placed: 'Order placed!', placedSub: 'Your Aero Runner is on its way', arr: 'Arriving Thursday', steps: ['Ordered', 'Shipped', 'Delivered'], track: 'Track order', cont: 'Continue shopping' };
+const COL = ['#ff4f8b', '#6aa6ff', '#c9a27a', '#3a3f3a', '#c8f03c', '#7d7d86'];
+const shoe = c => `<path d="M6 44C6 30 18 26 30 24L52 12C58 9 64 12 66 18C74 28 92 30 108 34C116 36 118 44 114 50L10 52C7 52 6 48 6 44Z" fill="${c}"/><path d="M8 50H114C114 55 110 58 104 58H14C10 58 8 55 8 50Z" fill="#fff" stroke="#ddd"/><path d="M40 27l12 16M50 21l13 19M61 19l11 17" stroke="#fff" stroke-width="4" stroke-linecap="round"/>`;
+const svg = (c, extra = '') => `<svg viewBox="0 0 120 64" ${extra}>${shoe(c)}</svg>`;
+$('#hHello').textContent = T.hello; $('#hPh').textContent = T.ph; $('#q').placeholder = T.ph; $('#cancel').textContent = T.cancel;
+$('#hSec').innerHTML = `${T.pop}<span>${T.all}</span>`;
+$('#hTitle').innerHTML = RTL ? T.title.split(' ').map(w => `<span class="w"><span class="c">${w}</span></span>`).join(' ')       // Arabic: words, never glyphs
+  : T.title.split(' ').map(w => `<span class="w">${[...w].map(c => `<span class="c">${c}</span>`).join('')}</span>`).join(' ');
+$('#hTitle').setAttribute('aria-label', T.title);
+$('#hChips').innerHTML = T.chips.map((c, i) => `<span class="chip${i ? '' : ' sel'}">${c}</span>`).join('');
+$('#grid').innerHTML = T.names.map((n, i) => `<div class="card" data-i="${i}" data-p="card${i}"><div class="img" data-p="img${i}">${svg(COL[i], `data-p="shoeC${i}"`)}</div>
+  <div class="txt" data-p="txt${i}"><b>${T.brand}</b>${n}<div style="font-weight:700;margin-top:2px">$${[150, 75, 110, 90, 70, 85][i]}</div></div><span class="heart">♡</span></div>`).join('');
+$('#kb').innerHTML = [10, 9, 9, 5].map(n => `<div>${'<i></i>'.repeat(n)}</div>`).join('');
+$('#dSizes').innerHTML = [40, 41, 42, 43, 44, 45].map((s, i) => `<span data-p="sz${i}">${s}</span>`).join('');
+$('#dRate').textContent = T.rate; $('#dSizeH').textContent = T.size; $('#addLbl').textContent = T.add; $('#dBrand').textContent = T.brand;
+$('#cTitle').textContent = T.cart; $('#cName').textContent = T.names[0]; $('#cThumb').innerHTML = shoe(COL[0]); $('#oThumb').innerHTML = shoe(COL[0]);
+$('#lSub').textContent = T.sub; $('#lTax').textContent = T.tax; $('#lTot').textContent = T.tot; $('#checkout').textContent = T.checkout;
+$('#shT').textContent = T.payment; $('#shShip').textContent = T.ship; $('#shDel').textContent = T.del; $('#shSub').textContent = T.sub; $('#shTax').textContent = T.tax; $('#shTot').textContent = T.tot;
+$('#payTxt').textContent = T.pay; $('#proc').textContent = T.proc; $('#shSec').textContent = T.sec; $('#err').textContent = T.fail; $('#pill').textContent = T.paid;
+$('#placed').textContent = T.placed; $('#placedSub').textContent = T.placedSub; $('#oArr').textContent = T.arr;
+$('#oSt').innerHTML = T.steps.map(s => `<span>${s}</span>`).join(''); $('#trackBtn').textContent = T.track; $('#contBtn').textContent = T.cont;
+function setDetail(i) { $('#hero').innerHTML = shoe(COL[i]); $('#dTitle').textContent = T.names[i]; $('#dPrice').textContent = `$${[150, 75, 110, 90, 70, 85][i]}.00` }
+setDetail(0);
+
+// ---------------------------------------------------------------- per-frame probe
+const LOG = []; window.__log = LOG; let REC = false; window.__cls = 0;
+window.__mark = m => LOG.push({ t: performance.now(), mark: m });
+function eo(el) { let o = 1; for (let e = el; e && e.nodeType === 1; e = e.parentElement) { const cs = getComputedStyle(e);
+  if (cs.display === 'none' || cs.visibility === 'hidden') return 0; o *= +cs.opacity; if (o < .005) return 0 } return o }
+function frame() {
+  if (REC) { const f = { t: performance.now() };
+    if (PROBE) { const p = {}; for (const el of document.querySelectorAll('[data-p]')) { if (!el.isConnected) continue; const r = el.getBoundingClientRect();
+        if (!r.width && !r.height) continue; let o = eo(el);
+        if (o && el.dataset.p.startsWith('shoeC')) { const h = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); if (h && !el.closest('.card').contains(h)) o = 0 }   // occluded by a page on top if (o === 0 && !el.dataset.p.startsWith('shoe')) continue;
+        p[el.dataset.p] = [r.x, r.y, r.width, r.height, o].map(n => Math.round(n * 100) / 100) }
+      f.p = p; if (window.__extra) Object.assign(f, window.__extra()) }
+    LOG.push(f) }
+  requestAnimationFrame(frame) }
+requestAnimationFrame(frame);
+try { new PerformanceObserver(l => { for (const e of l.getEntries()) if (!e.hadRecentInput && REC) window.__cls += e.value }).observe({ type: 'layout-shift', buffered: true }) } catch {}
+function tap(x, y) { const el = document.elementFromPoint(x, y); if (!el) return null; const o = { bubbles: true, clientX: x, clientY: y, pointerId: 1, isPrimary: true };
+  el.dispatchEvent(new PointerEvent('pointerdown', o)); el.dispatchEvent(new PointerEvent('pointerup', o)); el.dispatchEvent(new MouseEvent('click', o)); return el }
+const tapEl = el => { const r = rect(el); return tap(r.x + r.width / 2, r.y + r.height / 2) };
+window.__counters = { opens: 0, flights: 0, mounts: 0, unmounts: 0, celebrate: 0 };
+
+// ================================================================ 1. ENTRANCE
+function entrance() {
+  if (RM) return;                                                        // skill: reduced motion → no entrance at all
+  const { ord, stg, cdur, img, grid } = V;
+  // header content: title (chars LTR / words RTL), field, chips — chrome (brown header) is already there
+  $$('#hTitle .c').forEach((c, i) => A(c, { transform: ['translateY(115%) rotate(6deg)', 'none'] }, { d: 850, delay: i * 22, e: E.title }));
+  content($('#hField'), 60); $$('#hChips .chip').forEach((c, i) => content(c, 120 + i * 80, 550, 10));
+  content($('#hSec'), grid);
+  const cards = $$('.card'), n = cards.length;
+  cards.forEach((c, i) => { const row = i >> 1, col = i & 1;
+    const rank = ord === 'row' ? row : ord === 'col' ? col * 3 + row : ord === 'diag' ? row + col : i;
+    const t = grid + rank * stg;
+    surf(c, t, cdur); A(c.querySelector('.img svg'), { opacity: [0, 1], transform: ['scale(.92)', 'none'] }, { d: 550, delay: t + img, e: E.content });
+    content(c.querySelector('.txt'), t + img + 50, 550, 8) });
+}
+
+// ================================================================ 2. SEARCH
+const S = { open: false, anims: [] };
+$('#hField').addEventListener('click', () => openSearch());
+$('#cancel').addEventListener('click', () => closeSearch());
+function openSearch() {
+  if (S.open) return; S.open = true; on('#search'); $('#q').value = ''; renderSug('', true);
+  const home = [$('#hTitle'), $('#hChips'), $('#hBody'), $('#hRow')];
+  const f0 = rect($('#hField')), f1 = rect($('#sField'));
+  const kb = A($('#kb'), { transform: ['translateY(100%)', 'none'] }, { d: 380, e: E.iosKb });      // system keyboard, same in every variant
+  if (V.sx === 'nav') {                                        // skill navigation rule: old view exits together, new view cascades
+    home.concat($('#hField')).forEach(el => exit(el));
+    fadeIn($('#sBody'), 0, 1); A($('#sTopBg'), { transform: [`scaleY(${262 / 104})`, 'none'] }, { d: 1, delay: 200 });
+    content($('#sField'), 200, 550, 18); content($('#cancel'), 260); rowsEnter(300);
+  } else {
+    $('#hHdr').style.background = 'transparent';                  // the collapsing search bar now owns the brown; leaving it here showed a brown band through the fading body (contact sheet, 120–260 ms)
+    $('#hField').style.opacity = 0;                               // hand-off: the search field IS the home field, travelling
+    home.forEach(el => exit(el, 0, 180));
+    A($('#sTopBg'), { transform: [`scaleY(${262 / 104})`, 'none'] }, { d: 550, e: E.move });          // header collapses (bg only, no text inside)
+    fadeIn($('#sBody'), 60, 220);
+    const dx = RTL ? f0.right - f1.right : f0.x - f1.x, dy = f0.y - f1.y;   // align the INLINE-START edge (bg scales from it)
+    if (V.sx === 'flipScale')                                     // naive FLIP: whole element scaled → text inside squeezed
+      A($('#sField'), { transform: [`translate(${dx}px,${dy}px) scale(${f0.width / f1.width},${f0.height / f1.height})`, 'none'], transformOrigin: ['0 0', '0 0'] }, { d: 550, e: E.move });
+    else { A($('#sField'), { transform: [`translate(${dx}px,${dy}px)`, 'none'] }, { d: 550, e: E.move });          // travel the box…
+      A($('#sFbg'), { transform: [`scale(${f0.width / f1.width},${f0.height / f1.height})`, 'none'], transformOrigin: [RTL ? '100% 0' : '0 0', RTL ? '100% 0' : '0 0'] }, { d: 550, e: E.move }) } // …only the bg resizes
+    content($('#cancel'), 250, 400, 0); rowsEnter(250);
+  }
+  kb.finished.then(() => $('#q').focus({ preventScroll: true })).catch(() => {});
+}
+function rowsEnter(t0) { content($('#sHead'), t0); $$('#rows .row').forEach((r, i) => content(r, t0 + 40 + i * 40, 550, 10)) }
+function closeSearch() {           // retarget from wherever the open is: capture current transform/opacity, then reverse to home
+  const els = ['#sField', '#sFbg', '#sTopBg', '#sBody', '#cancel', '#kb', '#sHead'].map($).concat($$('#rows .row'));
+  const home = [$('#hTitle'), $('#hChips'), $('#hBody'), $('#hRow'), $('#hField')];
+  const cur = new Map([...els, ...home].map(el => { const cs = getComputedStyle(el); return [el, { t: cs.transform, o: cs.opacity }] }));
+  [...els, ...home].forEach(el => el.getAnimations().forEach(a => a.cancel()));
+  const f0 = rect($('#hField')), f1 = rect($('#sField'));           // sField rect now = untransformed final
+  const back = (el, to, d = 300) => { const c = cur.get(el); return el.animate([{ transform: c.t, opacity: c.o }, to], { duration: D(d), easing: E.out, fill: 'forwards' }) };
+  if (V.sx !== 'nav') { const dx = RTL ? f0.right - f1.right : f0.x - f1.x, dy = f0.y - f1.y;   // align the INLINE-START edge (bg scales from it)
+    back($('#sField'), { transform: `translate(${dx}px,${dy}px)`, opacity: 1 }, 380);
+    back($('#sFbg'), { transform: `scale(${f0.width / f1.width},${f0.height / f1.height})`, opacity: 1 }, 380);
+    back($('#sTopBg'), { transform: `scaleY(${262 / 104})`, opacity: 1 }, 380) }
+  else [$('#sField'), $('#sTopBg')].forEach(el => back(el, { transform: 'none', opacity: 0 }, 150));
+  [$('#sBody'), $('#cancel'), $('#sHead'), ...$$('#rows .row')].forEach(el => back(el, { transform: 'none', opacity: 0 }, 150));
+  back($('#kb'), { transform: 'translateY(100%)', opacity: 1 }, 300);
+  home.filter(e => e.id !== 'hField').forEach(el => back(el, { transform: 'none', opacity: 1 }, 300));
+  setTimeout(() => { $('#hField').style.opacity = ''; $('#hHdr').style.background = ''; home.forEach(stop); on('#search', false); [...els].forEach(stop); S.open = false }, D(390));
+}
+function sugFor(q) { return q ? T.corpus.filter(s => s.includes(q)).slice(0, 5) : T.recents }
+function rowHTML(text, q) { if (!q) return `<span>↺</span><span>${text}</span>`; const i = text.indexOf(q);
+  return `<span>⌕</span><span>${text.slice(0, i)}<b>${q}</b>${text.slice(i + q.length)}</span>` }
+let KEYSEQ = 0;
+$('#q').addEventListener('input', e => { KEYSEQ++; window.__mark('key:' + e.target.value); renderSug(e.target.value) });
+function renderSug(q, first) {
+  $('#sHead').textContent = q ? T.sugg : T.recent;
+  const want = sugFor(q), box = $('#rows'), mode = first ? 'instant' : V.sug;
+  const key = t => (q ? 's:' : 'r:') + t + (mode === 'remount' ? '@' + q : '');
+  const old = new Map($$('#rows .row:not(.leaving)').map(r => [r.dataset.k, r]));
+  const firstR = new Map([...old].map(([k, r]) => [k, r.offsetTop]));
+  const keep = new Set(want.map(key));
+  for (const [k, r] of old) if (!keep.has(k)) {                       // leavers
+    window.__counters.unmounts++;
+    if (mode === 'instant' || (mode === 'keyed' && !V.kout)) { r.remove(); continue }
+    r.getAnimations().forEach(a => a.cancel());
+    Object.assign(r.style, { position: 'absolute', top: firstR.get(k) + 'px', insetInline: 0 }); r.classList.add('leaving'); r.dataset.p = 'gone:' + r.dataset.k;
+    const a = mode === 'keyed' ? A(r, { opacity: 0 }, { d: V.kout, e: 'linear', fill: 'forwards' })
+      : A(r, { opacity: 0, transform: 'translateY(10px)' }, { d: 320, e: E.out, fill: 'forwards' });
+    a.finished.then(() => r.remove()).catch(() => {}) }
+  want.forEach((t, i) => { const k = key(t); let r = old.get(k);
+    if (!r) { r = document.createElement('div'); r.className = 'row'; r.dataset.k = k; window.__counters.mounts++;
+      r.dataset.new = 1 } else delete r.dataset.new;
+    r.dataset.p = 'row:' + t; r.innerHTML = rowHTML(t, q); box.appendChild(r) });   // appendChild in order = reorder
+  want.forEach((t, i) => { const r = box.querySelector(`.row[data-k="${CSS.escape(key(t))}"]`); if (first) return;
+    if (r.dataset.new) {
+      if (mode === 'keyed') A(r, { opacity: [0, 1] }, { d: V.kin, e: 'linear' });
+      else if (mode !== 'instant') A(r, { opacity: [0, 1], transform: ['translateY(10px)', 'none'] }, { d: 320, delay: i * 45, e: E.out });   // TransitionGroup recipe: --d = i*45ms
+    } else if (mode !== 'instant') { const dy = firstR.get(key(t)) - r.offsetTop;
+      if (dy) A(r, { transform: [`translateY(${dy}px)`, 'none'] }, { d: mode === 'keyed' ? V.kmove : 320, e: E.out }) } });
+}
+async function submitSearch() {
+  const kb = A($('#kb'), { transform: 'translateY(100%)' }, { d: 250, e: E.exit, fill: 'forwards' });
+  [$('#sHead'), ...$$('#rows .row')].forEach(r => exit(r, 0, 180, 0));
+  $('#sRes').innerHTML = [1, 0, 3, 5].map((k, i) => `<div class="card" data-p="res${i}"><div class="img">${svg(COL[k])}</div><div class="txt"><b>${T.brand}</b>${T.names[k]}</div></div>`).join('');
+  const W = PRESETS.entrance.W;
+  $$('#sRes .card').forEach((c, i) => { const rank = W.ord === 'row' ? i >> 1 : i; surf(c, 120 + rank * W.stg, 850, 22) });
+}
+
+// ================================================================ 3. ITEM TAP
+const IT = { open: false, anims: [], clone: null, i: 0, busy: false };
+$('#grid').addEventListener('click', e => { const c = e.target.closest('.card'); if (c) openItem(+c.dataset.i) });
+$('#dBack').addEventListener('click', () => closeItem());
+const detailParts = () => [$('#dR1'), $('#dRate'), $('#dSizeH'), ...$$('#dSizes span'), $('#addBtn'), $('#dBack'), $('#dHeart'), $('#dCart')];
+function detailCascade(t0) {
+  content($('#dR1'), t0, 550, 14); content($('#dRate'), t0 + 60, 550, 12); content($('#dSizeH'), t0 + 120, 550, 12);
+  $$('#dSizes span').forEach((s, i) => content(s, t0 + 160 + i * 35, 550, 10));
+  content($('#addBtn'), t0 + 220, 550, 20);
+  [$('#dBack'), $('#dHeart'), $('#dCart')].forEach((b, i) => A(b, { opacity: [0, 1], transform: ['scale(.8)', 'none'] }, { d: 320, delay: t0 + 300 + i * 40, e: E.out }));  // chrome last
+}
+function cloneShoe(fromEl) { const r = rect(fromEl), c = document.createElement('div');
+  c.innerHTML = svg(COL[IT.i], 'data-p="shoeX" style="width:100%;height:100%;display:block"');
+  Object.assign(c.style, { position: 'fixed', left: r.x + 'px', top: r.y + 'px', width: r.width + 'px', height: r.height + 'px', transformOrigin: '0 0', zIndex: 60 });
+  $('#flyLayer').appendChild(c); return c }
+const flipTo = (a, b) => `translate(${b.x - a.x}px,${b.y - a.y}px) scale(${b.width / a.width})`;
+function openItem(i) {
+  window.__counters.opens++; IT.open = true; IT.i = i; setDetail(i);
+  const card = $$('.card')[i], cImg = card.querySelector('svg'), cr = rect(card);
+  const det = $('#detail'); stop(det); det.style.cssText = '';
+  if (V.it === 'vt' && document.startViewTransition && !RM) {
+    cImg.style.viewTransitionName = 'shoe';
+    const vt = document.startViewTransition(() => { cImg.style.viewTransitionName = ''; $('#hero').style.viewTransitionName = 'shoe'; on('#detail'); on('#home', false) });
+    vt.finished.then(() => { $('#hero').style.viewTransitionName = ''; window.__mark('vt-done') }); return }
+  on('#detail'); const hr = rect($('#hero'));
+  if (V.it === 'container') {                                         // literal FLIP of the page from the card rect
+    det.style.transformOrigin = '0 0';
+    IT.anims = [A(det, { transform: [`translate(${cr.x}px,${cr.y}px) scale(${cr.width / 390},${cr.height / 844})`, 'none'] }, { d: V.sd, e: E[V.se] })];
+    detailCascade(0); done(V.sd);
+  } else if (V.it === 'clip') {                                       // container transform done as a clip unmask + image FLIP
+    const ins = `inset(${cr.y}px ${390 - cr.right}px ${844 - cr.bottom}px ${cr.x}px round 16px)`;
+    IT.anims = [A(det, { clipPath: [ins, 'inset(0px 0px 0px 0px round 0px)'] }, { d: V.sd, e: E[V.se] }),
+      A($('#hero'), { transform: [flipTo(hr, rect(cImg)), 'none'], transformOrigin: ['0 0', '0 0'] }, { d: V.sd, e: E[V.se] })];
+    detailCascade(200); done(V.sd);
+  } else if (V.it === 'shared') {                                     // the shoe lifts out and becomes the hero; the rest goes to white
+    const c = IT.clone = cloneShoe(cImg); cImg.style.visibility = 'hidden'; $('#hero').style.visibility = 'hidden';
+    const fly = A(c, { transform: ['none', flipTo(rect(cImg), hr)] }, { d: V.sd, e: E[V.se], fill: 'forwards' });
+    IT.anims = [fly]; fadeIn($('#dHbg'), 0, 200);
+    IT.trk = []; (function trk() { if (IT.clone !== c) return; const r = rect(c); IT.trk.push([performance.now(), r.x, r.y, r.width]); if (IT.trk.length > 2) IT.trk.shift(); requestAnimationFrame(trk) })();
+    A(det, { backgroundColor: ['rgba(255,255,255,0)', '#fff'] }, { d: 200, e: 'ease-out' });
+    detailCascade(Math.round(V.sd * .45));
+    fly.finished.then(() => { $('#hero').style.visibility = ''; c.remove(); IT.clone = null; done(0) }).catch(() => {});
+  } else {                                                            // fade-through
+    IT.anims = [exit($('#home'), 0, 200, 0)]; A(det, { opacity: [0, 1] }, { d: 250, delay: 200, e: 'ease-out' });
+    surf($('#hero'), 200, 850, 18); detailCascade(260); done(450) }
+  function done(ms) { setTimeout(() => { if (IT.open) { on('#home', false); cImg.style.visibility = '' } }, D(ms)) }
+}
+function closeItem() {
+  if (!IT.open) return; IT.open = false; window.__mark('back');
+  const card = $$('.card')[IT.i], cImg = card.querySelector('svg'), det = $('#detail');
+  on('#home'); stop($('#home')); const cr = rect(card);
+  const parts = detailParts(); const cur = parts.map(el => getComputedStyle(el).opacity);
+  parts.forEach((el, k) => { el.getAnimations().forEach(a => a.cancel()); A(el, { opacity: [cur[k], 0] }, { d: 150, e: E.exit, fill: 'forwards' }) });
+  const fin = ms => { const f = () => { if (!IT.open) { on('#detail', false); stop(det); det.style.cssText = ''; cImg.style.visibility = ''; $('#hero').style.visibility = '' } }; ms ? setTimeout(f, D(ms)) : f() };
+  if (V.it === 'shared' || V.it === 'fade' || V.it === 'vt') {
+    let c = IT.clone, from;
+    if (c) { const r = rect(c); IT.anims.forEach(a => a.cancel()); Object.assign(c.style, { left: r.x + 'px', top: r.y + 'px', width: r.width + 'px', height: r.height + 'px' }) } // retarget from where it is
+    else { c = IT.clone = cloneShoe($('#hero')) }
+    from = rect(c); $('#hero').style.visibility = 'hidden'; cImg.style.visibility = 'hidden';
+    A(det, { backgroundColor: 'rgba(255,255,255,0)' }, { d: 200, e: E.exit, fill: 'forwards' }); A($('#dHbg'), { opacity: 0 }, { d: 200, e: E.exit, fill: 'forwards' });
+    let a; const to = rect(cImg);
+    if (V.rt === 'spring' && IT.trk?.length === 2 && IT.anims.length) {      // retarget with the CURRENT velocity: critically damped spring, no velocity jump
+      const [[t0, x0, y0, w0], [t1, x1, y1, w1]] = IT.trk, dt = (t1 - t0) / 1000 || .016, w = 2 * Math.PI / .42, T = [to.x - from.x, to.y - from.y, to.width / from.width],
+        v = [(x1 - x0) / dt, (y1 - y0) / dt, (w1 - w0) / dt / from.width], d0 = [-T[0], -T[1], 1 - T[2]], N = 40, dur = 520;
+      const at = (k, t) => T[k] + (d0[k] + (v[k] + w * d0[k]) * t) * Math.exp(-w * t);
+      a = A(c, Array.from({ length: N + 1 }, (_, i) => { const t = i / N * dur / 1000; return { transform: `translate(${at(0, t)}px,${at(1, t)}px) scale(${at(2, t)})`, offset: i / N } }), { d: dur, e: 'linear', fill: 'forwards' })
+    } else a = A(c, { transform: ['none', flipTo(from, to)] }, { d: 380, e: E.out, fill: 'forwards' });
+    a.finished.then(() => { c.remove(); IT.clone = null; cImg.style.visibility = ''; fin(0) }).catch(() => {});
+  } else {                                                    // container / clip: run the open animations backwards from where they are
+    const running = IT.anims.filter(a => a.playState === 'running');
+    if (running.length) running.forEach(a => a.reverse());
+    else IT.anims.forEach(a => { a.cancel(); a.effect.updateTiming({ delay: 0, fill: 'both' }); a.reverse() });
+    Promise.all(IT.anims.map(a => a.finished)).then(() => fin(0)).catch(() => {}) }   // hide on finish, not on a timer (a timer flashed the full page for one frame)
+}
+
+// ================================================================ 4. ADD TO CART
+const CT = { count: 0 };
+$('#addBtn').addEventListener('click', e => addToCart(e));
+$('#dCart').addEventListener('click', () => openCart());
+function setBadge(n) { const b = $('#badge'); b.textContent = n; b.classList.toggle('zero', !n); window.__mark('badge:' + n) }
+function pop(el) { el.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.35)' }, { transform: 'scale(1)' }], { duration: D(320), easing: E.over }) }  // web.md fly-to-target recipe
+function bump(first) { const b = $('#badge');                 // badge pops from current scale (retrigger-safe: implicit from-keyframe)
+  if (first) A(b, { transform: ['scale(.3)', 'none'] }, { d: 420, e: E.over });
+  else A(b, [{ transform: 'scale(1.3)', offset: .3 }, { transform: 'none' }], { d: 420, e: E.out, fill: 'none' });
+  A($('#dCart'), [{ transform: 'scale(.965)', offset: .5 }, { transform: 'none' }], { d: 160, e: E.out, fill: 'none' }) }
+function addToCart(e) {
+  window.__counters.flights++;
+  const btn = $('#addBtn'), icon = $('#dCart'), br = rect(btn);
+  const rip = $('#rip').cloneNode(); btn.appendChild(rip); rip.removeAttribute('id');
+  const rx = (e.clientX ?? br.x + br.width / 2) - br.x - 20, ry = (e.clientY ?? br.y + br.height / 2) - br.y - 20;
+  Object.assign(rip.style, { left: rx + 'px', top: ry + 'px' });
+  A(rip, { transform: ['scale(0)', 'scale(12)'], opacity: [1, 0] }, { d: 550, e: E.out, fill: 'forwards' }).finished.then(() => rip.remove());
+  if (V.count === 'click') setBadge(++CT.count);
+  const landed = () => { window.__mark('land');
+    if (V.count === 'land') setBadge(++CT.count);
+    if (V.land === 'skill') pop(icon); else bump(CT.count === 1);
+    if (V.land !== 'skill') { btn.classList.add('ok'); const l = $('#addLbl'); l.textContent = T.added; A(l, { opacity: [0, 1], transform: ['translateY(6px)', 'none'] }, { d: 240, e: E.out }) } };
+  if (V.path === 'none' || RM) { landed(); return }
+  // source element
+  let src, sr;
+  if (V.src === 'btn') { src = btn.cloneNode(true); src.removeAttribute('id'); src.querySelectorAll('[id]').forEach(n => n.removeAttribute('id')); sr = br }
+  else { src = document.createElement('div'); src.innerHTML = svg(COL[IT.i]); src.firstChild.style.cssText = 'width:100%;height:100%;display:block';
+    const w = 72, h = 38.4; sr = { left: br.x + br.width / 2 - w / 2, top: br.y + br.height / 2 - h / 2, width: w, height: h } }
+  src.dataset.p = 'fly' + window.__counters.flights;
+  Object.assign(src.style, { position: 'fixed', right: 'auto', bottom: 'auto', left: sr.left + 'px', top: sr.top + 'px', width: sr.width + 'px', height: sr.height + 'px', margin: 0, pointerEvents: 'none', zIndex: 9999 });
+  $('#flyLayer').appendChild(src);
+  const t = rect(icon), dx = (t.left + t.width / 2) - (sr.left + sr.width / 2), dy = (t.top + t.height / 2) - (sr.top + sr.height / 2);
+  let kf, opt;
+  if (V.path === 'skill') {                                    // web.md recipe verbatim
+    kf = [{ transform: 'translate(0,0) scale(1)', opacity: 1, offset: 0 },
+      { transform: `translate(${dx * .5}px, ${dy * .5 - 60}px) scale(0.7)`, opacity: 1, offset: .6 },
+      { transform: `translate(${dx}px, ${dy}px) scale(0.25)`, opacity: .4, offset: 1 }];
+    opt = { d: 600, e: E.inOut, fill: 'forwards' };
+  } else {                                                     // baked path: quadratic arc (control point beside the target) or straight line
+    const sEnd = V.land === 'skill' ? .25 : 26 / sr.width, N = 48;
+    const sgn = Math.sign(dx) || dirX, cx = V.path === 'arc' ? dx : dx / 2, cy = V.path === 'arc' ? dy * .18 : dy / 2;   // control: above the start, in line with the target
+    kf = Array.from({ length: N + 1 }, (_, k) => { const u = k / N, x = 2 * (1 - u) * u * cx + u * u * dx, y = 2 * (1 - u) * u * cy + u * u * dy;
+      const s = V.land === 'skill' ? (u < .6 ? 1 - .3 * u / .6 : .7 - .45 * (u - .6) / .4) : (u < .14 ? 1 + .15 * Math.sin(u / .14 * Math.PI / 2) : 1.15 + (sEnd - 1.15) * ((u - .14) / .86) ** 1.4);
+      const o = V.land === 'skill' ? (u < .6 ? 1 : 1 - .6 * (u - .6) / .4) : 1;
+      return { transform: `translate(${x}px,${y}px) scale(${s})`, opacity: o, offset: u } });
+    opt = V.land === 'skill' ? { d: 600, e: E.inOut, fill: 'forwards' } : { d: 680, e: 'cubic-bezier(.45,0,.2,1)', fill: 'forwards' };
+  }
+  A(src, kf, opt).finished.then(() => { src.remove(); landed() });
+}
+function openCart() {
+  on('#cartp'); const cp = $('#cartp'), det = $('#detail');
+  if (V.cp === 'nav') { [...detailParts(), $('#hero'), $('#dHbg')].forEach(el => exit(el)); fadeIn(cp, 200, 1);
+    [cp.querySelector('.chdr'), $('#cItem'), $('#cSum'), $('#checkout')].forEach((el, i) => content(el, 200 + i * 60, 550, 18)) }
+  else { A(cp, { transform: [`translateX(${100 * dirX}%)`, 'none'] }, { d: 460, e: E.surface });         // push from inline-end, mirrored in RTL
+    A(det, { transform: ['none', `translateX(${-30 * dirX}%)`], filter: ['none', 'brightness(.85)'] }, { d: 460, e: E.surface, fill: 'forwards' });
+    [$('#cItem'), $('#cSum'), $('#checkout')].forEach((el, i) => content(el, 160 + i * 60, 550, 12)) }
+}
+
+// ================================================================ 5. CHECKOUT + SUCCESS
+$('#checkout').addEventListener('click', () => openSheet());
+$('#payBtn').addEventListener('click', () => pay(+(window.__payLat ?? 900), !!window.__payFail));
+function openSheet() {
+  const sh = $('#sheet'), sc = $('#scrim'); sh.style.display = 'block'; sc.style.display = 'block'; sc.style.opacity = .45;
+  A(sc, { opacity: [0, .45] }, { d: 300, e: 'ease-out' }); A(sh, { transform: ['translateY(100%)', 'none'] }, { d: 520, e: E.surface });
+  A($('#cartp'), { transform: ['none', 'scale(.98)'] }, { d: 520, e: E.surface, fill: 'forwards' });                 // overlayRise: base recedes
+  $$('#sheet .sr, #payBtn').forEach((el, i) => content(el, 120 + i * 40, 550, 10));
+}
+const PB = { state: 'idle' };
+async function pay(lat, fail) {
+  if (PB.state !== 'idle') return; PB.state = 'pending'; window.__mark('pay');
+  const lbl = $('#payLbl'), bg = $('#payBg'), sp = $('#spin'), ck = $('#chk'), proc = $('#proc'), err = $('#err');
+  A($('#payBtn'), [{ transform: 'scale(.97)', offset: .4 }, { transform: 'none' }], { d: 220, e: E.out, fill: 'none' });
+  err.getAnimations().forEach(a => a.cancel()); err.style.opacity = 0;
+  let shownAt = null, resolved = false;
+  const show = () => { if (resolved && shownAt == null && V.spin === 'delay') return; shownAt = performance.now() + D(V.morph === 'swap' ? 160 : V.morph === 'shrink' ? 300 : 220); window.__mark('spin-show');   // min time counts from when the spinner is actually visible
+    if (V.morph === 'swap') { A(lbl, { opacity: 0, transform: 'scale(.8)' }, { d: 160, e: E.out, fill: 'forwards' }); A(sp, { opacity: [0, 1], transform: ['scale(.8)', 'none'] }, { d: 160, delay: 160, e: E.out, fill: 'both' }) }
+    else if (V.morph === 'shrinkNaive') { A(lbl, { opacity: 0 }, { d: 160, e: 'linear', fill: 'forwards' }); A(bg, { width: '56px', borderRadius: '28px' }, { d: 300, e: E.move, fill: 'forwards' }); A(sp, { opacity: [0, 1] }, { d: 160, delay: 220, fill: 'both' }) }
+    else { A(lbl, { opacity: 0, transform: 'scale(.92)' }, { d: 110, e: E.exit, fill: 'forwards' });           // label leaves BEFORE the box narrows
+      A(bg, { width: '56px', borderRadius: '28px' }, { d: 360, delay: 90, e: E.move, fill: 'forwards' });
+      A(sp, { opacity: [0, 1], transform: ['scale(.6)', 'none'] }, { d: 260, delay: 300, e: E.out, fill: 'both' });
+      fadeIn(proc, 200, 250).effect.updateTiming({ fill: 'both' });
+      if (!RM) $('#pulse').animate([{ opacity: .6, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(1.6)' }], { duration: 1100, delay: 400, iterations: Infinity, easing: 'ease-out' }) } };
+  if (V.spin === 'now') show(); else setTimeout(show, 300);
+  const ok = await new Promise(r => setTimeout(() => r(!fail), lat)); resolved = true; window.__mark('resolved');
+  if (shownAt != null) { const left = V.min - (performance.now() - shownAt); if (left > 0) await wait(left) }
+  $('#pulse').getAnimations().forEach(a => a.cancel());
+  const spinShown = shownAt != null;
+  if (ok) { PB.state = 'done'; window.__mark('success');
+    if (spinShown) A(sp, { opacity: 0, transform: 'scale(.6)' }, { d: 160, e: E.exit, fill: 'forwards' });
+    else A(lbl, { opacity: 0, transform: 'scale(.9)' }, { d: 140, e: E.exit, fill: 'forwards' });
+    if (V.morph !== 'swap' && !spinShown) A(bg, { width: '56px', borderRadius: '28px' }, { d: 300, e: E.move, fill: 'forwards' });
+    bg.classList.add('ok'); A(ck, { opacity: [0, 1], transform: ['scale(.6)', 'none'] }, { d: 420, delay: 140, e: E.over, fill: 'both' });
+    A(ck.querySelector('path'), { strokeDashoffset: [24, 0] }, { d: 320, delay: 180, e: E.out, fill: 'both' });
+    if (V.morph !== 'swap') { proc.getAnimations().forEach(a => a.cancel()); proc.textContent = T.done; proc.style.color = 'var(--ok)'; content(proc, 0, 300, 6) }
+    setTimeout(celebrate, D(V.cel === 'wave' ? 600 : 700));
+  } else { window.__mark('fail');
+    if (V.err === 'idle') {                                                // success-morph recipe: catch { state = 'idle' }
+      [lbl, sp, bg].forEach(stop); PB.state = 'idle'; return }
+    sp.getAnimations().forEach(a => a.cancel()); proc.getAnimations().forEach(a => a.cancel());
+    const w = getComputedStyle(bg).width; bg.getAnimations().forEach(a => a.cancel());
+    if (spinShown) A(bg, { width: [w, '100%'], borderRadius: ['28px', '16px'] }, { d: 320, e: E.out });          // critically damped: no overshoot back to the button
+    lbl.getAnimations().forEach(a => a.cancel()); if (spinShown) A(lbl, { opacity: [0, 1] }, { d: 200, delay: 120 });   // label never left → don't blink it
+    err.style.opacity = 1; content(err, 80, 300, 6); A(err, { transform: ['translateX(0)', 'translateX(-8px)', 'translateX(7px)', 'translateX(-5px)', 'translateX(3px)', 'translateX(0)'] }, { d: 420, delay: 380, e: 'ease-out', fill: 'none' });
+    PB.state = 'idle' }
+}
+let CONF = []; window.__extra = () => ({ conf: CONF.length });
+function celebrate() {
+  window.__counters.celebrate++; window.__mark('celebrate'); const sc = $('#succ'); on('#succ');
+  const pill = $('#pill'); pill.style.opacity = 1;
+  if (V.cel === 'nav') {                                               // navigation rule: old view exits, success view cascades
+    sc.style.opacity = ''; fadeIn(sc, 0, 200); pill.style.opacity = 0;
+    A($('#bigOk'), { opacity: [0, 1], transform: ['scale(.86)', 'none'] }, { d: 450, delay: 150, e: E.over });
+    [$('#placed'), $('#placedSub')].forEach((el, i) => content(el, 230 + i * 80, 550, 18));
+    surf($('#ocard'), 390, 850, 22); A($('#stepFill'), { transform: [RTL ? 'scaleX(0)' : 'scaleX(0)', 'scaleX(.5)'] }, { d: 900, delay: 700, e: E.surface });
+    [$('#trackBtn'), $('#contBtn')].forEach((el, i) => content(el, 470 + i * 80, 550, 18)); return }
+  A(pill, { opacity: [0, 1], transform: ['translateY(-40px) scale(.8)', 'none'] }, { d: 480, e: E.over });
+  const pr = rect($('#payBg')), R = Math.hypot(390, 844);
+  // brown fills the WHOLE screen from the button, then recedes to the top as the order card arrives. A wave clipped to the top
+  // 560 px left the old sheet visible underneath for ~250–600 ms (contact sheet), whatever the white fade timing.
+  A($('#wave'), { clipPath: [`circle(0px at ${pr.x + pr.width / 2}px ${pr.y + pr.height / 2}px)`, `circle(${R}px at ${pr.x + pr.width / 2}px ${pr.y + pr.height / 2}px)`] }, { d: 700, e: E.surface });
+  A($('#wave'), { clipPath: ['inset(0px 0px 0px 0px)', 'inset(0px 0px 284px 0px)'] }, { d: 650, delay: 620, e: E.move, fill: 'forwards' });
+  A(sc, { backgroundColor: ['rgba(255,255,255,0)', '#fff'] }, { d: 1, delay: 600 });
+  A($('#bigOk'), { opacity: [0, 1], transform: ['scale(.5)', 'none'] }, { d: 520, delay: 260, e: E.over });
+  A($('#ring'), { opacity: [.8, 0], transform: ['scale(.8)', 'scale(1.9)'] }, { d: 800, delay: 380, e: E.out });
+  [$('#placed'), $('#placedSub')].forEach((el, i) => content(el, 420 + i * 70, 550, 14));
+  surf($('#ocard'), 560, 850, 40);
+  A($('#stepFill'), { transform: ['scaleX(0)', 'scaleX(.5)'] }, { d: 900, delay: 900, e: E.move });
+  [$('#trackBtn'), $('#contBtn')].forEach((el, i) => content(el, 1050 + i * 80, 550, 16));
+  if (!RM && V.conf) setTimeout(() => confetti(V.conf), 380);
+}
+function confetti(n) {
+  const cv = $('#conf'), g = cv.getContext('2d'), o = rect($('#bigOk')), ox = o.x + o.width / 2, oy = o.y + o.height / 2, t0 = performance.now();
+  const cols = ['#ffd166', '#ef476f', '#06d6a0', '#ffffff', '#f4a261'];
+  CONF = Array.from({ length: n }, () => { const a = Math.random() * Math.PI * 2, v = 2.5 + Math.random() * 4.5;
+    return { x: ox, y: oy, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 2, r: Math.random() * 6, c: cols[Math.random() * 5 | 0], w: 4 + Math.random() * 4 } });
+  (function step() { const k = (performance.now() - t0) / 1600; g.clearRect(0, 0, 390, 844);
+    if (k >= 1) { CONF = []; return }
+    for (const p of CONF) { p.vy += .12; p.vx *= .985; p.x += p.vx; p.y += p.vy; p.r += .1;
+      g.save(); g.globalAlpha = 1 - k * k; g.translate(p.x, p.y); g.rotate(p.r); g.fillStyle = p.c; g.fillRect(-p.w / 2, -2, p.w, 4); g.restore() }
+    requestAnimationFrame(step) })();
+}
+
+// ================================================================ setup per moment + scenarios
+if (M === 'entrance') $$('#hHdr>*:not(.stat), #hBody').forEach(el => el.style.visibility = 'hidden');
+if (M === 'cart') { on('#home', false); on('#detail'); IT.i = 0 }
+if (M === 'pay') { on('#home', false); on('#cartp'); CT.count = 1 }
+const SC = {
+  // entrance
+  load: async () => { $$('#hHdr>*, #hBody').forEach(el => el.style.visibility = ''); entrance(); await wait(2200) },
+  // search
+  open: async () => { const r = rect($('#hField')); window.__mark(`pre:${RTL ? r.right : r.x},${r.y}`); tapEl($('#hField')); await wait(1100) },
+  cancelMid: async () => { tapEl($('#hField')); await wait(160); window.__mark('go'); tapEl($('#cancel')); await wait(800) },
+  type: async (gap = 90) => { tapEl($('#hField')); await wait(1100); window.__mark('B'); const q = $('#q');
+    for (const ch of [...T.typed]) { q.value += ch; q.dispatchEvent(new Event('input', { bubbles: true })); await wait(gap) } await wait(900) },
+  typeFast: async () => SC.type(45),
+  typeReal: async () => SC.type(180),
+  submit: async () => { await SC.type(90); window.__mark('submit'); submitSearch(); await wait(1500) },
+  // item
+  tapItem: async () => { await wait(50); tapEl($$('.card')[1]); await wait(1300) },
+  backMid: async () => { tapEl($$('.card')[1]); await wait(170); window.__mark('go'); tapEl($('#dBack')); await wait(900) },
+  doubleTap: async () => { const r = rect($$('.card')[1]); tap(r.x + r.width / 2, r.y + 60); await wait(70); tap(r.x + r.width / 2, r.y + 60); await wait(1300) },
+  back: async () => { tapEl($$('.card')[1]); await wait(1300); window.__mark('go'); tapEl($('#dBack')); await wait(900) },
+  // cart
+  add: async () => { await wait(50); tapEl($('#addBtn')); await wait(1400) },
+  addTwice: async () => { tapEl($('#addBtn')); await wait(150); tapEl($('#addBtn')); await wait(1600) },
+  toCart: async () => { tapEl($('#addBtn')); await wait(1300); window.__mark('go'); tapEl($('#dCart')); await wait(1000) },
+  // pay
+  payFast: async () => { window.__payLat = 80; tapEl($('#checkout')); await wait(800); window.__mark('go'); tapEl($('#payBtn')); await wait(3200) },
+  paySlow: async () => { window.__payLat = 1500; tapEl($('#checkout')); await wait(800); window.__mark('go'); tapEl($('#payBtn')); await wait(4400) },
+  payFail: async () => { window.__payLat = 900; window.__payFail = 1; tapEl($('#checkout')); await wait(800); window.__mark('go'); tapEl($('#payBtn')); await wait(2200) },
+  payFailFast: async () => { window.__payLat = 80; window.__payFail = 1; tapEl($('#checkout')); await wait(800); window.__mark('go'); tapEl($('#payBtn')); await wait(1600) },
+};
+window.__run = async name => { REC = true; window.__mark('A'); await SC[name](); window.__mark('Z'); REC = false; return window.__counters };
+if (M === 'entrance' && !P.hold) { /* entrance waits for __run('load') so recording starts first */ }
+</script>
+</body></html>

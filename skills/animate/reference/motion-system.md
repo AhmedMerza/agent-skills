@@ -13,8 +13,10 @@ words: "if animation is missing then it is dull".
 1. **Regions with explicit beats:** shell and first content begin together; later supporting regions may start 100–150 ms apart. Write these offsets down rather than letting independent observers accidentally start every region at zero.
 2. **Siblings staggered:** `stagger = clamp(35, 500 / n, 80)` ms — so 3 stats get 80 ms and 20
    cards get 35 ms, and no cascade runs past ~700 ms. Optional title characters 22 ms (line/word reveals are also valid); table/list rows
-   30–40 ms (cap ~24 rows, the rest arrive together).
-3. **Inside complex cards, when useful:** the surface arrives first, selected contents 135–150 ms later — media, then
+   30–40 ms (cap ~24 rows, the rest arrive together). **Grids stagger by row** — cards in one row
+   start together, rows 80 ms apart; never by column (it inverted the reading order 3 times) and not
+   by flat index (the last visible card was ready 218 ms later) (measured in the shop motion lab, `assets/shop-motion-lab/`).
+3. **Inside complex cards, when useful:** the surface arrives first, selected contents ≤80 ms later (image at +80 scaling .92→1, text at +130; at 135–150 ms a card sat empty for 100 ms) — media, then
    the text block, then data marks (each bar, row, meter, number staggered on its own beat).
 
 **Chrome never gates content.** The shell (sidebar/nav items, top bar) and the page regions start
@@ -55,7 +57,9 @@ What keeps this calm is small travel and long decelerating eases, not stillness.
 - the selected tab / nav / segment pill **travels** to the new item (360 ms leading edge,
   550 ms trailing) — it never just re-renders in place.
 
-**Navigation:** old view exits (`exit`, fade + `y −6…−10`), new view replays the full cascade with
+**Navigation:** an element present in both views (a search field, a product image) **travels** instead —
+exit-and-replay made the search field vanish for 10 frames and reappear 99.5 px away. Otherwise the
+old view exits (`exit`, fade + `y −6…−10`), new view replays the full cascade with
 travel reduced to ~18 px, starting ≤250 ms after the click. Filtering in place = leaving items
 `exit` together → survivors `move` → newcomers `enter-surface` at 40 ms stagger.
 
