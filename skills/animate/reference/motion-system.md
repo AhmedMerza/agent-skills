@@ -43,7 +43,7 @@ What keeps this calm is small travel and long decelerating eases, not stillness.
 | `move` (FLIP) | 550 ms, `cubic-bezier(.645,.045,.355,1)` (power3.inOut) | `Curves.easeInOutCubic` | re-layout after filter/sort/reorder |
 
 **Data** (starts 150–500 ms after its card):
-- numbers count up 1.2–1.4 s `enter-content` ease, tabular numerals, width locked so layout doesn't jump. **Money never counts up**: balances, cash, revenue and totals owed appear at their final value (a fade or rise is fine). Measured: two blind personas on a finance dashboard both read a counting cash figure as the balance changing by itself. Counts of things (orders, tasks) may count up;
+- numbers count up 1.2–1.4 s `enter-content` ease, tabular numerals, width locked so layout doesn't jump. **Money never counts up**: balances, cash, revenue and totals owed appear at their final value (a value the user is TYPING is neither — it enters glyph by glyph, see "Inputs reflect back" below; a count-up there showed 42–97 frames of values never typed) (a fade or rise is fine). Measured: two blind personas on a finance dashboard both read a counting cash figure as the balance changing by itself. Counts of things (orders, tasks) may count up;
 - lines and sparklines draw their stroke 1.0–1.2 s ease-in-out;
 - bars, columns and meters scale from their baseline 0.7–1.0 s `enter-surface` ease, 35–40 ms apart
   (from the start edge — mirrored in RTL);
@@ -62,6 +62,31 @@ exit-and-replay made the search field vanish for 10 frames and reappear 99.5 px 
 old view exits (`exit`, fade + `y −6…−10`), new view replays the full cascade with
 travel reduced to ~18 px, starting ≤250 ms after the click. Filtering in place = leaving items
 `exit` together → survivors `move` → newcomers `enter-surface` at 40 ms stagger.
+
+**Inputs reflect back** — what the user enters shows up in the UI immediately, in place, with
+motion that never shows a state that isn't true. Measured in `assets/form-reaction-lab/` (any amount input, any
+picker result, any content-derived icon), always on, not a per-screen choice:
+- **Typed amount/number:** key each glyph by position; a new digit enters scale .6→1, blur 6→0,
+  rise .16em, 240 ms ease-out; surviving glyphs slide to re-centre 270 ms `cubic-bezier(.22,.61,.36,1)`,
+  and new glyphs start from their left neighbour's offset (else the new digit lands on the sliding
+  one, up to 79 px overlap). Key a separator to the digit before it; a new one grows its width
+  0→1 with the gap, a moving one vanishes at once (else "$9,9,999" for ~80 ms). Auto-shrink to fit,
+  keeping room for one more digit — never wrap, never clip. The number stays LTR inside RTL
+  (Arabic-Indic digits fine). Resting "0" needs no entrance. Optional sparkle (8 dots + ring
+  ≈520 ms) on added digits only, never under reduced motion. Test: no frame ever shows a value
+  the user didn't type. Instant re-render jumped 34 px per key; fade-through blanked the amount.
+- **Picker result → its form row:** show the selection 150 ms (check pops 220 ms), dismiss the
+  sheet (255 ms ease-in), and start the row change **120 ms into the dismissal** — not on tap
+  (it plays under the scrim, unseen) and not after (730 ms to settle). Old and new content stacked
+  in one grid cell: old out 120 ms ease-in; new from +90 ms — icon/avatar scale .6→1 with overshoot
+  260 ms, line 1 fade + rise 3 px 200 ms, line 2 +50 ms. The placeholder row reserves the filled
+  height. Out-in left the row blank ~130 ms and jumped 9 px; an avatar flight added nothing.
+- **Icon derived from content (note → 🍕):** classify only after a **300 ms typing pause**, whole
+  words only (prefix matching put 🏠 on "Rental"; per-keystroke gave ✏️🍕✏️🎁 while typing); 200 ms
+  still flickered for a slow typist. Swap as a pop: old scale→.3 + fade 110 ms ease-in, new 50 ms
+  later scale .4→1.15→1 with rotate −14°→+4°→0 over 300 ms — never out-in (an empty slot for 9–14
+  frames). Clearing the field returns the default icon at once. The keyword map is app logic;
+  include the app's languages (Arabic: عشاء → 🍕).
 
 **Collection view changes** — same records, different arrangement:
 - **Density toggle (compact ↔ comfortable):** row padding/height tweens ~300 ms
