@@ -159,7 +159,7 @@ Compose the actual sequence from the frequency + brand personality; don't reprod
 ### `themeReveal` — the theme switch that comes from the toggle
 - **Choreography:** snapshot the old page, apply the new theme, then grow a `circle()` clip on the *new* snapshot from the toggle's centre to the farthest viewport corner. The browser does the snapshotting (`document.startViewTransition`); you only animate one `clip-path`. Recipe in `web.md`.
 - **When NOT:** reduced motion, or a browser without `startViewTransition` — swap instantly, no fake fallback. Don't reuse this for routine navigation; it's a once-in-a-while skin change, and a circle wiping across a data screen on every route change is exactly the noise this skill avoids.
-- **Bonus:** the same API turns `containerTransform` and `sharedAxis` into a few lines (`view-transition-name` on the source and destination), with the browser handling the FLIP. Reach for it before hand-rolling those, where the browser support you need allows.
+- **Bonus:** the same API turns `containerTransform` and `sharedAxis` into a few lines (`view-transition-name` on the source and destination), with the browser handling the FLIP. Reach for it before hand-rolling those, where the browser support you need allows — **but not for a surface the user re-taps mid-morph**: View Transitions swallowed taps for ~110 frames, blanked on interrupt (195 missing frames) and width-fit text past both end sizes on 52 frames `assets/time-until-lab/`.
 
 ### The ambient patterns — loops that explain a state that *persists*
 
@@ -206,11 +206,17 @@ mid-morph, 6× CPU throttle, reduced motion, RTL + long Arabic), logging every f
   ≈450 ms). **Shrink critically damped:** an undershoot dips the box under its content (clipped frames
   10 → 1). A fixed-duration ease restarts from zero speed on every interruption: its worst frame-to-frame
   velocity jump was 10–23 px (46 at 6× CPU throttle) vs ≈5 for the spring.
-- **Content after the shape:** incoming content starts when the shape has covered 90% of its travel
-  (fade + rise 6 px, 260 ms); outgoing fades out 110 ms at once. Fading in alongside the shape showed
-  content in a too-small box for 27–35 frames and reflowed the title; starting at 80% still clipped
-  3 frames. Accept the ≈130 ms empty beat between two large states — it reads as the shape breathing.
-- **Each state's content has a fixed width** (that state's width) and its titles stay on one line with
+- **Content: an element present in both states FLIES; only state-specific content fades.** Shared
+  elements (title, the key number, icon, list rows) FLIP their rect on the shape's own spring, text
+  resized by uniform `scale` only (render at the destination size, start at old/new), retargeted with
+  position and velocity. Fading everything lost the card, title or number on 38–51 frames per
+  sequence and they jumped 83–111 px when they reappeared `assets/time-until-lab/`. State-specific content: outgoing
+  fades 110 ms at once; incoming fades + rises 6 px over 260 ms once its spot is inside the shape and
+  clear of anything still flying (≈55% of travel when content shares the box; ≈90% when it needs
+  the full box — before that it showed in a too-small box for 27–35 frames). Keep elements in the
+  same order in every size (crossing paths overlapped 8–16 frames); a supporting element whose path
+  would cross another fades instead of flying; identity elements always fly.
+- **State-specific content has a fixed width** (that state's width) and its titles stay on one line with
   an ellipsis: on collapse it is clipped by the shrinking box instead of reflowing into a squeezed
   two-line mess. Resizing the box is fine; a clip-path/transform engine measured no better, even
   throttled.
@@ -228,7 +234,7 @@ mid-morph, 6× CPU throttle, reduced motion, RTL + long Arabic), logging every f
   from the centre (gaussian); tapping a side item centres it, tapping the centre item moves the surface
   to its next state. A media/artwork state glows with the artwork's dominant colour as a blurred radial
   wash, faded with the state.
-- **Reduced motion:** dims jump, content crossfades 150 ms; every gesture still lands in the right state.
+- **Reduced motion:** dims jump, persistent elements snap, outgoing content vanishes, incoming fades in 150 ms (a whole-content crossfade doubled content on 61–97 frames); every gesture still lands in the right state.
   Every gesture has a tap path. RTL: counts via i18n with the number isolated (raw "7 songs" renders
   "songs 7"); media transport controls are not mirrored.
 - **When NOT:** more than one at a time on a screen; anything whose content needs scrolling text.

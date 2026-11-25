@@ -53,6 +53,17 @@ What keeps this calm is small travel and long decelerating eases, not stillness.
 - bars, columns and meters scale from their baseline 0.7–1.0 s `enter-surface` ease, 35–40 ms apart
   (from the start edge — mirrored in RTL);
 - a data *change* tweens the existing marks to new values (0.75–0.9 s) — never remount the chart.
+- **A live number tied to the clock** (countdown, "42 min", "Late by 6") **never tweens and never
+  counts** — not on change, not on entrance (enter at its final value with a 260 ms fade + rise).
+  Only the digits that changed roll, 200 ms `cubic-bezier(.2,.8,.2,1)` in a per-digit
+  `overflow:hidden` slot — new digit from above when counting down, from below when counting up; the
+  slot width tweens with it when the digit count changes. Measured in `assets/time-until-lab/`: a tween showed 4
+  values that were never true when returning from background, a crossfade superimposed digits for
+  6 frames, rolling the whole number moved digits that didn't change.
+- **A tick meter** (a bar of discrete ticks up to "now") reveals with a clip-path that ends AT the
+  current value, and its marker rides the same easing; scaleX squashed the ticks, and a marker placed
+  early disagreed with the fill for 17–36 frames. Live, a tick lights at once when its span passes
+  with a scaleY pulse 1.45→1 (320 ms) — fading the new tick in made the fill lag the marker.
 
 **Interaction:**
 - hover: lift `y −4` over 450 ms (`enter-content` ease), on `(hover: hover) and (pointer: fine)`
