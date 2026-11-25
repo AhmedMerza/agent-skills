@@ -22,6 +22,11 @@ words: "if animation is missing then it is dull".
 **Chrome never gates content.** The shell (sidebar/nav items, top bar) and the page regions start
 together, at ≤150 ms after mount — the title and first cards must not wait for the nav cascade to
 finish. Chrome that was already on screen (Inertia/SPA navigation) doesn't re-enter at all.
+**Exception — a branded first-load header** (a home screen whose header carries the title, search
+and chips, as in a shopping app): the header settles first and the content grid starts at **+320 ms**.
+The user compared it by eye against the faster +120 ms grid and chose this: it reads as deliberate.
+The cost is ~200 ms to the first card; the row stagger and "contents ≤80 ms behind the card" still
+apply, so no card is ever empty. Admin shells, dashboards and repeat navigation keep the rule above.
 **No empty-box phase:** a card surface may be visible without its contents for ≤150 ms — start
 contents ≤140 ms after the card, and let the surface's opacity reach 1 in ~250 ms (the long ease
 is on its travel/scale, not its opacity). Both mistakes were made by agents in the first two
