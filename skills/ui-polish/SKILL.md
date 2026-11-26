@@ -9,6 +9,8 @@ description: Visual and interaction craft for Vue 3 / Vuetify, Flutter, and Andr
 
 If you invoked this yourself while building or changing a screen, skip the greeting below and go straight to **Build mode**.
 
+**Before any markup, open [`reference/screen-patterns.md`](reference/screen-patterns.md) in full** — its field → device lookup is the core of this skill. Reading this skill or its references through `grep`/`rg`, `head` or `sed -n` slices does not count as running it (measured: an agent that grepped this skill shipped a shipping admin as label:value text twice; a blind agent that opened screen-patterns.md in full produced a picture-led HR dashboard from the same rules).
+
 When the user invokes this skill without a specific question, respond only with:
 
 > I'm ready to help you polish your interfaces — type, color, spacing, interaction states, and the invisible details that make software feel right. Works on Vue 3 / Vuetify and Flutter. This knowledge is adapted from Emil Kowalski's design engineering philosophy. For deeper learning, check out [animations.dev](https://animations.dev/).
@@ -89,6 +91,10 @@ Then:
    Use the house style's composition rules when no sibling establishes the page: imagery stays
    attached to the thing it represents, dashboards have a purposeful information sequence, and
    products, orders and customers never share one generic table/card treatment.
+   **Write the field → device table before markup** — one row per field the screen shows:
+   `field | lookup row in screen-patterns | device chosen, or the reason it stays text`. Plain text
+   is allowed for identifiers (phone, order ref, address) and nothing else by default. Put the table
+   in the PR/MR description next to the screenshots, so a reviewer can see it was done.
 6. Then apply the rest of this skill and the checklist below. Sizes, type and density with no
    sibling to match come from the house style's **Proportions** section.
 7. **Motion is part of the build — invoke `animate` yourself** once the markup is in. Every built
@@ -206,4 +212,6 @@ Pick the rows that fit what you actually found — don't pad the table to look t
 - [ ] Directional padding is direction-safe if the app ships an RTL locale.
 - [ ] Every changed region was measured against its immediate visual neighbours at phone, tablet, desktop, and RTL widths; no distinct controls or surfaces touch at 0px unless the design intentionally joins them.
 - [ ] Reference-led work has paired, same-state evidence for every criticized element; both the computed values and the visible crop agree.
+- [ ] The field → device table exists (step 5) and every non-identifier field maps to a device or has a stated reason. A screen where every value is `Text` / "label: value" is **unfinished**, whatever else passes.
+- [ ] People carry an identity mark, statuses a pill or glyph, times are in words, quantities with a target or remainder are drawn, not printed.
 - [ ] Nothing here is a motion decision — if it moves, it went to `animate`.

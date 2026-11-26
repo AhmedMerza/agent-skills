@@ -39,6 +39,10 @@ device you could not build (data missing) in the API contract table, not as a "l
 | a share of a whole (by category, stage, channel) | a totals table | **segmented bar** or ribbon with legend |
 | a count of related things (items, people, attachments) | `4 items` | "Oak chair **+3**", avatar stack, thumbnails |
 | a person or customer | a name column | **avatar mark** + name |
+| a remainder, headroom or not-yet part (rest of a pay period, capacity left, forecast) | a second number or plain track | **hatched segment** after the solid done part; hatch means "not yet / remaining" everywhere in the app |
+| one value that is the point of a series (the anomaly, the current period, the worst) | all marks the same colour | **one mark in the accent**, the rest muted, labelled with its value and why it is highlighted |
+| a row's state in a history or ledger (paid, scheduled, failed) | a status word at the end | **status glyph in a tinted circle** leading the row (✓ paid, 🕐 scheduled), word underneath |
+| a date in a list (birthday, due, slot) | plain text | **date chip** + relative words ("in 9 weeks") |
 | a category or type | a word | **colour-dot chip** or icon tile |
 | a yes/no | "Yes"/"No" | icon or toggle, coloured only when it matters |
 | a location or route | an address string | mini map or route line (only if location is the question) |
