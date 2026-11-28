@@ -400,11 +400,34 @@ Semantics(                     // the split text is unreadable to TalkBack/Voice
 )
 ```
 
-> **Never split Arabic by character.** `text.characters` gives correct grapheme clusters (always prefer it over `split('')`, which mangles emoji and combining marks) — but putting each glyph in its own `Text` widget **breaks cursive shaping**, because each widget is shaped in isolation with no joining context, and each becomes its own bidi run so the right-to-left order scrambles too. Measured on the web side of this same bilingual app: `مرحبا بكم في أوريم` rendered +22% wider split per character (321.5px → 392.7px) with visibly disconnected, mis-ordered glyphs; split per word the delta was 0.0px. Flutter shapes text per-widget the same way, so the failure carries over. Per-character is a rendering bug in `ar`, not a style choice — split by word or line.
+> **Never split Arabic by character.** `text.characters` gives correct grapheme clusters (always prefer it over `split('')`, which mangles emoji and combining marks) — but putting each glyph in its own `Text` widget **breaks cursive shaping**, because each widget is shaped in isolation with no joining context, and each becomes its own bidi run so the right-to-left order scrambles too. Measured on the web side of this same bilingual app: a four-word Arabic welcome line rendered +22% wider split per character (321.5px → 392.7px) with visibly disconnected, mis-ordered glyphs; split per word the delta was 0.0px. Flutter shapes text per-widget the same way, so the failure carries over. Per-character is a rendering bug in `ar`, not a style choice — split by word or line.
 > Gate on `MediaQuery.of(context).disableAnimations` — render the whole string at once, no stagger.
 > Budget the **total** span: 40 words × 45ms is 1800ms before the last one lands. Law 2 applies to the last piece, not the first.
 
 ---
+
+## Entrance timing: opacity apart from travel, beats from the screen opening
+
+The measured detail/list rule in `motion-system.md`, in Flutter. Give the entrance widget an
+optional fade duration so opacity finishes before the travel does. Snapshot its timing when it
+starts: a parent that rebuilds with a recomputed delay must not remap an entrance that is already
+running.
+```dart
+// in the entrance State: late final _delay = widget.delay, _fade = widget.fadeDuration;
+final total = _delay + _duration;
+final start = _delay.inMicroseconds / total.inMicroseconds;
+final travel = Interval(start, 1, curve: Curves.easeOutCubic);           // 450 ms, 28 px
+final fade = Interval(start, ((_delay + _fade).inMicroseconds / total.inMicroseconds)
+    .clamp(start, 1.0), curve: Curves.easeOut);                          // 180 ms
+```
+Count beats from when the screen opened (a `Stopwatch` started in `initState`), and shift the
+loaded part of the sequence by however late the data arrived:
+```dart
+Duration at(int beatMs) => Duration(milliseconds: math.max(0, beatMs - opened.elapsedMilliseconds));
+// late = arrivedMs - firstDataBeat; each loaded beat += max(0, late)
+```
+Draw-ins (a `TweenAnimationBuilder` fill or line) wait by stretching the duration and starting an
+`Interval` at `delay / (delay + draw)`, which needs no `Timer` and leaves none pending in tests.
 
 ## Verifying Flutter motion
 Hot-reload and screenshot, drive via `flutter test` golden frames, or describe the curve/duration choices and confirm against the tokens above. Prefer implicit widgets (`AnimatedScale/Opacity/Switcher`) and `Transform`/`Opacity` over rebuilding layout; gate big travel behind `disableAnimations`.

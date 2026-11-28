@@ -28,6 +28,7 @@ product (menu, shop, about, collection). Extract:
 | Brand marks | logo (SVG/PNG), palette (CSS custom properties, the most frequent hex values), fonts (`@font-face`, Google Fonts links) |
 | Place | a physical venue? (address, photos of the space) → hints at Mode C |
 | Proof | prices, awards, numbers, signature item |
+| Motion (if the site has any worth keeping) | not visible to `curl`: run the `app-teardown` §3b motion pass on the home page — recorded entrance, hover and route motion with timings, plus the site's own defects to avoid |
 
 Download the best 6–12 images into the project's `assets/source/`. Note their resolution and
 whether they have plain backgrounds (cut-outable). **Assets decide what is buildable**, so this
@@ -70,7 +71,7 @@ a 3D model).
 - **Pour sequence** (coffee reel): AI video of the product transforming, scrubbed frame by frame
   on a canvas by scroll; oversized serif chapter titles; ends on the finished product with
   orbiting info cards → Mode A.
-- **Kit rail** (Garuda, Bahrain): products hanging in a dark room, procedural spring + cloth
+- **Kit rail** (Garuda): products hanging in a dark room, procedural spring + cloth
   bend, drag to browse, click to focus, turn to see the back, live name/number → Mode B.
 - **Tower explorer** (real-estate reel): hotspots on a photo, click → zoom clip → cutaway floor
   plan → room renders → rooftop, with a price card per unit → Mode C.
@@ -83,7 +84,7 @@ Combine and invert them. A rail can be shoes, a scroll story can run backwards
 ## 2. Build
 
 - New project directory, a sibling under the user's projects dir (e.g.
-  `/srv/dev/projects/private/<brand>-showcase/`). Never inside an unrelated repo.
+  `<projects>/<brand>-showcase/`). Never inside an unrelated repo.
 - **Mode A** → follow `scroll-craft` (its brief is already answered by step 1, so skip its interview
   and feed it the concept, harvested assets, palette and fonts).
   **Modes B / C** → follow `explore-site` from its step 2 (the reverse-engineering step is replaced
@@ -98,6 +99,8 @@ Combine and invert them. A rail can be shoes, a scroll story can run backwards
 
 - The builder skill's verification runs (GPU screenshots, desktop + phone, every state, mid-motion
   frame, console clean, build passes). Look at the shots yourself before reporting.
+- Runtime pass on the built page: `../app-teardown/motion-pass.sh <s> open <url>` twice. Any
+  flash-before-entrance, stuck-hidden, replay or long-frame flag is fixed before the report.
 - Then the originality check, honestly:
   - Swap test: would this page work for a competitor with the logo changed? If yes, the twist is
     missing. Go back to step 1.4.

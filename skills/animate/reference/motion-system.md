@@ -13,17 +13,54 @@ words: "if animation is missing then it is dull".
 1. **Regions with explicit beats:** shell and first content begin together; later supporting regions may start 100–150 ms apart. Write these offsets down rather than letting independent observers accidentally start every region at zero.
 2. **Siblings staggered:** `stagger = clamp(35, 500 / n, 80)` ms — so 3 stats get 80 ms and 20
    cards get 35 ms, and no cascade runs past ~700 ms. Optional title characters 22 ms (line/word reveals are also valid); table/list rows
-   30–40 ms (cap ~24 rows, the rest arrive together).
-3. **Inside complex cards, when useful:** the surface arrives first, selected contents 135–150 ms later — media, then
+   30–40 ms (cap ~24 rows, the rest arrive together). **Grids stagger by row** — cards in one row
+   start together, rows 80 ms apart; never by column (it inverted the reading order 3 times) and not
+   by flat index (the last visible card was ready 218 ms later) (measured in the shop motion lab, `assets/shop-motion-lab/`).
+3. **Inside complex cards, when useful:** the surface arrives first, selected contents ≤80 ms later (image at +80 scaling .92→1, text at +130; at 135–150 ms a card sat empty for 100 ms) — media, then
    the text block, then data marks (each bar, row, meter, number staggered on its own beat).
 
 **Chrome never gates content.** The shell (sidebar/nav items, top bar) and the page regions start
 together, at ≤150 ms after mount — the title and first cards must not wait for the nav cascade to
 finish. Chrome that was already on screen (Inertia/SPA navigation) doesn't re-enter at all.
+**Exception — a branded first-load header** (a home screen whose header carries the title, search
+and chips, as in a shopping app): the header settles first and the content grid starts at **+320 ms**.
+The user compared it by eye against the faster +120 ms grid and chose this: it reads as deliberate.
+The cost is ~200 ms to the first card; the row stagger and "contents ≤80 ms behind the card" still
+apply, so no card is ever empty. Admin shells, dashboards and repeat navigation keep the rule above.
 **No empty-box phase:** a card surface may be visible without its contents for ≤150 ms — start
 contents ≤140 ms after the card, and let the surface's opacity reach 1 in ~250 ms (the long ease
 is on its travel/scale, not its opacity). Both mistakes were made by agents in the first two
 trials and read as a slow loader, not as choreography.
+
+**Detail screens and lists whose data arrives after mount** (an admin record detail, a search
+list). Measured on a real Flutter web build with a per-frame probe on every entrance, 250 ms mock
+latency, two runs each, against a "16 px rise, 500 ms ease-out-expo, opacity on the same curve,
+55 ms stagger, delays counted from each widget's mount" baseline that users reported as invisible:
+- **Opacity leads, travel trails.** Fade 180 ms ease-out; cards rise 28 px over 450 ms
+  ease-out-cubic from scale .98; text blocks 12 px over 380 ms. With opacity on the travel's expo
+  curve, an element was already 50 % visible with only 6.8 px of its 16 px left to travel, so it read
+  as a plain fade. The split fade left 10–14 px of travel visible on phone cards and 10–12 px on list
+  rows. A 40 px rise also reached ~10 px but settled 400 ms later.
+- **Beats count from the screen opening, not from mount, and a late response shifts the rest of
+  the sequence instead of collapsing onto it.** Mount-relative delays dropped four regions (figures,
+  people, timeline, issues) onto the ~100 ms after the response arrived. Rows likewise start at
+  arrival, 40 ms apart, as one unit per row (nesting row contents measured no better on a list).
+- **Draw-ins start once their card is readable** (stepper fill +110 ms, route +150 ms after the
+  card; on rows +120/+140): stepper 140 + 200 ms per step ease-in-out with each dot swelling 1.25 as
+  the fill reaches it; route line 600 ms (450 ms compact) with the vehicle riding the line's tip,
+  mirrored in RTL; the cash tile scales from .96 and its figure never counts. Started at mount, 69 %
+  of the draw had played before the card reached 90 % opacity; with the delay it was 1–3 %.
+- **A header that is on screen in both views does not re-enter on drill-in.** Fading it from 0 left
+  one blank frame on every open.
+- **Admin screens start content at +0, not +320.** The branded-header +320 exception cost
+  330–360 ms to first content on a detail (530–556 ms vs 150–200 ms) and made the order and
+  visibility no better.
+- Result: on desktop, everything was readable by 695–720 ms (baseline 896–944 ms) and settled by
+  780–821 ms (baseline ~1000 ms); ≤ 700 ms with zero latency (693/706 ms). First content came at
+  147–157 ms (baseline ~195 ms). Cost: the list was readable about 250 ms later (930–1077 ms vs 727–786 ms),
+  because the row steppers and routes now draw where they can be seen. A soft spring
+  (`cubic-bezier(.22,1.2,.36,1)`) on the cards measured within noise of the ease, so that choice is
+  taste. Reduced motion: an opacity-only fade, and draw-ins snap to their final value.
 
 Whole page settled by ~2 s; first content readable by ~0.6 s. **Never fade or rise a page, view,
 or grid container as one block** — the only whole-block motion is the fast *exit* of an old view.
@@ -41,11 +78,22 @@ What keeps this calm is small travel and long decelerating eases, not stillness.
 | `move` (FLIP) | 550 ms, `cubic-bezier(.645,.045,.355,1)` (power3.inOut) | `Curves.easeInOutCubic` | re-layout after filter/sort/reorder |
 
 **Data** (starts 150–500 ms after its card):
-- numbers count up 1.2–1.4 s `enter-content` ease, tabular numerals, width locked so layout doesn't jump;
+- numbers count up 1.2–1.4 s `enter-content` ease, tabular numerals, width locked so layout doesn't jump. **Money never counts up**: balances, cash, revenue and totals owed appear at their final value (a value the user is TYPING is neither — it enters glyph by glyph, see "Inputs reflect back" below; a count-up there showed 42–97 frames of values never typed) (a fade or rise is fine). Measured: two blind personas on a finance dashboard both read a counting cash figure as the balance changing by itself. Counts of things (orders, tasks) may count up;
 - lines and sparklines draw their stroke 1.0–1.2 s ease-in-out;
 - bars, columns and meters scale from their baseline 0.7–1.0 s `enter-surface` ease, 35–40 ms apart
   (from the start edge — mirrored in RTL);
 - a data *change* tweens the existing marks to new values (0.75–0.9 s) — never remount the chart.
+- **A live number tied to the clock** (countdown, "42 min", "Late by 6") **never tweens and never
+  counts** — not on change, not on entrance (enter at its final value with a 260 ms fade + rise).
+  Only the digits that changed roll, 200 ms `cubic-bezier(.2,.8,.2,1)` in a per-digit
+  `overflow:hidden` slot — new digit from above when counting down, from below when counting up; the
+  slot width tweens with it when the digit count changes. Measured in `assets/time-until-lab/`: a tween showed 4
+  values that were never true when returning from background, a crossfade superimposed digits for
+  6 frames, rolling the whole number moved digits that didn't change.
+- **A tick meter** (a bar of discrete ticks up to "now") reveals with a clip-path that ends AT the
+  current value, and its marker rides the same easing; scaleX squashed the ticks, and a marker placed
+  early disagreed with the fill for 17–36 frames. Live, a tick lights at once when its span passes
+  with a scaleY pulse 1.45→1 (320 ms) — fading the new tick in made the fill lag the marker.
 
 **Interaction:**
 - hover: lift `y −4` over 450 ms (`enter-content` ease), on `(hover: hover) and (pointer: fine)`
@@ -55,9 +103,49 @@ What keeps this calm is small travel and long decelerating eases, not stillness.
 - the selected tab / nav / segment pill **travels** to the new item (360 ms leading edge,
   550 ms trailing) — it never just re-renders in place.
 
-**Navigation:** old view exits (`exit`, fade + `y −6…−10`), new view replays the full cascade with
+**Navigation:** an element present in both views (a search field, a product image) **travels** instead —
+exit-and-replay made the search field vanish for 10 frames and reappear 99.5 px away. Otherwise the
+old view exits (`exit`, fade + `y −6…−10`), new view replays the full cascade with
 travel reduced to ~18 px, starting ≤250 ms after the click. Filtering in place = leaving items
 `exit` together → survivors `move` → newcomers `enter-surface` at 40 ms stagger.
+
+**Inputs reflect back** — what the user enters shows up in the UI immediately, in place, with
+motion that never shows a state that isn't true. Measured in `assets/form-reaction-lab/` (any amount input, any
+picker result, any content-derived icon), always on, not a per-screen choice:
+- **Typed amount/number:** key each glyph by position; a new digit enters scale .6→1, blur 6→0,
+  rise .16em, 240 ms ease-out; surviving glyphs slide to re-centre 270 ms `cubic-bezier(.22,.61,.36,1)`,
+  and new glyphs start from their left neighbour's offset (else the new digit lands on the sliding
+  one, up to 79 px overlap). Key a separator to the digit before it; a new one grows its width
+  0→1 with the gap, a moving one vanishes at once (else "$9,9,999" for ~80 ms). Auto-shrink to fit,
+  keeping room for one more digit — never wrap, never clip. The number stays LTR inside RTL
+  (Arabic-Indic digits fine). Resting "0" needs no entrance. Optional sparkle (8 dots + ring
+  ≈520 ms) on added digits only, never under reduced motion. Test: no frame ever shows a value
+  the user didn't type. Instant re-render jumped 34 px per key; fade-through blanked the amount.
+- **Picker result → its form row:** show the selection 150 ms (check pops 220 ms), dismiss the
+  sheet (255 ms ease-in), and start the row change **120 ms into the dismissal** — not on tap
+  (it plays under the scrim, unseen) and not after (730 ms to settle). Old and new content stacked
+  in one grid cell: old out 120 ms ease-in; new from +90 ms — icon/avatar scale .6→1 with overshoot
+  260 ms, line 1 fade + rise 3 px 200 ms, line 2 +50 ms. The placeholder row reserves the filled
+  height. Out-in left the row blank ~130 ms and jumped 9 px; an avatar flight added nothing.
+- **Icon derived from content (note → 🍕):** classify only after a **300 ms typing pause**, whole
+  words only (prefix matching put 🏠 on "Rental"; per-keystroke gave ✏️🍕✏️🎁 while typing); 200 ms
+  still flickered for a slow typist. Swap as a pop: old scale→.3 + fade 110 ms ease-in, new 50 ms
+  later scale .4→1.15→1 with rotate −14°→+4°→0 over 300 ms — never out-in (an empty slot for 9–14
+  frames). Clearing the field returns the default icon at once. The keyword map is app logic;
+  include the app's languages (Arabic: عشاء → 🍕).
+
+**Collection view changes** — same records, different arrangement:
+- **Density toggle (compact ↔ comfortable):** row padding/height tweens ~300 ms
+  `cubic-bezier(.645,.045,.355,1)`; content never fades or remounts. Keep the row under the pointer
+  (or the first visible row) anchored: measure its `top` before, correct `scrollTop` after. Flutter:
+  `AnimatedPadding`/`AnimatedContainer` on the row, `Curves.easeInOutCubic`.
+- **Table ↔ Cards:** `move` (FLIP) — each row's identity block (avatar + name) travels to its spot in
+  its card while the row's other cells `exit` and the card body `enter-content` at 30 ms stagger;
+  cards past the first screenful just fade in. Web: give the row's and the card's identity block the
+  same `data-flip-id`, then `Flip.getState('[data-flip-id]')` → swap view →
+  `Flip.from(state, { duration: .55, ease: 'power3.inOut', absolute: true })`. Flutter has no
+  cross-layout FLIP: old view `exit`s together, then cards `enter-surface` at 40 ms stagger. The
+  segmented switch's pill travels like any other.
 
 **Theme, look and language changes** — the page stays, only its paint changes:
 - **Light/dark toggle, look/theme picker, accent change (user-triggered): circular reveal from the
@@ -132,8 +220,9 @@ bumps (`scale 1.06, y −4`) and flashes the accent for ~900 ms. Error: shake `x
 ## Implementation shape
 
 - **Vue:** one shared entrance — a composable or directive mounted in the layout with role presets
-  (`v-enter="'title' | 'card' | 'content' | 'row' | 'data'"`), driving WAAPI, or GSAP if the app
-  already has it. Not per-page hand code. `<TransitionGroup>` with a move class for FLIP.
+  (`v-enter="'title' | 'card' | 'content' | 'row' | 'data'"`), driving **GSAP** timelines inside a
+  `gsap.context()` reverted on unmount (required on web; install it if missing). Not per-page hand
+  code. GSAP `Flip` for reorders, the nav pill and card → drawer.
 - **Flutter:** one entrance widget with the same roles; per region one `AnimationController` with
   `Interval`s for the stagger (or keyed `TweenAnimationBuilder`s so a rebuild doesn't replay);
   `AnimatedPositioned` / implicit animations for FLIP. Dispose controllers.

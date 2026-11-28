@@ -11,9 +11,13 @@ Fitlo). Reuse the ideas, never their code or assets.
 
 ## Suggest mode — tell the user before they ask
 
-Whenever you build, change, or even just open a data page (web or Flutter), scan what it shows as
+Whenever you **open** a data page you are not changing (web or Flutter), scan what it shows as
 text and **propose** the upgrades in this shape, at most 5, biggest win first. Suggest; don't
 restyle a page the user didn't ask you to change.
+
+On a page you are **building or changing**, this is not a suggestion: apply the lookup below to
+every field the page shows, and apply [Every number is a door](#every-number-is-a-door). List any
+device you could not build (data missing) in the API contract table, not as a "later".
 
 > **Visual upgrades for `<page>`** — the question this page answers: *"…"*
 > | Now (text) | Show instead | Tells the user at a glance | Data needed | API has it? |
@@ -35,11 +39,32 @@ restyle a page the user didn't ask you to change.
 | a share of a whole (by category, stage, channel) | a totals table | **segmented bar** or ribbon with legend |
 | a count of related things (items, people, attachments) | `4 items` | "Oak chair **+3**", avatar stack, thumbnails |
 | a person or customer | a name column | **avatar mark** + name |
+| a remainder, headroom or not-yet part (rest of a pay period, capacity left, forecast) | a second number or plain track | **hatched segment** after the solid done part; hatch means "not yet / remaining" everywhere in the app |
+| one value that is the point of a series (the anomaly, the current period, the worst) | all marks the same colour | **one mark in the accent**, the rest muted, labelled with its value and why it is highlighted |
+| a row's state in a history or ledger (paid, scheduled, failed) | a status word at the end | **status glyph in a tinted circle** leading the row (✓ paid, 🕐 scheduled), word underneath |
+| a date in a list (birthday, due, slot) | plain text | **date chip** + relative words ("in 9 weeks") |
 | a category or type | a word | **colour-dot chip** or icon tile |
 | a yes/no | "Yes"/"No" | icon or toggle, coloured only when it matters |
 | a location or route | an address string | mini map or route line (only if location is the question) |
 | long free text (notes, descriptions) | the full paragraph | a one-line summary + expand |
 | the thing to do next | a generic "Save" | **value-carrying action** ("Record balance $4,611") |
+
+### Every number is a door
+
+A count or KPI the user cannot open is a claim they cannot check ("20 merchants" — which 20?).
+On every page you build or change:
+- **Every count, KPI, chip count and ranked-bar value opens its members**: a filtered list,
+  or a drawer for small sets, showing per member the identity (name + avatar/thumbnail), the
+  value that put it in the count, its status, and a link to the record. Web: the figure is a
+  `router-link` / button to the filtered route or a URL-addressable drawer; Flutter: `InkWell`
+  pushing the filtered route or a sheet.
+- **The drawer total equals the headline.** Same filters, same period, same source query; a
+  mismatch is a bug, not rounding. Show the count in the drawer title ("20 merchants · last 7 days").
+- Sums and averages open the rows they were computed from, sorted by contribution, biggest first.
+- Exempt only a number that *is* the member (a record's own price) or a pure running total shown
+  as context. Say which, in the PR, if you exempt one.
+- The members come from the `members` contract in [data-for-visuals.md](data-for-visuals.md)
+  (rule 11), never from a client-side refilter of a paged list.
 
 ### Tables are not exempt
 A table of plain text is the most overwhelming screen there is. In every table:
@@ -47,6 +72,8 @@ A table of plain text is the most overwhelming screen there is. In every table:
 - 5–7 columns max on desktop; the rest move to the row's drawer;
 - sort worst-first by default when the page is about problems (late, low, behind);
 - the first column is the identity (avatar/thumbnail + name + one-line summary), not an ID;
+- every table has a **density toggle** (compact ↔ comfortable) in its header row, remembered per
+  user; the row height tweens between the two (motion owned by `animate`);
 - numbers right-aligned, tabular, with their unit; totals row or key figures above, not below;
 - mobile: rows become stacked cards with the same devices, first N + "Show all".
 
@@ -54,14 +81,15 @@ A table of plain text is the most overwhelming screen there is. In every table:
 
 | Device | Replaces | Web (Vue/Vuetify) | Flutter |
 | --- | --- | --- | --- |
-| **Key figure** — big number, label, change vs a comparison, optional real sparkline | a summary sentence | `KeyFigure` (tabular-nums, count-up on first entrance only) | `KeyFigure` widget, `TweenAnimationBuilder<double>` |
+| **Key figure** — big number, label, change vs a comparison, optional real sparkline | a summary sentence | `KeyFigure` (tabular-nums, count-up on first entrance only — never for a clock-derived or countdown value: 55 frames of untrue values measured) | `KeyFigure` widget, `TweenAnimationBuilder<double>` |
 | **Stage stepper** — done ✓ / current ring / future hollow, connector filled to current, date under each reached step | a status dropdown or history table | `StageStepper` (not `v-stepper`, which is a wizard) | custom `Row` of `StepDot`s; vertical on narrow widths |
 | **Threshold meter** — "2 / 6 kg" over a bar with a par/target tick; fill colour by server severity; can overfill | three numeric columns | `ThresholdMeter` | `ThresholdMeter` (`FractionallySizedBox` + tick) |
 | **Split well** — paid vs balance (or used vs left) side by side over one bar | a payments table | `SplitWell` | same |
 | **Proportional ribbon / segmented bar** — one segment per stage or category, sized by value, with legend | a totals table | `SegmentedBar` | `Row` of `Expanded(flex:)` |
 | **Status pill** — dot at full strength on a ~12–15% tint of the same hue; meaning from a server enum | a status word | `StatusPill` | `StatusPill` |
 | **Words for time** — "runs out tonight", "valid 3 more days", "late by 2 days", tinted by urgency | raw dates/decimals | i18n helper from `runs_out_at` / `due_at` | same helper |
-| **Identity mark** — initials avatar with a stable tint, or a thumbnail | a name column | `AvatarMark` | `AvatarMark` |
+| **Time-until** — big "42 min" with its word ("in", "left", "Late by"), a state chip, and a tick bar from day start to end with a Now marker. Minutes: ceil before the start, "Now" for ±1 min around it, floor after ("Late by 6 min"), ceil to the end while in progress; then Ended / Missed. Never "in 0 min" or "Late by 0" (a naive `Math.round` was wrong at 15 of 24 boundary probes). The card keeps its identity colour in every state; lateness changes the chip, the overdue ticks and the counting direction. Number isolated `dir=ltr` (unisolated "٤٢" rendered "٢٤"), unit from plural rules (`Intl.PluralRules`), bar fills from the inline start. Motion in `animate` (live number, tick meter). Measured in `animate/`assets/time-until-lab/`` | a raw "11:00" | `TimeUntil` (pure function of a clock you can fake in tests) | same |
+| **Identity mark** — the person's photo when the record has one; otherwise initials on a soft pastel from the palette (dark text, tint fixed per record id). Same size and shape either way, and a photo URL that fails to load falls back to initials, never a broken-image icon | a name column | `AvatarMark` (`<img @error>` → initials) | `AvatarMark` (`CircleAvatar` + `onBackgroundImageError`) |
 | **Value-carrying action** — the button says what it does with the number: "Record balance $4,611", "Add 4 pieces · $276", "→ Shipped" | "Submit", "Save" | `v-btn` text from `next_action` | same |
 | **Counted tabs / chips** — every tab and filter chip carries its count; chips have a colour dot | a filter form | `v-tabs` + `v-chip-group` with badges | `ChoiceChip`s in a horizontal `ListView` |
 | **Inline edit + undo** — −/+ stepper or toggle in the row; row, totals and header re-count; toast with Undo | an edit page | `v-snackbar` with Undo action | `SnackBar(action: Undo)` |
@@ -104,8 +132,26 @@ Question: *what runs out or overloads first, and is it handled?*
 
 ### 4. Overview / dashboard
 Question: *is anything off today, compared with usual?*
-- Key figures with delta vs the previous period and a 7–30 point series.
-- One main chart with the previous period as a dashed line (see the `dataviz` skill).
+- **A "needs attention" panel in the first screenful, beside the main chart** (a side column of
+  the chart row on desktop; directly under the key figures on a phone), never a full-width list
+  that pushes the chart below the fold. Compact: 4–6 rows, then "Show all N". It fills its column:
+  if items remain hidden, show as many as fit the panel's height (no more than a third of the
+  panel empty while "Show all" has more); with fewer items, the panel shrinks rather than stretching
+  to the chart's height. One row per open
+  exception (late, below par, failed, unassigned, stale), worst first. Each row says the consequence in words
+  ("3 orders miss today's cut-off", not "late: 3"), carries its fix inline (assign, retry, reorder,
+  contact — a value-carrying action), and after the fix shows the handled state with Undo instead
+  of vanishing. No exceptions → one calm line ("Nothing needs you · checked 2 min ago"), not an
+  empty band.
+- Key figures with delta vs the previous period and a 7–30 point series; each opens its members.
+  One of them may be the hero (inverted or larger) when it is the page's answer. One headline total
+  per measure on the first screen: if the chart's figure and a key figure are different measures
+  (paid vs sales after refunds), they differ in label *and* size, or the chart shows the key figure's
+  measure — two near-identical totals side by side read as a bug.
+- One main chart with the previous period as a dashed line (see the `dataviz` skill), visible in
+  the first screenful at 1440×900.
+- Controls (date range, filters) are compact and sit in the header row, not a card of their own
+  above the content; explanatory text goes behind a disclosure.
 - Ranked bars with thumbnails; live list with status pills. Every number has a comparison.
 
 ### 5. Catalog / gallery (products, looks, listings)
@@ -122,6 +168,26 @@ Question: *what needs me right now?*
   inline; modules come after.
 - Every module tile carries a live number or nothing — never a bare "Report".
 - The biggest number is the decision, not the running total (4,843 delivered is context, not a hero).
+
+### 7. People directory (users, staff, customers, vendors)
+Question: *who is this, are they active, and how much do they use it?*
+Only lists of people or other identities get this; orders, payments and other transaction lists
+stay table-only, because they are scanned row by row.
+- **Header row:** title + one muted sentence carrying the count and the sort ("All users · 2,847
+  customers · sorted by last seen"), then the density toggle, then a **Table | Cards** segmented
+  switch. The choice is remembered per user. Both views show the **same fields**: switching never
+  hides or adds data.
+- **Row (table view):** checkbox · identity mark + name, with the **phone number** muted underneath
+  (email only when there is no phone; the phone is an LTR-isolated `<bdi dir="ltr">` in RTL) · plan
+  as a pill (the top tier filled, the others quiet) · status as dot + word ("Active", "Trial · 9d
+  left", "Invited") · a thin usage meter + its count ("142 sessions") · last seen in words ("Just
+  now", "Invite sent 2d ago"). An inactive person's meter and count go muted. A selected row is
+  lifted to a lighter surface, not tinted with the accent.
+- **Card (cards view, 3 across on desktop):** top: identity mark, name, phone, a `⋯` row menu ·
+  middle: plan pill + status · then two label/value pairs (Company, Last seen) · bottom: the usage
+  meter full-width with its count on the right. Same selected state as the row.
+- Above the list, the hero key figure may be a **people cluster**: overlapping photo/initials bubbles
+  sized by activity with a "+2.1k" overflow bubble, instead of a chart.
 
 ## Working lists on a phone (ops, dispatch, support)
 - **Density:** at least 5–7 rows per phone screen. Header + filters + search take ≤ 30% of the
@@ -159,17 +225,22 @@ Question: *what needs me right now?*
 ## Motion for these devices (owned by `animate`)
 Meters grow, steppers fill, ribbons grow `scaleX` from the start edge (mirror in RTL), key figures
 count up — **once, on the shared entrance**, never on refresh. Drawer slides in, its sections
-cascade top-down. Inline edits update instantly, then the header re-counts.
+cascade top-down. Inline edits update instantly, then the header re-counts. Density changes tween
+row height; Table ↔ Cards moves each row into its card (recipes in `animate`'s motion-system).
 
 ## Checklist
 - [ ] The page's one question is written down, and the first screenful answers it.
 - [ ] Every status, progress, quantity-vs-target and money-owed fact uses a device, not text.
 - [ ] Every number has a comparison (target, previous period, par, total).
+- [ ] Every count/KPI opens its members, and the members list's total equals the headline.
+- [ ] Overview and ops pages show a compact "needs attention" panel beside the main chart, in the first screenful: consequence in words, inline fix, handled state.
 - [ ] The primary action names its effect and its number.
 - [ ] Devices come from the kit; a missing one is added to the kit, not hand-rolled in the page.
 - [ ] The API contract for each device is listed ([data-for-visuals.md](data-for-visuals.md)).
 - [ ] Mobile layout chosen per archetype (sheet, stacked cards, scrolling chips, bottom dock).
 - [ ] Working lists show 5–7 rows per phone screen; row actions are icons/swipe, not full buttons.
+- [ ] Every table has a remembered density toggle; people lists also have a remembered Table | Cards switch with identical fields in both.
+- [ ] Identity marks show the photo when there is one and fall back to tinted initials (also on a failed load); the line under a person's name is the phone, not the email.
 - [ ] One solid primary per screen, in the thumb zone; close and back look different.
 - [ ] Zero values are neutral; non-zero counts keep their hue in its readable text tone; red/amber only for exceptions.
 - [ ] No raw server enums, hard-coded English, or developer copy in the Arabic or English UI.

@@ -29,7 +29,7 @@ Examples of the kind of thing this skill exists to find (from the POS product):
 
 ### 1. Frame — two minutes, no questions you could answer yourself
 
-Write down what the product **already has** first — from its README, docs and screens, not memory — or the parity matrix will list your own features as gaps. Then the product, the market (country/region, segment — e.g. "cafés and small restaurants in Bahrain"), the **personas** (e.g. owner, cashier, kitchen, end customer) and the **moments** in their day the product touches (opening, rush hour, closing, month end, onboarding). Mine the user's own pain history too (past transcripts, issues, handovers): their repeated complaints are the highest-signal input you have. Read the repo, the roadmap, and the decision log first so you know what already exists and what was already rejected — don't re-propose a rejected idea unless something changed, and say what.
+Write down what the product **already has** first — from its README, docs and screens, not memory — or the parity matrix will list your own features as gaps. Then the product, the market (country/region, segment — e.g. "cafés and small restaurants in one country"), the **personas** (e.g. owner, cashier, kitchen, end customer) and the **moments** in their day the product touches (opening, rush hour, closing, month end, onboarding). Mine the user's own pain history too (past transcripts, issues, handovers): their repeated complaints are the highest-signal input you have. Read the repo, the roadmap, and the decision log first so you know what already exists and what was already rejected — don't re-propose a rejected idea unless something changed, and say what.
 
 ### 2. Parity baseline — research it yourself
 

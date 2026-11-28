@@ -92,7 +92,7 @@ Capture matrix per direction and for `current`:
 
 | | values |
 | --- | --- |
-| viewport | `phone` 390×844 · `tablet` 834×1112 · `desktop` 1440×900 — pick the ones the app targets, and say which cells are not applicable instead of leaving silent gaps |
+| viewport | `phone` 390×844 · `tablet` 834×1112 · `desktop` 1440×900 · `ultrawide` 2560×1440 (house-style **Ultra-wide**) — pick the ones the app targets, and say which cells are not applicable instead of leaving silent gaps |
 | theme | `light` · `dark` |
 | locale | `en` · `ar` (RTL) — **or `en` only if the app has no Arabic/RTL: skip `ar`, and say so in the verdict** |
 

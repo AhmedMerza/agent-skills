@@ -1,0 +1,591 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Time-until lab</title>
+<style>
+:root{--or:#FF6A1F;--ink:#18130e;--mut:#7a7166;--bg:#F3F0EB;--late:#2E0900}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{font:15px/1.3 -apple-system,"Inter","Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);overflow:hidden}
+.tn{font-variant-numeric:tabular-nums}
+#cap{position:fixed;bottom:0;inset-inline:0;padding:12px 16px;font:700 15px system-ui;background:#000;color:#fff;text-align:center;z-index:9}
+.ph{padding:52px 16px 0;font:800 28px/1.1 system-ui}.ps{padding:4px 16px 0;color:var(--mut)}
+/* ---------- time device ---------- */
+.tcard{margin:20px 16px 0;background:var(--or);color:#fff;border-radius:24px;padding:18px 18px 16px;position:relative}
+.trow{display:flex;gap:10px;align-items:center}
+.ic{width:30px;height:30px;border-radius:50%;background:rgb(255 255 255/.25);flex:none;display:grid;place-items:center;font-size:15px}
+.tt b{display:block;font-size:17px}.tt small{opacity:.8;font-size:13px}
+.chip{display:inline-block;margin-top:14px;padding:3px 10px;border-radius:99px;font:700 12px/18px system-ui;background:rgb(255 255 255/.22)}
+.chip.starting{background:#fff;color:var(--or)}.chip.late{background:var(--late);color:#fff}.chip.progress{background:#fff;color:var(--ink)}
+.line{display:flex;align-items:baseline;gap:8px;margin-top:4px;min-height:62px}
+.line .pre,.line .unit{font:600 20px system-ui}
+.big{font:800 52px/1.15 system-ui;display:inline-flex;unicode-bidi:isolate}
+.slot{display:inline-block;position:relative;overflow:hidden;height:1.15em;vertical-align:top}
+.slot .g{display:block;white-space:pre}
+.slot .g.n{position:absolute;inset-inline-start:0;top:0}
+.bar{position:relative;margin-top:30px;height:24px}
+.ticks{display:flex;justify-content:space-between;align-items:flex-end;height:24px}
+.ticks i{width:3px;height:14px;border-radius:2px;background:rgb(255 255 255/.32);position:relative;overflow:hidden;flex:none}
+.ticks i.ap{height:22px}
+.ticks i b{position:absolute;inset:0;background:#fff;opacity:0;transform-origin:bottom}
+.ticks i.ap b{background:#fff}.late .ticks i.ap b{background:var(--late)}
+.litlayer{position:absolute;inset:0;pointer-events:none}
+.litlayer .ticks i{background:#fff}
+.mk{position:absolute;top:-4px;left:0;width:2px;height:32px;margin-left:-1px;background:#fff;border-radius:1px;box-shadow:0 0 0 2px var(--or)}
+.bl{display:flex;justify-content:space-between;font:600 12px system-ui;opacity:.9;margin-top:6px;position:relative;height:16px}
+#lnow{position:absolute;top:-20px;left:0;white-space:nowrap;font:700 12px system-ui}
+.btn{margin-top:14px;width:100%;height:44px;border:0;border-radius:14px;background:#fff;color:var(--or);font:700 15px system-ui}
+/* ---------- morph ---------- */
+#surf{position:absolute;top:118px;inset-inline-start:16px;overflow:hidden;background:#fff;box-shadow:0 1px 2px rgb(0 0 0/.06),0 8px 24px rgb(0 0 0/.07);cursor:pointer;view-transition-name:surf;transition:background-color .25s}
+.layer{position:absolute;top:0;inset-inline-start:0;opacity:0;pointer-events:none}
+.layer.on{opacity:1}
+#ghost{position:absolute;top:0;inset-inline-start:0;visibility:hidden;pointer-events:none}
+#ghost .layer{opacity:1;position:absolute}
+.L .card{background:var(--or);color:#fff;border-radius:16px;position:relative}
+.L .icon{width:24px;height:24px;border-radius:50%;background:rgb(255 255 255/.28);display:block}
+.L .title{font:600 13px/1.25 system-ui;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.L .time{font:700 22px/1.15 system-ui}
+.L .num{font:800 40px/1.1 system-ui;white-space:nowrap}.L .num .u{font-size:.5em;font-weight:700}.L-pill .num .u,.L-large .num .u{font-size:1em}
+.L .row{font:500 13px/18px system-ui;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink);padding:6px 10px;background:#F5F2EE;border-radius:10px}
+.L .hdr{font:700 15px/20px system-ui;color:var(--ink)}
+.L-small .card{margin:8px;height:88px;padding:10px}
+.L-small .time{margin-top:6px}.L-small .title{margin-top:6px}.L-small .title{width:136px}
+.L-small .row{margin:4px 8px 0;width:156px;padding:5px 10px}
+.L-pill{display:flex;align-items:center;gap:10px;padding:0 8px}
+.L-pill .card{width:28px;height:28px;border-radius:14px;display:grid;place-items:center;flex:none}
+.L-pill .icon{width:16px;height:16px}
+.L-pill .num{font:700 17px/22px system-ui;color:#fff}
+.L-wide{display:flex;gap:10px;padding:8px}
+.L-wide .card{width:176px;height:156px;padding:12px;flex:none}
+.L-wide .title{margin-top:10px;width:152px;font-size:14px}.L-wide .num{margin-top:22px}
+.L-wide .rows{display:flex;flex-direction:column;gap:8px;padding-top:12px;min-width:0}.L-wide .row{width:156px}
+.L-large{padding:12px 8px 8px}
+.L-large .hrow{display:flex;gap:6px;padding:0 8px 10px;align-items:baseline}
+.L-large .num{font:700 15px/20px system-ui;color:var(--ink)}
+.L-large .card{height:172px;padding:14px}
+.L-large .title{font-size:17px;width:300px;margin-top:10px}
+.L-large .tline{display:flex;gap:6px;align-items:baseline;margin-top:4px}
+.L-large .time{font:700 15px/20px system-ui}.L-large .room{font:500 14px system-ui;opacity:.85}
+.L-large .mbar{position:absolute;inset-inline:14px;bottom:14px}
+.L-large .row{margin-top:8px}
+.mbar .ticks{height:18px}.mbar .ticks i{height:10px}.mbar .ticks i.ap{height:16px}.mbar .ticks i.on{background:#fff}
+#surf.pill{background:#111}
+.fl{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+.below{position:absolute;top:478px;inset-inline:16px}
+.below .hd{font:700 17px system-ui;margin-bottom:8px}.below .it{background:#fff;border-radius:14px;height:54px;margin-bottom:8px}
+/* view transitions (variant E) */
+::view-transition-group(*){animation-duration:.42s;animation-timing-function:linear(0,.13 6%,.44 15%,.75 26%,.94 38%,1.03 50%,1.04 60%,1.01 76%,1)}
+::view-transition-old(*),::view-transition-new(*){animation-duration:.2s}
+@media (prefers-reduced-motion: reduce){*{transition-duration:0s!important;animation-duration:0s!important}::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}}
+</style></head>
+<body>
+<script>
+const P = Object.fromEntries(new URLSearchParams(location.search));
+const MODE = P.mode || 'time';
+const RTL = P.rtl === '1', RM = matchMedia('(prefers-reduced-motion: reduce)').matches, LITE = P.lite === '1';
+if (RTL) { document.documentElement.dir = 'rtl'; document.documentElement.lang = 'ar'; }
+const log = []; window.__log = log; window.__mark = m => log.push({ t: performance.now(), mark: m });
+if (P.cap) { const m0 = window.__mark; window.__mark = m => { if (m === 'A') { const q = document.createElement('i'); q.style.cssText = 'position:fixed;right:0;bottom:0;width:10px;height:10px;background:#f00;z-index:99'; document.body.appendChild(q); } m0(m); }; }   // video sync dot
+const fmt = n => RTL ? new Intl.NumberFormat('ar-EG').format(n) : String(n);
+if (P.cap) { const c = document.createElement('div'); c.id = 'cap'; c.textContent = P.cap; document.body.appendChild(c); }
+function ticksHTML(N, apFrom, cls = '') { let s = `<div class="ticks ${cls}">`; for (let i = 0; i < N; i++) s += `<i class="${i >= apFrom ? 'ap' : ''}"><b></b></i>`; return s + '</div>'; }
+</script>
+
+<!-- =================== TOPIC 1: time-until device =================== -->
+<template id="timeT">
+  <div class="ph" id="ph">Good morning</div><div class="ps" id="ps">Tuesday · 3 appointments</div>
+  <section class="tcard" id="dev">
+    <div class="trow"><span class="ic">✚</span><div class="tt"><b id="ttl">Injured Examinations</b><small id="tsub">11:00–11:45 · Room 2</small></div></div>
+    <span class="chip" id="chip">Up next</span>
+    <div class="line" id="line"><span class="pre" id="pre"></span><span class="big tn" id="num"></span><span class="unit" id="unit"></span></div>
+    <div class="bar" id="bar"><span id="lnow">Now</span><div id="tk"></div><div class="mk" id="mk"></div></div>
+    <div class="bl"><span id="l0">Day started 9:00</span><span id="ls">11:45</span></div>
+    <button class="btn" id="chk">Check in</button>
+  </section>
+</template>
+<script>
+if (MODE === 'time') {
+document.body.appendChild(document.getElementById('timeT').content.cloneNode(true));
+const NUM = P.num || 'roll';          // roll | rollall | fade | tween | instant
+const ENTER = P.enter || 'fade';      // fade (final value, rise) | count (count-up from 0, today's KeyFigure rule)
+const BAR = P.bar || 'clip';          // clip (edge reveal) | stagger | scalex | instant
+const MARK = P.marker || 'ride';      // ride (marker travels with the fill) | fixed (at its final place at once)
+const LIVE = P.live || 'step';        // step (a tick lights when its span has passed) | smooth (current tick fills)
+const LABELS = P.labels || 'truth';   // truth | naive
+const ISO = P.iso !== '0';
+const ROLL = +(P.roll || 200);
+const N = +(P.ticks || 33);
+const D = 9 * 60, S0 = 11 * 60, E0 = 11 * 60 + 45;           // minutes of day
+const pitchMin = (E0 - D) / N, apFrom = Math.round((S0 - D) / pitchMin);
+const $ = id => document.getElementById(id);
+const numEl = $('num'); if (!ISO) { numEl.style.unicodeBidi = 'normal'; } else numEl.dir = 'ltr';
+$('tk').innerHTML = ticksHTML(N, apFrom);
+const ticks = [...$('tk').querySelectorAll('i')], lits = ticks.map(t => t.firstChild);
+if (RTL) { $('ttl').textContent = 'فحوصات الإصابات'; $('tsub').textContent = '١١:٠٠–١١:٤٥ · غرفة ٢'; $('l0').textContent = 'بدأ اليوم ٩:٠٠'; $('ls').textContent = '١١:٤٥'; $('chk').textContent = 'تسجيل الحضور'; $('ph').textContent = 'صباح الخير'; $('ps').textContent = 'الثلاثاء · ٣ مواعيد'; }
+
+// ---- fake clock (minutes of day, float). rate = clock-minutes per real second
+const clk = { base: P.at ? +P.at : 10 * 60 + 18, t0: performance.now(), rate: +(P.rate || 0) };
+const now = () => clk.base + (performance.now() - clk.t0) / 1000 * clk.rate;
+window.__clock = (m, rate = 0) => { clk.base = m; clk.t0 = performance.now(); clk.rate = rate; };
+let checked = false; window.__checkin = v => { checked = v ?? true; };
+$('chk').onclick = () => { checked = true; };
+
+// ---- labels
+const AR = { in: 'بعد', left: 'متبقٍ', late: 'متأخر', now: 'الآن', chip: { up: 'التالي', starting: 'يبدأ الآن', progress: 'جارٍ الآن', late: 'متأخر', ended: 'انتهى', missed: 'لم يتم الحضور' } };
+const arMin = n => { const r = new Intl.PluralRules('ar').select(n); return { one: 'دقيقة', two: 'دقيقتان', few: 'دقائق' }[r] || 'دقيقة'; };
+function model(t) {
+  const u = S0 - t; let st, n = null;
+  if (LABELS === 'naive') {
+    if (t < S0) { st = 'up'; n = Math.round(u); }
+    else if (checked && t < E0) { st = 'progress'; n = Math.round(E0 - t); }
+    else if (t < E0) { st = 'late'; n = Math.round(t - S0); }
+    else st = checked ? 'ended' : 'missed';
+  } else {
+    if (u > 1) { st = 'up'; n = Math.ceil(u); }                       // never "in 0 min": ceil, then a word
+    else if (!checked && u > -1) st = 'starting';                     // 1 min either side of the start = "Now"
+    else if (checked && t < S0) st = 'starting';
+    else if (checked && t < E0) { st = 'progress'; n = Math.ceil(E0 - t); }
+    else if (!checked && t < E0) { st = 'late'; n = Math.floor(-u); } // only whole minutes passed: never "late by 0"
+    else st = checked ? 'ended' : 'missed';
+  }
+  return { st, n };
+}
+function parts(m) {
+  const en = !RTL, N_ = m.n == null ? null : fmt(m.n);
+  switch (m.st) {
+    case 'up': return { pre: en ? 'in' : AR.in, num: N_, unit: en ? 'min' : arMin(m.n) };
+    case 'progress': return { pre: '', num: N_, unit: en ? 'min left' : arMin(m.n) + ' ' + AR.left };
+    case 'late': return { pre: en ? 'Late by' : AR.late, num: N_, unit: en ? 'min' : arMin(m.n) };
+    case 'starting': return { pre: '', num: en ? 'Now' : AR.now, unit: '' };
+    case 'ended': return { pre: '', num: en ? 'Ended' : 'انتهى', unit: '' };
+    case 'missed': return { pre: '', num: en ? 'Missed' : 'فات', unit: '' };
+  }
+}
+const CHIP = { up: 'Up next', starting: 'Starting now', progress: 'In progress', late: 'Late', ended: 'Done', missed: 'Not checked in' };
+
+// ---- the number: per-slot glyphs, roll only the slots that changed
+let cur = '', curVal = null, pend = [], tw = null;
+const slotHTML = c => `<span class="slot"><span class="g" data-c="${c}">${c}</span></span>`;
+const isNum = s => /^[0-9٠-٩]+$/.test(s);
+function finishPending() { for (const f of pend.splice(0)) f(); }
+function setNum(str, val, enter) {
+  const old = cur; if (str === old) return; cur = str; numEl.dataset.val = str;
+  finishPending(); if (tw) { tw = null; }
+  const prevVal = curVal; curVal = val;
+  if (!old || NUM === 'instant' || RM) { numEl.innerHTML = [...str].map(slotHTML).join(''); return; }
+  if (NUM === 'tween' && isNum(old) && isNum(str)) {   // today's "a data change tweens the marks" applied to the number
+    tw = { from: prevVal, to: val, t0: performance.now(), dur: 800 }; return;
+  }
+  const whole = !(isNum(old) && isNum(str)) || NUM === 'rollall';
+  const dir = val != null && prevVal != null ? Math.sign(val - prevVal) || 1 : 1; // up = new from below; countdown = new from above
+  const L = Math.max(old.length, str.length);
+  const o = whole ? [old] : [...old.padStart(L, ' ')], n = whole ? [str] : [...str.padStart(L, ' ')];
+  numEl.innerHTML = o.map(slotHTML).join('');
+  const slots = [...numEl.children];
+  slots.forEach((sl, i) => {
+    if (o[i] === n[i]) return;                          // unchanged digit never moves
+    const og = sl.firstChild, ng = document.createElement('span');
+    ng.className = 'g n'; ng.dataset.c = n[i]; ng.textContent = n[i]; sl.appendChild(ng);
+    const w0 = og.getBoundingClientRect().width, w1 = n[i] === ' ' ? 0 : ng.getBoundingClientRect().width;
+    if (o[i] === ' ') { og.textContent = ''; }
+    const ease = 'cubic-bezier(.2,.8,.2,1)', dur = ROLL;
+    const anims = [];
+    if (NUM === 'fade') {
+      anims.push(og.animate([{ opacity: 1 }, { opacity: 0 }], { duration: dur, easing: 'linear', fill: 'forwards' }));
+      anims.push(ng.animate([{ opacity: 0 }, { opacity: 1 }], { duration: dur, easing: 'linear', fill: 'forwards' }));
+    } else {
+      anims.push(og.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${-dir * 100}%)` }], { duration: dur, easing: ease, fill: 'forwards' }));
+      anims.push(ng.animate([{ transform: `translateY(${dir * 100}%)` }, { transform: 'translateY(0)' }], { duration: dur, easing: ease, fill: 'forwards' }));
+    }
+    if (Math.abs(w1 - w0) > .5) anims.push(sl.animate([{ width: w0 + 'px' }, { width: w1 + 'px' }], { duration: dur, easing: ease, fill: 'forwards' }));
+    const done = () => { anims.forEach(a => a.cancel()); og.remove(); ng.classList.remove('n'); if (n[i] === ' ') sl.remove(); };
+    pend.push(done);
+    Promise.all(anims.map(a => a.finished)).then(() => { const k = pend.indexOf(done); if (k >= 0) { pend.splice(k, 1); done(); } }).catch(() => {});
+  });
+}
+function countUp(val, dur) { tw = { from: 0, to: val, t0: performance.now(), dur, ease: t => 1 - Math.pow(1 - t, 3) }; }
+
+// ---- bar
+const barEl = $('bar'), mk = $('mk'), lnow = $('lnow');
+let entering = null, layer = null, litShown = -1;
+function frac(t) { return Math.max(0, Math.min(1, (t - D) / (E0 - D))); }
+function barW() { return barEl.clientWidth; }
+function xAt(f) { const W = barW(); const p = (W - 3) * f; return RTL ? W - p : p; }   // fill-units → physical px
+function applyTicks(t, animateNew) {
+  const f = frac(t) * N, full = Math.floor(f), part = f - full;
+  const late = !checked && t >= S0 + 1;
+  $('dev').classList.toggle('late', late);
+  ticks.forEach((tk, i) => {
+    const b = lits[i];
+    const on = i < full ? 1 : (LIVE === 'smooth' && i === full ? part : 0);
+    if (i < full && i >= litShown && litShown >= 0 && full - litShown === 1 && animateNew && !RM) tk.animate([{ transform: 'scaleY(1.45)' }, { transform: 'none' }], { duration: 320, easing: 'cubic-bezier(.2,.8,.2,1)' }); // lit at once (no lag behind the marker), the pulse says "a minute passed"
+    b.style.opacity = on ? 1 : 0; b.style.transform = LIVE === 'smooth' && i === full ? `scaleY(${part})` : '';
+  });
+  litShown = full;
+}
+function placeMarker(t) { if (entering && MARK === 'ride') return; const x = xAt(frac(t)); mk.style.transform = `translateX(${x}px)`; placeNow(x, t); }
+function placeNow(x, t) {
+  const W = barW(), w = lnow.offsetWidth; let l = x - w / 2; l = Math.max(0, Math.min(W - w, l)); lnow.style.left = l + 'px';
+  const h = Math.floor(t / 60), m = Math.floor(t % 60);
+  lnow.textContent = RTL ? `الآن ${fmt(h)}:${fmt(m).padStart(2, RTL ? '٠' : '0')}` : `Now ${h}:${String(m).padStart(2, '0')}`;
+}
+window.__enter = () => {          // replay the device's entrance
+  window.__mark('enter'); finishPending();
+  const t = now(), f = frac(t), lit = Math.floor(f * N);
+  const p = parts(model(t)); cur = ''; numEl.innerHTML = '';
+  $('pre').textContent = p.pre; $('unit').textContent = p.unit;
+  if (ENTER === 'count' && p.num && isNum(p.num) && !RM) { cur = p.num; numEl.dataset.val = p.num; curVal = model(t).n; numEl.innerHTML = [...fmt(0)].map(slotHTML).join(''); countUp(curVal, 1200); }
+  else { setNum(p.num, model(t).n); if (!RM) numEl.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: 'cubic-bezier(.22,.61,.36,1)' }); }
+  lits.forEach(b => { b.getAnimations().forEach(a => a.cancel()); b.style.opacity = 0; b.style.transform = ''; });
+  layer?.remove(); layer = null; litShown = -1;
+  const done = () => { entering = null; layer?.remove(); layer = null; applyTicks(now(), false); placeMarker(now()); window.__mark('entered'); };
+  if (BAR === 'instant' || RM) { done(); return; }
+  const ease = 'cubic-bezier(.16,1,.3,1)'; // enter-surface stand-in
+  let dur;
+  entering = { t0: performance.now(), f };
+  if (BAR === 'stagger') {
+    const step = Math.min(35, 520 / Math.max(1, lit)); dur = lit * step + 220;
+    lits.slice(0, lit).forEach((b, i) => { b.style.opacity = 1; b.animate([{ opacity: 0, transform: 'scaleY(.2)' }, { opacity: 1, transform: 'none' }], { duration: 220, delay: i * step, easing: 'ease-out', fill: 'backwards' }); });
+    entering.mk = [{ at: 0, f: 0 }, { at: dur - 220, f: lit / N }];
+  } else {
+    dur = 800;
+    layer = document.createElement('div'); layer.className = 'litlayer'; layer.innerHTML = ticksHTML(N, apFrom);
+    [...layer.querySelectorAll('i')].forEach((t, i) => { if (i >= lit) t.style.visibility = 'hidden'; });
+    barEl.insertBefore(layer, mk);
+    const W = barW(), edge = (xAt(lit / N) - (RTL ? 0 : 0));
+    if (BAR === 'clip') {
+      const rest = Math.max(0, W - f * W);   // reveal ends exactly at "now", not at the bar's end
+      const from = RTL ? `inset(0 0 0 ${W}px)` : `inset(0 ${W}px 0 0)`, to = RTL ? `inset(0 0 0 ${rest}px)` : `inset(0 ${rest}px 0 0)`;
+      layer.animate([{ clipPath: from }, { clipPath: to }], { duration: dur, easing: ease, fill: 'forwards' });
+    } else {
+      layer.style.transformOrigin = RTL ? 'right' : 'left';
+      layer.animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: dur, easing: ease, fill: 'forwards' });
+    }
+    entering.layerAnim = layer.getAnimations()[0];
+  }
+  if (MARK === 'ride') {
+    const x1 = xAt(f), x0 = xAt(0);
+    const a = BAR === 'stagger'
+      ? mk.animate([{ transform: `translateX(${x0}px)` }, { transform: `translateX(${x1}px)` }], { duration: dur - 220, delay: 70, easing: 'linear', fill: 'both' })
+      : mk.animate([{ transform: `translateX(${x0}px)` }, { transform: `translateX(${x1}px)` }], { duration: dur, easing: ease, fill: 'forwards' });
+    mk.style.transform = `translateX(${x1}px)`; placeNow(x1, t);
+    lnow.animate([{ opacity: 0 }, { opacity: 0, offset: .7 }, { opacity: 1 }], { duration: dur });
+    a.finished.then(() => a.cancel());
+  } else placeMarker(t);
+  setTimeout(done, dur + 20);
+};
+
+// ---- per frame: clock → model → render; then sample what the eye sees
+let lastM = '';
+function frame() {
+  const t = now(), m = model(t), p = parts(m), key = JSON.stringify(p) + checked;
+  if (key !== lastM) {
+    const first = !lastM; lastM = key;
+    $('pre').textContent = p.pre; $('unit').textContent = p.unit;
+    $('chip').textContent = RTL ? AR.chip[m.st] : CHIP[m.st]; $('chip').className = 'chip ' + m.st;
+    if (!first) { window.__mark('change:' + p.num); setNum(p.num, m.n); }
+    $('chk').style.display = checked || m.st === 'ended' || m.st === 'missed' ? 'none' : '';
+  }
+  if (tw) {
+    const k = Math.min(1, (performance.now() - tw.t0) / tw.dur), e = tw.ease ? tw.ease(k) : (k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
+    const v = Math.round(tw.from + (tw.to - tw.from) * e), s = fmt(v);
+    if (numEl.textContent !== s) numEl.innerHTML = [...s].map(slotHTML).join('');
+    if (k >= 1) tw = null;
+  }
+  if (!entering) { const f = Math.floor(frac(t) * N); applyTicks(t, f !== litShown); placeMarker(t); }
+  sample(t, p);
+  requestAnimationFrame(frame);
+}
+function sample(t, p) {
+  const e = { t: performance.now(), now: t, chk: checked, want: p.num, line: [p.pre, p.num, p.unit].filter(Boolean).join(' ') };
+  if (LITE) { log.push({ t: e.t }); return; }
+  // what the eye reads in the number: per slot the glyph that is ≥50% visible
+  let read = '', sup = 0, ill = 0, mvc = 0; const xs = [];
+  for (const sl of numEl.children) {
+    const sr = sl.getBoundingClientRect(); const gs = [...sl.children].map(g => { const r = g.getBoundingClientRect();
+      const vis = Math.max(0, Math.min(r.bottom, sr.bottom) - Math.max(r.top, sr.top)) / (r.height || 1) * +getComputedStyle(g).opacity; return { c: g.dataset.c, vis, r }; });
+    if (sr.width < 1) continue;
+    const best = gs.reduce((a, b) => b.vis > a.vis ? b : a, { vis: 0 });
+    if (best.vis >= .5) { read += best.c; xs.push({ c: best.c, x: best.r.left }); }
+    if (best.vis < .7) ill = 1;
+    for (const g of gs) if (Math.abs(g.r.top - sr.top) > 1 && g.vis > .02) mvc = Math.max(mvc, mvc + 0, (g.c || '').trim().length);
+    const two = gs.filter(g => g.vis > .25); if (two.length > 1 && Math.abs(two[0].r.top - two[1].r.top) < two[0].r.height * .5) sup = 1;
+  }
+  const visual = xs.sort((a, b) => a.x - b.x).map(x => x.c).join('');
+  e.read = read.trim(); e.vis = visual.trim(); e.sup = sup; e.ill = ill; e.mvc = mvc; e.ux = $('unit').getBoundingClientRect().left;
+  // the bar: fill frontier (in fill px from the start edge) vs the marker
+  const br = barEl.getBoundingClientRect(), W = br.width, toFill = x => RTL ? br.right - x : x - br.left;
+  let fr = 0;
+  if (layer) {
+    const a = entering?.layerAnim, k = a ? (a.effect.getComputedTiming().progress ?? 1) : 1;
+    const ef = a ? +getComputedStyle(layer).clipPath.match(/[\d.]+px/g)?.map(parseFloat).reduce((m, v) => Math.max(m, v), 0) : 0;
+    const lr = layer.getBoundingClientRect();
+    if (BAR === 'clip') fr = Math.min(W - (ef || 0), entering.f * W); else fr = entering.f * W * (lr.width / W);
+    e.tickSX = BAR === 'scalex' ? +(lr.width / W).toFixed(3) : 1;
+  } else {
+    ticks.forEach((tk, i) => { const o = +getComputedStyle(lits[i]).opacity; const sy = new DOMMatrix(getComputedStyle(lits[i]).transform).d;
+      if (o * sy > .5) { const r = tk.getBoundingClientRect(); fr = Math.max(fr, RTL ? br.right - r.left : r.right - br.left); } });
+  }
+  const mr = mk.getBoundingClientRect(); e.mk = toFill(mr.left + mr.width / 2); e.fr = fr; e.pitch = W / N;
+  e.first = RTL ? ticks[0].getBoundingClientRect().left > ticks[N - 1].getBoundingClientRect().left : ticks[0].getBoundingClientRect().left < ticks[N - 1].getBoundingClientRect().left;
+  e.lit = ticks.filter((tk, i) => +getComputedStyle(lits[i]).opacity > .5).length;
+  log.push(e);
+}
+window.__enter(); requestAnimationFrame(frame);
+}
+</script>
+
+<!-- =================== TOPIC 2: one object across sizes =================== -->
+<script>
+if (MODE === 'morph') {
+const V = P.v || 'C';              // A liveSurface as written | B FLIP + font-size | C FLIP + uniform scale | D crossfade | E View Transitions
+const IN_AT = +(P.inAt ?? (V === 'A' ? .9 : .55));
+const FLAT = V === 'B' || V === 'C';
+const T = RTL ? { title: 'فحوصات الإصابات', time: '١١:٠٠', room: '– ١١:٤٥ · غرفة ٢', n: '٤٢', u: 'دقيقة', hdr: 'التالي · بعد', r1: '١٢:٣٠  مكالمة متابعة', r2: '١٤:٠٠  مراجعة الفريق', r3: '١٥:١٥  فحص المستلزمات', h: 'اليوم', later: 'لاحقاً اليوم' }
+  : { title: 'Injured Examinations', time: '11:00', room: '– 11:45 · Room 2', n: '42', u: 'min', hdr: 'Up next · in', r1: '12:30  Follow-up call', r2: '14:00  Team review', r3: '15:15  Supply check', h: 'Today', later: 'Later today' };
+const SZ = { small: { w: 172, h: 172, r: 24 }, pill: { w: 172, h: 44, r: 22 }, wide: { w: 358, h: 172, r: 24 }, large: { w: 358, h: 352, r: 26 } };
+const iso = s => `<bdi>${s}</bdi>`;
+T.num = `<bdi dir="ltr">${T.n}</bdi><span class="u"> ${T.u}</span>`;   // big digits, small unit: the Arabic unit is long
+const M = {
+  small: (P.order || 'keep') === 'keep'   // keep: title above time in every size, so they never cross mid-flight
+    ? `<div class="card" data-k="card"><span class="icon" data-k="icon"></span><div class="title" data-k="title">${T.title}</div><div class="time" data-k="time">${iso(T.time)}</div></div>
+          <div class="row" data-k="r1">${T.r1}</div><div class="row" data-k="r2">${T.r2}</div>`
+    : `<div class="card" data-k="card"><span class="icon" data-k="icon"></span><div class="time" data-k="time">${iso(T.time)}</div><div class="title" data-k="title">${T.title}</div></div>
+          <div class="row" data-k="r1">${T.r1}</div><div class="row" data-k="r2">${T.r2}</div>`,
+  pill: `<div class="card" data-k="card"><span class="icon" data-k="icon"></span></div><div class="num" data-k="num">${T.num}</div>`,
+  wide: `<div class="card" data-k="card"><span class="icon" data-k="icon"></span><div class="title" data-k="title">${T.title}</div><div class="num" data-k="num">${T.num}</div></div>
+          <div class="rows"><div class="row" data-k="r1">${T.r1}</div><div class="row" data-k="r2">${T.r2}</div></div>`,
+  large: `<div class="hrow"><span class="hdr" data-k="hdr">${T.hdr}</span><span class="num" data-k="num">${T.num}</span></div>
+          <div class="card" data-k="card"><span class="icon" data-k="icon"></span><div class="title" data-k="title">${T.title}</div>
+          <div class="tline"><span class="time" data-k="time">${iso(T.time)}</span><span class="room" data-k="room">${T.room}</span></div><div class="mbar" data-k="bar">${ticksHTML(33, 24)}</div></div>
+          <div class="row" data-k="r1">${T.r1}</div><div class="row" data-k="r2">${T.r2}</div><div class="row" data-k="r3">${T.r3}</div>`,
+};
+document.body.insertAdjacentHTML('beforeend', `<div class="ph">${T.h}</div><div class="ps">${RTL ? 'الثلاثاء' : 'Tuesday'}</div>
+  <div id="surf"></div><div class="below"><div class="hd">${T.later}</div><div class="it"></div><div class="it"></div><div class="it"></div></div><div id="ghost"></div>`);
+const surf = document.getElementById('surf'), ghost = document.getElementById('ghost');
+for (const [k, html] of Object.entries(M)) ghost.insertAdjacentHTML('beforeend', `<div class="layer L L-${k}" data-l="${k}" style="width:${SZ[k].w}px;height:${SZ[k].h}px">${html}</div>`);
+ghost.querySelectorAll('.mbar .ticks i').forEach((t, i) => { if (i < 20) t.classList.add('on'); });
+const KEYS = {}; for (const l of ghost.children) KEYS[l.dataset.l] = new Set([...l.querySelectorAll('[data-k]')].map(e => e.dataset.k));
+const BOX = new Set(['card', 'icon']);
+const TEXT = new Set(['title', 'time', 'num', 'r1', 'r2', 'r3', 'hdr', 'room']);
+// ghost geometry in inline coords (u = distance from the inline-start edge)
+function geo(l, k) {
+  const L = ghost.querySelector(`[data-l="${l}"]`), el = L.querySelector(`[data-k="${k}"]`); if (!el) return null;
+  const lr = L.getBoundingClientRect(), r = el.getBoundingClientRect(), cs = getComputedStyle(el);
+  return { u: RTL ? lr.right - r.right : r.left - lr.left, y: r.top - lr.top, w: r.width, h: r.height, fs: parseFloat(cs.fontSize), color: cs.color, bg: cs.backgroundColor, rad: parseFloat(cs.borderTopLeftRadius) || 0, html: el.innerHTML, cls: el.className, el };
+}
+const G = {}; for (const l in M) { G[l] = {}; for (const k of KEYS[l]) G[l][k] = geo(l, k); }
+
+// ---- springs (house liveSurface numbers)
+const GROW = { resp: .35, z: .72 }, SHRINK = { resp: .35, z: 1 };
+function stepSpring(o, key, tgt, sp, dt) {
+  const K = (2 * Math.PI / sp.resp) ** 2, C = 4 * Math.PI * sp.z / sp.resp, n = Math.max(1, Math.ceil(dt * 1000));
+  let x = o[key], v = o.v[key] || 0; for (let i = 0; i < n; i++) { const a = -K * (x - tgt) - C * v; v += a * dt / n; x += v * dt / n; }
+  if (Math.abs(x - tgt) < .05 && Math.abs(v) < .5) { x = tgt; v = 0; } o[key] = x; o.v[key] = v;
+}
+let state = P.start || 'small';
+const sh = { ...SZ[state], v: {} }; let shFrom = { ...SZ[state] }, shSp = GROW;
+function renderSurf() { surf.style.width = sh.w + 'px'; surf.style.height = sh.h + 'px'; surf.style.borderRadius = sh.r + 'px'; }
+let fadeIn = null;
+function shapeProg() { const t = SZ[state], span = Math.abs(t.h - shFrom.h) + Math.abs(t.w - shFrom.w) || 1; return 1 - (Math.abs(t.h - sh.h) + Math.abs(t.w - sh.w)) / span; }
+
+// ---------- layered engines (A, D, E) ----------
+const layers = {};
+if (!FLAT) {
+  for (const l in M) { const d = document.createElement('div'); d.className = 'layer L L-' + l; d.dataset.l = l; d.style.width = SZ[l].w + 'px'; d.style.height = SZ[l].h + 'px'; d.innerHTML = M[l]; surf.appendChild(d); layers[l] = d; }
+  surf.querySelectorAll('.mbar .ticks i').forEach((t, i) => { if (i % 33 < 20) t.classList.add('on'); });
+  layers[state].classList.add('on'); layers[state].style.opacity = 1;
+}
+function layerGo(next) {
+  if (V === 'E' && document.startViewTransition && !RM) {
+    const prev = state;
+    for (const el of layers[prev].querySelectorAll('[data-k]')) if (KEYS[next].has(el.dataset.k)) el.style.viewTransitionName = 'k-' + el.dataset.k;
+    const vt = document.startViewTransition(() => {
+      for (const el of surf.querySelectorAll('[data-k]')) el.style.viewTransitionName = '';
+      for (const l in layers) { layers[l].classList.toggle('on', l === next); layers[l].style.opacity = l === next ? 1 : 0; }
+      for (const el of layers[next].querySelectorAll('[data-k]')) if (KEYS[prev].has(el.dataset.k)) el.style.viewTransitionName = 'k-' + el.dataset.k;
+      Object.assign(sh, SZ[next]); sh.v = {}; renderSurf(); surf.classList.toggle('pill', next === 'pill');
+    });
+    window.__vt = vt; vt.finished.then(() => { for (const el of surf.querySelectorAll('[data-k]')) el.style.viewTransitionName = ''; if (window.__vt === vt) window.__vt = null; });
+    return;
+  }
+  for (const l in layers) if (l !== next) { const L = layers[l]; L.classList.remove('on'); const o = +getComputedStyle(L).opacity;
+    L.getAnimations().forEach(a => a.cancel()); L.style.opacity = 0;
+    if (o > 0) L.animate([{ opacity: o }, { opacity: 0 }], { duration: RM ? 150 : V === 'D' ? 220 : 110, easing: V === 'D' ? 'linear' : 'cubic-bezier(.55,.085,.68,.53)' }); }
+  fadeIn = { l: next, started: false };
+  if (V === 'D' || RM) startLayerFade();
+}
+function startLayerFade() {
+  if (!fadeIn || fadeIn.started) return; fadeIn.started = true; const L = layers[fadeIn.l]; L.classList.add('on');
+  L.getAnimations().forEach(a => a.cancel()); L.style.opacity = 1;
+  if (V === 'D' || RM) L.animate([{ opacity: 0 }, { opacity: 1 }], { duration: RM ? 150 : 220, easing: 'linear' });
+  else for (const k of L.children) k.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: 'cubic-bezier(.22,.61,.36,1)', fill: 'backwards' });
+  window.__mark('fade:' + fadeIn.l);
+}
+
+// ---------- flat shared-element engines (B, C) ----------
+const F = {};
+if (FLAT) {
+  const all = new Set(Object.values(KEYS).flatMap(s => [...s]));
+  for (const k of all) {
+    const el = document.createElement('div'); el.className = 'fl L'; el.dataset.k = k; surf.appendChild(el);
+    F[k] = { el, k, u: 0, y: 0, w: 0, h: 0, s: 1, fs: 0, r: 0, v: {}, tgt: null, op: 0, fade: null, from: null, mix: 1 };
+  }
+  // card first so it paints under its texts
+  surf.prepend(F.card.el);
+}
+function styleFor(f, g) {                       // take the destination's look (font, colour); size comes from s or fs
+  const el = f.el, src = g.el;
+  if (BOX.has(f.k)) { el.style.background = getComputedStyle(src).backgroundColor; return; }
+  el.innerHTML = g.html; const cs = getComputedStyle(src);
+  el.style.font = cs.font; el.style.whiteSpace = 'nowrap'; el.style.overflow = 'hidden'; el.style.textOverflow = 'ellipsis';
+  el.style.padding = cs.padding; el.style.borderRadius = cs.borderRadius; el.style.background = cs.backgroundColor; el.style.letterSpacing = cs.letterSpacing;
+  if (f.k === 'bar') { el.style.width = g.w + 'px'; el.className = 'fl L mbar'; }
+  f.colTo = cs.color;
+  const gu = src.querySelector('.u'), lu = el.querySelector('.u'); if (gu && lu) { f.uFrom = f.uNow ?? 1; f.uTo = parseFloat(getComputedStyle(gu).fontSize) / parseFloat(cs.fontSize); f.uEl = lu; lu.style.fontSize = f.uFrom + 'em'; }
+}
+function place(f, g, snap) {
+  f.tgt = { u: g.u, y: g.y, w: g.w, h: g.h, r: g.rad, fs: g.fs };
+  const prevFs = f.fsT || g.fs; f.fsT = g.fs;
+  if (snap) { Object.assign(f, f.tgt); f.s = 1; f.v = {}; styleFor(f, g); f.colFrom = f.colTo; return; }
+  // C: keep the glyphs at the destination size and scale them; carry the current visual size over as a scale
+  if (TEXT.has(f.k)) {
+    if (V === 'C') { const visH = f.h * f.s; f.s = (f.s * prevFs) / g.fs; f.v.s = (f.v.s || 0) * prevFs / g.fs; }
+    else { f.fs = f.fs || prevFs; }
+  }
+  f.colFrom = getComputedStyle(f.el).color; styleFor(f, g);
+}
+// a supporting element whose straight path would sweep through another moving element doesn't fly: it fades out
+// in place and back in at its new spot. Identity (card, title, number) always flies.
+const RANK = ['card', 'num', 'title', 'icon', 'time', 'r1', 'r2'], CONT = new Set(['card|icon', 'card|title', 'card|time', 'card|num', 'icon|title']);
+function crosses(a, b, next) {
+  const A = F[a], B = F[b], ga = G[next][a], gb = G[next][b];
+  for (let i = 1; i < 10; i++) { const t = i / 10, L = (x, y) => x + (y - x) * t;
+    const ra = { x: L(A.u, ga.u), y: L(A.y, ga.y), w: L(A.w, ga.w), h: L(A.h * (A.s || 1), ga.h) }, rb = { x: L(B.u, gb.u), y: L(B.y, gb.y), w: L(B.w, gb.w), h: L(B.h * (B.s || 1), gb.h) };
+    const ix = Math.min(ra.x + ra.w, rb.x + rb.w) - Math.max(ra.x, rb.x), iy = Math.min(ra.y + ra.h, rb.y + rb.h) - Math.max(ra.y, rb.y);
+    if (ix > 0 && iy > 0 && ix * iy > .1 * Math.min(ra.w * ra.h, rb.w * rb.h)) return true; }
+  return false;
+}
+function flatGo(next, prev) {
+  const noFly = new Set();
+  if ((P.cross || 'fade') === 'fade' && !RM) {
+    const mv = RANK.filter(k => F[k].op > .25 && G[next][k]);
+    for (let i = 0; i < mv.length; i++) for (let j = i + 1; j < mv.length; j++) {
+      const [a, b] = [mv[i], mv[j]]; if (CONT.has([a, b].sort().join('|')) || CONT.has([b, a].join('|')) || CONT.has([a, b].join('|'))) continue;
+      if (noFly.has(a) || noFly.has(b)) continue;
+      if (crosses(a, b, next) && j > 2) noFly.add(b);       // the lower-ranked one, unless it is identity
+    }
+    if (noFly.size) window.__mark('nofly:' + [...noFly].join(','));
+  }
+  for (const k in F) {
+    const f = F[k], g = G[next][k];
+    if (noFly.has(k)) { f.fade = { out: true, t0: performance.now(), from: f.op, then: g }; continue; }
+    const visible = f.op > .01;
+    if (g) {
+      if (RM && visible) { place(f, g, true); f.fade = null; f.op = 1; }
+      else if (!visible || RM) { place(f, g, true); f.op0 = f.op; f.fade = { at: RM ? 0 : IN_AT, t0: null, from: f.op }; }
+      else { place(f, g, false); f.fade = f.op < 1 ? { at: 0, t0: null, from: f.op, quick: true } : null; }
+    } else if (visible) { if (RM) { f.op = 0; f.fade = null; } else f.fade = { out: true, t0: performance.now(), from: f.op }; }
+  }
+}
+function flatFrame(dt, now, sp) {
+  const prog = shapeProg();
+  for (const k in F) {
+    const f = F[k];
+    if (f.tgt && !RM) {
+      for (const p of ['u', 'y', 'w', 'h', 'r']) stepSpring(f, p, f.tgt[p], sp, dt);
+      if (TEXT.has(k)) { if (V === 'C') stepSpring(f, 's', 1, sp, dt); else { f.s = 1; stepSpring(f, 'fs', f.tgt.fs, sp, dt); } }
+    } else if (f.tgt) { Object.assign(f, { u: f.tgt.u, y: f.tgt.y, w: f.tgt.w, h: f.tgt.h, r: f.tgt.r, fs: f.tgt.fs, s: 1 }); }
+    if (f.fade) {
+      const fd = f.fade;
+      if (fd.out) { const k2 = Math.min(1, (now - fd.t0) / (RM ? 150 : 110)); f.op = fd.from * (1 - k2);
+        if (k2 >= 1) { f.op = 0; f.fade = null; if (fd.then && G[state][k] === fd.then) { place(f, fd.then, true); f.fade = { at: IN_AT, t0: null, from: 0 }; } } }
+      else { if (fd.t0 == null && prog >= fd.at) fd.t0 = now;
+        // an incoming element waits until its spot is clear of anything still flying through it (not its own parent)
+        if (fd.t0 != null && !fd.clear && !RM) { const g = G[state][k], blk = Object.values(F).some(o => o !== f && o.op > .25 && o.tgt && !inside(g, G[state][o.k]) && !inside(G[state][o.k], g) && hit(g, o));
+          if (blk && now - fd.t0 < 400) fd.t0 = now; else fd.clear = true; }
+        if (fd.t0 != null && fd.clear) { const k2 = Math.min(1, (now - fd.t0) / (RM ? 150 : fd.quick ? 120 : 260)); const e = 1 - Math.pow(1 - k2, 3); f.op = fd.from + (1 - fd.from) * e; f.rise = RM || fd.quick ? 0 : 6 * (1 - e); if (k2 >= 1) { f.fade = null; f.rise = 0; } } }
+    }
+    renderFlat(f);
+  }
+}
+const inside = (a, b) => a && b && a.u >= b.u - 1 && a.y >= b.y - 1 && a.u + a.w <= b.u + b.w + 1 && a.y + a.h <= b.y + b.h + 1;
+const hit = (g, o) => { const w = o.w, h = o.h * (TEXT.has(o.k) && V === 'C' ? o.s : 1); const ix = Math.min(g.u + g.w, o.u + w) - Math.max(g.u, o.u), iy = Math.min(g.y + g.h, o.y + h) - Math.max(g.y, o.y); return ix > 0 && iy > 0 && ix * iy > .05 * g.w * g.h; };
+function lerpCol(a, b, t) { const pa = a.match(/[\d.]+/g).map(Number), pb = b.match(/[\d.]+/g).map(Number); return `rgb(${[0, 1, 2].map(i => Math.round(pa[i] + (pb[i] - pa[i]) * t)).join(',')})`; }
+function renderFlat(f) {
+  const el = f.el; el.style.opacity = f.op;
+  const auto = f.k === 'num' || f.k === 'time' || f.k === 'hdr';
+  const visW = auto && TEXT.has(f.k) ? el.offsetWidth * (V === 'C' ? f.s : 1) : f.w;   // anchor by the real width (RTL)
+  const x = RTL ? sh.w - f.u - visW : f.u;
+  if (BOX.has(f.k)) { el.style.width = f.w + 'px'; el.style.height = f.h + 'px'; el.style.borderRadius = f.r + 'px'; el.style.transform = `translate(${x}px,${f.y}px)`; return; }
+  if (TEXT.has(f.k)) {
+    if (V === 'C') { el.style.width = auto ? 'auto' : (visW / f.s) + 'px'; el.style.transform = `translate(${x}px,${f.y + (f.rise || 0)}px) scale(${f.s})`; }
+    else { el.style.fontSize = f.fs + 'px'; el.style.width = auto ? 'auto' : visW + 'px'; el.style.transform = `translate(${x}px,${f.y + (f.rise || 0)}px)`; }
+    if (f.colFrom && f.colTo && f.tgt) { const d0 = Math.abs(f.tgt.y - f.y) + Math.abs(f.tgt.u - f.u); f.mixD = Math.max(f.mixD || 0, d0); const t = f.mixD ? 1 - d0 / f.mixD : 1; el.style.color = lerpCol(f.colFrom, f.colTo, Math.max(0, Math.min(1, t))); if (f.uEl) { f.uNow = f.uFrom + (f.uTo - f.uFrom) * Math.max(0, Math.min(1, t)); f.uEl.style.fontSize = f.uNow + 'em'; } if (d0 < .1) { f.mixD = 0; f.colFrom = f.colTo; if (f.uEl) { f.uNow = f.uFrom = f.uTo; f.uEl.style.fontSize = f.uTo + 'em'; } } }
+  } else el.style.transform = `translate(${x}px,${f.y + (f.rise || 0)}px)`;
+}
+
+// ---------- shared driver ----------
+const ORDER = ['small', 'pill', 'wide', 'large'];
+function go(next) {
+  if (next === state) return; const prev = state; window.__mark('go:' + prev + '>' + next);
+  shFrom = { w: sh.w, h: sh.h }; state = next;
+  shSp = SZ[next].w * SZ[next].h < shFrom.w * shFrom.h ? SHRINK : GROW;
+  if (V !== 'E' || RM) surf.classList.toggle('pill', next === 'pill');
+  if (FLAT) { for (const k in F) F[k].mixD = 0; flatGo(next, prev); } else layerGo(next);
+}
+window.__go = go; window.__state = () => state;
+surf.addEventListener('click', () => go(ORDER[(ORDER.indexOf(state) + 1) % 4]));
+if (FLAT) { for (const k of KEYS[state]) { place(F[k], G[state][k], true); F[k].op = 1; } }
+renderSurf(); if (FLAT) flatFrame(0, performance.now(), GROW);
+surf.classList.toggle('pill', state === 'pill');
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (V === 'E' && !RM) { /* the browser animates; nothing to step */ }
+  else if (RM) Object.assign(sh, SZ[state]);
+  else for (const k of ['w', 'h', 'r']) stepSpring(sh, k, SZ[state][k], shSp, dt);
+  renderSurf();
+  if (FLAT) flatFrame(dt, now, shSp);
+  else if (fadeIn && !fadeIn.started && shapeProg() >= IN_AT) startLayerFade();
+  sample(now);
+  requestAnimationFrame(frame);
+}
+// ---- sampling: every copy of every key, its effective opacity, rect, and scale
+const vtStyle = (k, part) => getComputedStyle(document.documentElement, `::view-transition-${part}(${k})`);
+function sample(now) {
+  if (LITE) { log.push({ t: now }); return; }
+  const sr = surf.getBoundingClientRect(), e = { t: now, state, sw: sh.w, sh: sh.h, k: {} };
+  const vt = V === 'E' && window.__vt;
+  if (vt) {           // read the browser's own flight: group box + image opacity
+    e.vt = 1; const sg = vtStyle('surf', 'group'), sm = new DOMMatrix(sg.transform === 'none' ? undefined : sg.transform); e.sw = parseFloat(sg.width); e.sh = parseFloat(sg.height);
+    const named = new Set(document.getAnimations().map(a => a.effect?.pseudoElement?.match(/group\(k-(\w+)\)/)?.[1]).filter(Boolean));
+    for (const k of named) {
+      const g = vtStyle('k-' + k, 'group');
+      const w = parseFloat(g.width), h = parseFloat(g.height); if (!w) continue;
+      const m = new DOMMatrix(g.transform === 'none' ? undefined : g.transform);
+      const on = +vtStyle('k-' + k, 'new').opacity, oo = +vtStyle('k-' + k, 'old').opacity;
+      const x = m.e - sm.e, y = m.f - sm.f;
+      (e.k[k] ||= []).push({ x: x + w / 2, y: y + h / 2, w, h, op: Math.max(on, oo), sx: 1, sy: 1, vtw: w, vth: h });
+    }
+    const hit = document.elementFromPoint(sr.left + 20, sr.top + 20); e.hit = hit === document.documentElement ? 'html' : hit?.id || hit?.className;
+  }
+  for (const el of surf.querySelectorAll('[data-k]')) {
+    const k = el.dataset.k; if (vt) break;
+    let op = 1; for (let n = el; n && n !== surf; n = n.parentElement) op *= +getComputedStyle(n).opacity;
+    if (op < .02) continue;
+    const r = el.getBoundingClientRect(); if (!r.width) continue;
+    const ix = Math.max(0, Math.min(r.right, sr.right) - Math.max(r.left, sr.left)), iy = Math.max(0, Math.min(r.bottom, sr.bottom) - Math.max(r.top, sr.top));
+    const inside = ix * iy / (r.width * r.height);
+    const m = new DOMMatrix(getComputedStyle(el).transform);
+    const o = { x: r.left + r.width / 2 - sr.left, y: r.top + r.height / 2 - sr.top, w: r.width, h: r.height, op: +op.toFixed(3), inside: +inside.toFixed(3), sx: Math.hypot(m.a, m.b), sy: Math.hypot(m.c, m.d) };
+    if (TEXT.has(k)) { const cs = getComputedStyle(el); o.trunc = el.scrollWidth > el.clientWidth + 1 ? 1 : 0; o.lines = Math.round((el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)) / (parseFloat(cs.lineHeight) || 20)); o.fs = parseFloat(getComputedStyle(el).fontSize) * o.sy; }
+    (e.k[k] ||= []).push(o);
+  }
+  log.push(e);
+}
+requestAnimationFrame(frame);
+window.__G = Object.fromEntries(Object.entries(G).map(([l, o]) => [l, Object.fromEntries(Object.entries(o).map(([k, g]) => [k, { u: g.u, y: g.y, w: g.w, h: g.h, fs: g.fs }]))]));
+window.__KEYS = Object.fromEntries(Object.entries(KEYS).map(([a, b]) => [a, [...b]]));
+}
+</script>
+</body></html>

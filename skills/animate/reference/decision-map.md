@@ -90,12 +90,13 @@ Find your **change class** (fact 1) + **relationship** (fact 2). The pattern is 
 | **Page / route** | reveal-beneath (splash / cover removed) | `revealBeneath` → new — cover pushes up & out, base was always there | object permanence: the cover *moved out of the way*, it didn't dissolve | `--ease-emphasized`, **once → 450–500ms OK** |
 | **Overlay / layer** | appear above base | `overlayRise` → new — layer rises from edge + scrim; **base dims & scales to ~0.98** | the base recedes in z so the layer reads as *on top*, not *replacing* | `--ease-out` in / `--ease-in` out |
 | **Overlay / layer** | dismiss | reverse of enter, **0.75× faster** | exits fast (law 3) | `--ease-in` |
-| **In-place** | swap *unrelated* content | `fadeThrough` → new — old fades out, **then** new fades in (no travel) | no spatial relationship between A and B → don't fake one with travel | `--ease-out`, occasional |
+| **In-place** | swap *unrelated* content | `fadeThrough` → new — old fades out, **then** new fades in (no travel) | no spatial relationship between A and B → don't fake one with travel | `--ease-out`, occasional — **not** for a value returning from a picker into its field: use the in-place stacked crossfade (motion-system "Inputs reflect back"; out-in blanked the row ~130 ms) |
 | **In-place** | expand / collapse *same* content | `v-expand-transition` (Vuetify built-in) | reuse the platform; you inherit reduced-motion | built-in |
 | **List / collection** | enter / reorder / delete | `list-stagger + FLIP` (SKILL) | survivors physically slide; entrants cascade to show order | `--ease-out`, stagger 30–80ms |
 | **Feedback** | transient msg, **has** an origin | `originExpand` → new — pill/dot at the origin **morphs** to full panel (FLIP), content staggered behind | keeps the eye locked to the entry point | overshoot **iff** tone ∈ {neutral, success} |
 | **Feedback** | transient msg, **no** origin | `toast-snackbar` (SKILL) — same-edge spring in/out | spatial consistency: leaves the way it came | tone-gated overshoot |
 | **Value / number** | count / total changes | `count-up + badge-pop` (SKILL) | the number rolls; the badge punches to mark the change | `--ease-out` roll, overshoot pop |
+| **Value / number** | the user is typing it (amount, quantity) | `amountInput` — per-glyph enter + re-centre slide, separators keyed to the digit before them, auto-shrink (motion-system "Inputs reflect back") | it is the user's own input appearing, not a value changing by itself — never count it | 240 ms enter, 270 ms slide |
 | **Brand / loading moment** | splash / launch screen | `brandReveal` → new — **mode depends on intent** (show-off vs. cover-a-wait); see Step D | it's not a state transition, it's a brand+loading beat — different rules | non-blocking; time-boxed to data-load |
 | **Continuous / scrubbed** | scroll drives a reveal, stack, or mask | `scrollScrub` → new — damped scroll progress drives clip/transform/blur | position is the clock, and the user scrubs it *both* ways | damping 0.08–0.15; **no bezier on the scrub** (law 11) |
 | **Continuous / scrubbed** | pointer drives depth / tilt | `pointerParallax` → new — pointer offset from centre × a per-layer depth multiplier, **clamped** | fakes depth-of-field from one signal; the clamp is what stops it breaking at screen edges | spring follow + hard `maxTravel` cap |
@@ -104,6 +105,7 @@ Find your **change class** (fact 1) + **relationship** (fact 2). The pattern is 
 | **Ambient / persisting** | a state is *live right now* | `livePulse` → new — dot + looping fading ring, only while live | the loop *is* the information: "this is happening now" | ~1.6–2s period, `--ease-out`, one per view |
 | **Ambient / persisting** | one element needs a first look | `attentionSheen` → new — 2–3 sweeps, then still | draws the eye once without becoming wallpaper | ~1.2s per sweep, bounded |
 | **Continuous / scrubbed** | drag drives position | `dragInertia` → new — pointer delta drives position; velocity decays after release; resistance near bounds | matches the physical expectation of *throwing* something | decay ~0.92/frame; nonlinear damping at bounds |
+| **Live surface** | one persistent surface the user reshapes (pill → banner → panel → player) by tap and drag | `liveSurface` → new — one object, 3–4 usable states; the finger drives the shape, a spring settles it, content arrives after the shape | it never closes and reopens, so the eye never loses it; every state is something you can act on | snappy spring (response .35s, damping .72) growing, critically damped shrinking |
 
 > The **Continuous / scrubbed** rows (`scrollScrub`, `pointerParallax`, `dragInertia`) are all gated by **Step B2's continuous restraint gate** first, and the **Ambient** rows by the ambient rules in Step D. On an operational surface the correct output is "none" — don't route into these rows just because the target happens to scroll.
 
@@ -151,13 +153,13 @@ Compose the actual sequence from the frequency + brand personality; don't reprod
 ### `overlayRise`, `sharedAxis`, `containerTransform`, `fadeThrough`
 - `overlayRise` — layer rises from the edge with a scrim; **the base dims and scales to ~0.98** so it reads as receding, not replaced. Reuse Vuetify's `v-dialog`/`v-bottom-sheet` transitions first; hand-roll only to add the base-recede.
 - `sharedAxis` — sibling replace: outgoing slides `-24px`+fades, incoming slides `+24px`→0+fades, on `--ease-inOut`. Direction mirrors under RTL (SKILL principle 8).
-- `containerTransform` — drill-in: the destination grows from the tapped element's rect (FLIP from `getBoundingClientRect()`; RTL-safe, don't flip real-coordinate travel).
+- `containerTransform` — drill-in: the destination grows from the tapped element's rect (RTL-safe, don't flip real-coordinate travel). **Never by scaling the page non-uniformly** — FLIP-scaling the page distorted the title 86% (measured in the shop motion lab, `assets/shop-motion-lab/`). Grow it with a clip-path unmask; for a media-led card use a **shared-element flight**: clone the image, fly it with translate + uniform scale (500 ms `cubic-bezier(.3,0,.1,1)`) to the hero while the rest fades to the page colour (200 ms), hide BOTH source and destination during the hand-off (0 frames with two images, 0 with none), then cascade the content from +225 ms (title/price, rating +60, options 35 ms apart, primary action +220, top-bar icons last at +300). Back mid-flight: retarget with a critically damped spring seeded with the clone's measured velocity.
 - `fadeThrough` — unrelated in-place swap: `out-in` cross-fade with a tiny `scale(0.99)`/blur bridge (see `skeleton-to-content` in `web.md` for the mechanics), no positional travel.
 
 ### `themeReveal` — the theme switch that comes from the toggle
 - **Choreography:** snapshot the old page, apply the new theme, then grow a `circle()` clip on the *new* snapshot from the toggle's centre to the farthest viewport corner. The browser does the snapshotting (`document.startViewTransition`); you only animate one `clip-path`. Recipe in `web.md`.
 - **When NOT:** reduced motion, or a browser without `startViewTransition` — swap instantly, no fake fallback. Don't reuse this for routine navigation; it's a once-in-a-while skin change, and a circle wiping across a data screen on every route change is exactly the noise this skill avoids.
-- **Bonus:** the same API turns `containerTransform` and `sharedAxis` into a few lines (`view-transition-name` on the source and destination), with the browser handling the FLIP. Reach for it before hand-rolling those, where the browser support you need allows.
+- **Bonus:** the same API turns `containerTransform` and `sharedAxis` into a few lines (`view-transition-name` on the source and destination), with the browser handling the FLIP. Reach for it before hand-rolling those, where the browser support you need allows — **but not for a surface the user re-taps mid-morph**: View Transitions swallowed taps for ~110 frames, blanked on interrupt (195 missing frames) and width-fit text past both end sizes on 52 frames `assets/time-until-lab/`.
 
 ### The ambient patterns — loops that explain a state that *persists*
 
@@ -188,9 +190,55 @@ All three share **one primitive** — a damped follower (law 9). Build that once
 
 #### `dragInertia` — drag with momentum and edges
 - **When:** a pannable/spinnable surface the user is meant to *throw* — a gallery, a canvas, a circular carousel.
-- **Choreography:** accumulate pointer delta into position while dragging; on release, carry the last velocity and decay it (~0.92/frame) until it falls below a threshold; near bounds apply **nonlinear** resistance (displacement past the edge scales down sharply) and spring back on release.
+- **Choreography:** accumulate pointer delta into position while dragging; on release, carry the velocity of the finger's last ~100 ms of pointer events (not the last frame's delta, which is 0 on the release frame) and decay it (~0.92/frame) until it falls below a threshold; near bounds apply **nonlinear** resistance (displacement past the edge scales down sharply) and spring back on release.
 - **When NOT:** anything with a small fixed item count where plain buttons are clearer and reachable; **always** keep a non-drag path (buttons/keyboard) — drag-only is an accessibility dead end.
 
+
+#### `liveSurface` — a persistent surface that reshapes between usable states
+Measured, not guessed: a lab prototype ran 9 engine × content-timing combinations and 6 drag/release
+rules through 15 scripted scenarios (tap, slow drag, flick, overdrag, flick-back-to-cancel, interrupt
+mid-morph, 6× CPU throttle, reduced motion, RTL + long Arabic), logging every frame. The winners:
+- **When:** something ongoing the user checks and controls without leaving the screen: an active order
+  or delivery, a timer, an upload, a call, playback. Not for one-off feedback (`originExpand`) or
+  for content that belongs on its own page.
+- **Shape = one spring per dimension (w, h, radius), retargeted, never restarted.** Grow on
+  response .35 s / damping .72 (≈4% overshoot, settles ≈380 ms — a reference reel measured 3–9% and
+  ≈450 ms). **Shrink critically damped:** an undershoot dips the box under its content (clipped frames
+  10 → 1). A fixed-duration ease restarts from zero speed on every interruption: its worst frame-to-frame
+  velocity jump was 10–23 px (46 at 6× CPU throttle) vs ≈5 for the spring.
+- **Content: an element present in both states FLIES; only state-specific content fades.** Shared
+  elements (title, the key number, icon, list rows) FLIP their rect on the shape's own spring, text
+  resized by uniform `scale` only (render at the destination size, start at old/new), retargeted with
+  position and velocity. Fading everything lost the card, title or number on 38–51 frames per
+  sequence and they jumped 83–111 px when they reappeared `assets/time-until-lab/`. State-specific content: outgoing
+  fades 110 ms at once; incoming fades + rises 6 px over 260 ms once its spot is inside the shape and
+  clear of anything still flying (≈55% of travel when content shares the box; ≈90% when it needs
+  the full box — before that it showed in a too-small box for 27–35 frames). Keep elements in the
+  same order in every size (crossing paths overlapped 8–16 frames); a supporting element whose path
+  would cross another fades instead of flying; identity elements always fly.
+- **State-specific content has a fixed width** (that state's width) and its titles stay on one line with
+  an ellipsis: on collapse it is clipped by the shrinking box instead of reflowing into a squeezed
+  two-line mess. Resizing the box is fine; a clip-path/transform engine measured no better, even
+  throttled.
+- **Drag drives the shape** through a damped follower (≈.35 catch-up per frame, 4–6 px behind the
+  finger): binding it 1:1 passes hand jitter straight through (jump 12–15 vs 4–5). Past the last state,
+  rubber-band: `max + ex·40/(40+ex)`.
+- **Release decides by projection with the FINGER's velocity** — `(y_last − y_first)/(t_last − t_first)`
+  over the last 100 ms of pointer events, zeroed if the finger rested > 60 ms before lifting — and the
+  spring starts with that velocity. Projected end = `h + v·0.18 s`; open if it passes the midpoint.
+  Measured: "past halfway" alone ignores a flick and *opens on a flick back up to cancel*; the last
+  frame's delta is 0 on the release frame, so a tiny flick snaps back. Only finger velocity got all
+  four cases right (tiny flick opens · flick back cancels · stop past half opens · short slow drag
+  closes).
+- **Inside a state:** a carousel uses native scroll-snap with scale/opacity falling off by distance
+  from the centre (gaussian); tapping a side item centres it, tapping the centre item moves the surface
+  to its next state. A media/artwork state glows with the artwork's dominant colour as a blurred radial
+  wash, faded with the state.
+- **Reduced motion:** dims jump, persistent elements snap, outgoing content vanishes, incoming fades in 150 ms (a whole-content crossfade doubled content on 61–97 frames); every gesture still lands in the right state.
+  Every gesture has a tap path. RTL: counts via i18n with the number isolated (raw "7 songs" renders
+  "songs 7"); media transport controls are not mirrored.
+- **When NOT:** more than one at a time on a screen; anything whose content needs scrolling text.
+- **Reference + harness:** `assets/live-surface-lab/` — `index.html` (defaults = these winners, every variant a query param) and `run.mjs` (the scenarios and per-frame scoring). Rerun it when tuning a new surface.
 ---
 
 ## Step E — Worked examples (the reasoning, end to end)

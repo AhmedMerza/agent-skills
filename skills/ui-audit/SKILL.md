@@ -37,7 +37,7 @@ per-page audit is structurally blind to duplication and absence.
 
 ## Diagnostic Scan
 
-Run checks across 7 dimensions. Score each **0-4** (0=critical failures, 4=excellent).
+Run checks across 8 dimensions (8 applies to data screens; score it n/a elsewhere). Score each **0-4** (0=critical failures, 4=excellent).
 
 ### 1. Accessibility (A11y)
 
@@ -146,7 +146,7 @@ Consult [responsive-design reference](../ui-polish/reference/responsive-design.m
 **Check for:**
 - **Fixed widths**: Hard-coded `width` values that break on mobile
 - **Missing responsive cols**: `v-col` without responsive breakpoint props (`cols="12" md="6"`)
-- **Touch targets**: Interactive elements < 44x44px on mobile
+- **Touch targets**: Interactive elements < 44×44 CSS px on mobile (Flutter: 48 dp, see the Flutter list)
 - **Horizontal overflow**: Content that causes horizontal scroll on narrow viewports
 - **Navigation**: Does the layout adapt? Is `v-navigation-drawer` set to `temporary` on mobile?
 - **Tables**: `v-data-table` without mobile consideration
@@ -169,7 +169,7 @@ Consult [responsive-design reference](../ui-polish/reference/responsive-design.m
 **Measure sibling sizes (required for web screens; Flutter when a device or emulator is connected).**
 Eyes skim past a card 20px taller than its row; on app !3895 (2026-11-09) five stat tiles rendered
 106/106/126px and this audit missed it from screenshots. Run
-`node ~/agent-skills/scripts/sibling-sizes.mjs <url> --widths 1440,1000,700,390 [--storage-state <file>] [--wait-text <heading>]`
+`node ~/agent-skills/scripts/sibling-sizes.mjs <url> --widths 2560,1440,1000,700,390 [--storage-state <file>] [--wait-text <heading>]`
 (Flutter: `--android --serial <device>` on each audited screen). It reports rows of repeated siblings
 (cards, tiles, buttons, tabs) whose heights differ by more than 2px, siblings out of line, and a grid's
 last row left with a lone part-width item. Every finding is at least **P2** under Responsive, with the
@@ -216,6 +216,7 @@ Consult [interaction-design reference](../ui-polish/reference/interaction-design
 - **Expensive computed in templates**: Complex calculations inline instead of cached `computed`
 - **Missing `will-change` on animating elements** (or worse, `will-change` on everything)
 - **Layout thrashing**: Reading + writing layout properties in loops
+- **Runtime health (measured, when the app runs):** `../app-teardown/motion-pass.sh <s> open <url>` (twice per page; flags vary with startup timing) and, in a never-used session, `… perf <url>`. Any `flash-before-entrance`, `stuck-hidden` or replay flag, a long frame ≥100 ms during load or an interaction, or CLS > 0.1 on a changed page is **P1**; cite the flag and its clip. Code reading cannot find these. Flutter: `../app-teardown/flutter/motion_pass.dart` in a widget test (motionless, flash, stuck, replay, press response, 48 dp targets) and `flutter/perf_test.dart` for frames.
 
 **Flutter — check for:**
 - **Missing `const` constructors** on static subtrees. This is the highest-leverage perf lever
@@ -253,7 +254,8 @@ Output a summary table, then detail each finding:
 | Interaction States | 2/4 | 3 issues |
 | Performance | 3/4 | 1 issue |
 | AI Slop & Design | 3/4 | 1 issue |
-| **Overall** | **20/28** | **12 issues** |
+| At-a-Glance (data screens) | 2/4 | 2 issues |
+| **Overall** | **22/32** | **14 issues** |
 
 ### Findings
 
@@ -271,8 +273,8 @@ Output a summary table, then detail each finding:
 | Level | Meaning | Examples |
 |-------|---------|---------|
 | **P0** | Broken/inaccessible | No keyboard nav, broken on mobile, fails WCAG A |
-| **P1** | Major UX problem | No loading state, layout property animations, no error handling |
-| **P2** | Quality gap | Hard-coded colors, untouched framework defaults, missing hover/press states |
+| **P1** | Major UX problem | No loading state, layout property animations, no error handling; on a screen the diff built or changed: missing hover/press, block-fade or no entrance, a dead-end count/KPI, untouched framework defaults |
+| **P2** | Quality gap | Hard-coded colors; the same P1 gaps on screens the diff only touched in passing |
 | **P3** | Polish opportunity | Could add stagger animation, tooltip delay grouping, reduced motion |
 
 ### 7. AI Slop & Design Quality
@@ -335,13 +337,24 @@ fact the page shows.
   number ("Record balance $4,611")
 - **Hand-rolled devices**: a stepper/meter/pill built inline in the page when the kit has (or
   should have) one
+- **Dead-end numbers**: a count, KPI, chip count or ranked-bar value that opens nothing ("20
+  merchants" with no way to see which). Each is a **P1** on a page the diff built or changed.
+  Exempt only a record's own value or a context-only running total.
+- **Drill-down that disagrees**: open each drill-down and compare its total to the headline under
+  the same filters; any mismatch is **P0** (the page states a number it can't back). In code, flag
+  a members list built from a different query than the aggregate, or a client refilter of a
+  paged list — file:line.
+- **Overview with no attention band**: an overview/ops page whose first screenful has no ranked
+  "needs attention" rows, rows that name a count instead of the consequence, or rows with no
+  inline fix
 
 Each finding cites the field, the device it should be, and the data it needs (and whether the API
 sends it) — same columns as ui-polish's Suggest mode, so the fix list is directly actionable.
 
 **Score**: 0=Wall of text and tables, 1=A few pills on a text page, 2=Main question answered
 visually but details are text, 3=Most facts are devices with comparisons, 4=The first screenful
-answers the page's question at a glance, every number has its comparison
+answers the page's question at a glance, every number has its comparison and opens its members.
+A page with any dead-end number scores at most 2.
 
 ## What NOT to Audit
 

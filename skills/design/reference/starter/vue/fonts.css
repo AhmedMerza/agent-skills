@@ -33,3 +33,16 @@
   src: url('./fonts/ibm-plex-sans-arabic-arabic-700-normal.woff2') format('woff2');
   unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
 }
+
+/* Metric-matched fallback: while Urbanist loads, text renders in a local Arial/Liberation Sans
+   resized to Urbanist's width and line box, so the swap causes no layout shift. Values measured
+   from urbanist-latin-wght-normal.woff2 at wght 400 against Liberation Sans (fontTools).
+   Keep font-display: swap above. Never `optional` for the brand face: it fixes CLS by showing
+   the fallback for the whole first visit. Preload the Latin file in the HTML head:
+   <link rel="preload" href="…/urbanist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin> */
+@font-face {
+  font-family: 'Urbanist Fallback';
+  src: local('Arial'), local('Liberation Sans'), local('Helvetica');
+  size-adjust: 98.6%; ascent-override: 96.3%; descent-override: 25.3%; line-gap-override: 0%;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+2000-206F, U+20AC, U+2122, U+2212;
+}

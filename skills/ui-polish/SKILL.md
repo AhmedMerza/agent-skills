@@ -9,6 +9,8 @@ description: Visual and interaction craft for Vue 3 / Vuetify, Flutter, and Andr
 
 If you invoked this yourself while building or changing a screen, skip the greeting below and go straight to **Build mode**.
 
+**Before any markup, open [`reference/screen-patterns.md`](reference/screen-patterns.md) in full** — its field → device lookup is the core of this skill. Reading this skill or its references through `grep`/`rg`, `head` or `sed -n` slices does not count as running it (measured: an agent that grepped this skill shipped a shipping admin as label:value text twice; a blind agent that opened screen-patterns.md in full produced a picture-led HR dashboard from the same rules).
+
 When the user invokes this skill without a specific question, respond only with:
 
 > I'm ready to help you polish your interfaces — type, color, spacing, interaction states, and the invisible details that make software feel right. Works on Vue 3 / Vuetify and Flutter. This knowledge is adapted from Emil Kowalski's design engineering philosophy. For deeper learning, check out [animations.dev](https://animations.dev/).
@@ -27,18 +29,38 @@ The boundary is simple: **if it changes over time, it's `animate`. If it's true 
 
 One more hand-off: whether the app's **identity** (palette, typeface, surface recipe, the look as a whole) is any good, and what should replace it, belongs to the **`design`** skill. This skill makes a screen right *within* an identity; when the user says the whole look is generic or not nice, go there.
 
-## Build mode — match the app before you write a widget
+## Build mode — meet the quality bar, reuse the kit where the kit is good
 
-A screen in an existing app is judged against its neighbours first, not against taste. Most ugly
-agent-built screens are not badly styled; they are *foreign*: a layout the rest of the app never
-uses, hand-rolled widgets beside a kit that already has them. Before writing markup:
+A screen is judged against the house quality bar first, then against its neighbours. Ugly
+agent-built screens come in two kinds: *foreign* (a layout the rest of the app never uses,
+hand-rolled widgets beside a kit that already has them) and *faithful to a weak app* (a perfect
+copy of neighbours that are themselves flat, generic or unexplained). Matching a weak sibling is
+not a pass. Before writing markup, in an existing app, run the **`design`** Critique (measured,
+from screenshots of the closest siblings). Its verdict decides what "the kit" means for this
+screen:
+
+- **"keep it"** — the app's look is the bar. Conform to it, steps 1–2 below.
+- **"worth redirecting"** — build this screen on the [house style](reference/house-style.md),
+  scoped to the page (see `design` Default → Established app), keep the siblings' *structure*
+  (step 1) and reuse kit components that render well, and put the global restyle in the final
+  message's "needs your yes" list. Never restyle the whole app inside a feature branch.
+
+Then:
 
 1. **Open the closest sibling screen** (same kind: detail, list, form, thread) and note its
    structure — section order, cards, how secondary content (history, remarks, logs) is reached
    (inline, tab, sheet), where actions sit. Reuse that structure unless the user asked for a new one.
+   **When the user names a reference** ("make it like <site>"), its first screenful is the
+   structure to reuse instead: screenshot it at 1440×900 and 390×844 and write its skeleton down
+   before any markup — the grid (columns and their widths), what sits in the first screenful and
+   where (hero figure, chart, side list, tiles), the relative sizes (title vs body, hero figure vs
+   other figures), and what is pushed below the fold. Build to that skeleton with your data; depart
+   only where your data can't fill a slot, and say which. In step 8, put your first screenful beside
+   the reference's at the same widths and check the skeleton slot by slot. Colours still come from
+   the user's palette, not the reference.
 2. **Use the kit and tokens.** Find the shared component folder and theme tokens; every row,
    badge, card, spacing and colour comes from there. A hand-rolled widget needs a reason the kit
-   can't meet. The app's `DESIGN.md`, if it has one, outranks the house style. **No kit or
+   can't meet. The app's `DESIGN.md`, if the user chose it, outranks the house style. **No kit or
    tokens yet** (new app, a page outside any system, or only framework defaults and no
    `DESIGN.md`)? The app has no deliberate identity: run the **`design`** skill (critique, then
    directions shown on this screen) and tell the user, rather than inventing a look. For a
@@ -69,16 +91,21 @@ uses, hand-rolled widgets beside a kit that already has them. Before writing mar
    Use the house style's composition rules when no sibling establishes the page: imagery stays
    attached to the thing it represents, dashboards have a purposeful information sequence, and
    products, orders and customers never share one generic table/card treatment.
+   **Write the field → device table before markup** — one row per field the screen shows:
+   `field | lookup row in screen-patterns | device chosen, or the reason it stays text`. Plain text
+   is allowed for identifiers (phone, order ref, address) and nothing else by default. Put the table
+   in the PR/MR description next to the screenshots, so a reviewer can see it was done.
 6. Then apply the rest of this skill and the checklist below. Sizes, type and density with no
    sibling to match come from the house style's **Proportions** section.
 7. **Motion is part of the build — invoke `animate` yourself** once the markup is in. Every built
    screen ships with the house motion system (per-element entrance, data draw-ins, hover/press,
    overlays); the user should never have to ask for it.
-8. **Look at it before you say done.** Screenshot the screen at 390, 834 and 1440 wide, and in
+8. **Look at it before you say done.** Screenshot the screen at 390, 834, 1440 and 2560 wide
+   (2560 checks the house-style **Ultra-wide** rule), and in
    Arabic/RTL (web: the `browse` skill or Playwright; Flutter: emulator or golden screenshots).
    Scan the whole frame once before focusing on the changed element. Compare against the sibling
    screen and the house-style proportions, and fix overlap, misalignment, cramped or half-empty
-   areas, touch targets under 44px on touch, and fallback icons where a photo belongs. For every
+   areas, touch targets under 44 CSS px (web) or 48 dp (Flutter), and fallback icons where a photo belongs. For every
    changed region, measure its boundary against its immediate visual neighbours at each required
    viewport and in RTL (`getBoundingClientRect` on web; widget bounds or golden comparison on
    Flutter), and record the gap and any overlap. A 0px visual gap between distinct surfaces or
@@ -90,6 +117,13 @@ uses, hand-rolled widgets beside a kit that already has them. Before writing mar
    the painted control, not only its DOM or hit target. Verify geometry and computed styles, then
    verify the screenshot; neither is sufficient alone. Do not say “matched”, “fixed”, or “parity”
    while any criticized state lacks this paired evidence.
+   Tests: when you rewrite a page, find the browser specs that visit it (`grep -rl '<route>' tests/`),
+   run them, and update the ones that assert the old markup in the same change.
+   Fonts: a layout shift on font load is fixed with a preload plus a metric-matched fallback face
+   (the starter's `Urbanist Fallback` in `fonts.css`), never `font-display: optional`, which shows
+   the fallback for the whole first visit.
+   Then the runtime pass on the built page: `../app-teardown/motion-pass.sh <s> open <url>` (twice per page; flags vary with startup timing) and, in a never-used session, `… perf <url>`. Flutter: `../app-teardown/flutter/motion_pass.dart` in a widget test (motionless, flash, stuck, replay, press response, 48 dp targets) and `flutter/perf_test.dart` for frames. Any defect flag (flash, stuck-hidden,
+   replay, long frame, CLS > 0.1) is unfinished work, not a test-environment quirk.
 9. **For Android custom notifications**, the notification shade is the sibling surface and System UI
    owns its card, header, expansion and motion. Read
    [Android native notifications](reference/android-notifications.md) before editing `RemoteViews`;
@@ -178,4 +212,6 @@ Pick the rows that fit what you actually found — don't pad the table to look t
 - [ ] Directional padding is direction-safe if the app ships an RTL locale.
 - [ ] Every changed region was measured against its immediate visual neighbours at phone, tablet, desktop, and RTL widths; no distinct controls or surfaces touch at 0px unless the design intentionally joins them.
 - [ ] Reference-led work has paired, same-state evidence for every criticized element; both the computed values and the visible crop agree.
+- [ ] The field → device table exists (step 5) and every non-identifier field maps to a device or has a stated reason. A screen where every value is `Text` / "label: value" is **unfinished**, whatever else passes.
+- [ ] People carry an identity mark, statuses a pill or glyph, times are in words, quantities with a target or remainder are drawn, not printed.
 - [ ] Nothing here is a motion decision — if it moves, it went to `animate`.

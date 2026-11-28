@@ -1,0 +1,376 @@
+<!doctype html>
+<!-- Form motion lab: "the UI reacts to what I entered". Every variant is a query param:
+     ?m=amount|pick|note  &v=A (skill as written today) | B.. (one axis changed) | W (measured winner, default)
+     any axis can be overridden directly, e.g. &v=W&spark=0  &rtl=1  &digits=ar  &kind=pay  &probe=0 (perf runs). -->
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Form motion lab</title>
+<style>
+:root{--ink:#0f1115;--mute:#8a8f98;--line:#e7e8ec;--bg:#f4f5f7;--card:#fff;--acc:#2f6bff}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--ink);font:15px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,"Droid Arabic Kufi",sans-serif;overflow:hidden}
+#app{position:absolute;inset:0;transform-origin:50% 0}
+.top{height:48px;display:flex;align-items:center;justify-content:center;font-weight:600;position:relative}
+.top .x{position:absolute;inset-inline-start:16px;width:30px;height:30px;border-radius:50%;background:#e9eaee;display:grid;place-items:center;font-size:14px}
+.bal{margin:4px auto 0;width:max-content;padding:5px 12px;border-radius:99px;background:#fff;font-size:12px;color:var(--mute)}
+.bal b{color:var(--ink)}
+/* amount */
+#amtWrap{position:relative;height:84px;margin-top:10px;overflow:visible}
+#amtWrap.clip{overflow:hidden;margin-inline:16px}
+#scaler{position:absolute;left:50%;top:0;width:0;height:84px;display:flex;justify-content:center;align-items:center;font-weight:750;font-size:66px;letter-spacing:-.02em;line-height:84px;white-space:nowrap}
+#amtWrap.clip #scaler{left:179px}
+#scaler.wrap{left:16px;width:358px;flex-wrap:wrap;height:auto;line-height:70px;align-content:flex-start}
+#scaler.tab{font-variant-numeric:tabular-nums}
+.g{display:inline-block;position:relative}
+.g.roll{clip-path:inset(0 -20px)}
+.gi{display:inline-block}
+.g.ph .gi{color:#c9ccd3}
+.g.cur.ph .gi{color:#c9ccd3}
+.cap{text-align:center;font-size:12px;color:var(--mute);margin-top:2px}
+/* form rows */
+.lbl{font-size:11px;letter-spacing:.06em;color:var(--mute);margin:14px 20px 6px}
+.row{margin:0 16px;background:var(--card);border-radius:16px;display:flex;align-items:center;padding:12px 14px;gap:10px;position:relative;overflow:hidden}
+.row.fixed{min-height:62px}
+.cell{flex:1;display:grid;min-width:0}
+.layer{grid-area:1/1;display:flex;align-items:center;gap:12px;min-width:0}
+.ic{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;flex:none;font-size:22px;background:#ffe8d6}
+.ic.plus{width:28px;height:28px;margin-inline:4px;background:none;border:1.5px solid var(--acc);color:var(--acc);font-size:18px;line-height:1}
+.ic.ini{background:#dfe6ff;color:#2a3f8f;font-size:14px;font-weight:700}
+.ic.card{border-radius:6px;width:36px;height:24px;margin-block:6px;background:linear-gradient(135deg,#3b82f6,#22d3ee);font-size:0}
+.tx{min-width:0;flex:1}
+.l1{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.l1.ph{color:var(--acc);font-weight:500}
+.l2{font-size:12.5px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chev{color:#b9bcc4;font-size:20px;flex:none}
+html[dir=rtl] .chev{transform:scaleX(-1)}
+.note{margin:0 16px;background:var(--card);border-radius:16px;display:flex;align-items:center;gap:10px;padding:10px 14px;border:1.5px solid transparent}
+.note:focus-within{border-color:var(--acc)}
+#nic{width:30px;height:30px;position:relative;flex:none}
+.ico{position:absolute;inset:0;display:grid;place-items:center;font-size:22px;line-height:1}
+#noteIn{flex:1;border:0;outline:0;font:inherit;background:none;min-width:0}
+/* keypad */
+#pad{position:absolute;left:0;right:0;bottom:8px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:0 24px;direction:ltr}
+.k{height:62px;border:0;background:none;font:500 26px system-ui;color:var(--ink);border-radius:20px;position:relative}
+.k .hl{position:absolute;inset:4px 18px;border-radius:18px;background:#dfe1e6;opacity:0;pointer-events:none}
+/* sheet */
+#scrim{position:fixed;inset:0;background:#0b0d12;opacity:0;pointer-events:none}
+#sheet{position:fixed;left:0;right:0;bottom:0;height:600px;background:#fff;border-radius:22px 22px 0 0;padding:10px 16px;transform:translateY(102%)}
+#sheet .grab{width:38px;height:5px;border-radius:3px;background:#d6d8de;margin:0 auto 10px}
+#sheet h3{font-size:17px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+#sheet .close{width:28px;height:28px;border-radius:50%;background:#eef0f3;display:grid;place-items:center;font-size:13px;font-weight:400}
+.srch{background:#f1f2f5;border-radius:12px;padding:9px 12px;color:var(--mute);font-size:13px;margin-bottom:10px}
+.opt{display:flex;align-items:center;gap:12px;padding:10px 8px;border-radius:14px;position:relative}
+.opt .chk{margin-inline-start:auto;width:22px;height:22px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;font-size:13px;opacity:0}
+.opt.sel{background:#eef3ff}
+#fx{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.spk{position:absolute;width:5px;height:5px;border-radius:50%;margin:-2.5px 0 0 -2.5px}
+.ring{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;border:1.5px solid #8fb0ff}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style></head><body>
+<div id="app">
+  <div class="top"><span class="x">✕</span><span id="ttl">Send</span></div>
+  <div class="bal"><span id="balL">Balance</span> <b dir="ltr">$4,820.50</b></div>
+  <div id="amtWrap" dir="ltr"><div id="scaler" aria-hidden="true"></div></div>
+  <div class="sr" aria-live="polite" id="amtSR"></div>
+  <div class="cap" id="capT">No fees · Arrives instantly</div>
+  <div class="lbl" id="lTo">TO</div>
+  <div class="row" id="toRow" data-p="toRow"><div class="cell"></div><span class="chev">›</span></div>
+  <div class="lbl" id="lPay">PAY WITH</div>
+  <div class="row" id="payRow" data-p="payRow"><div class="cell"></div><span class="chev">›</span></div>
+  <div class="lbl" id="lNote">NOTE</div>
+  <label class="note"><span id="nic"></span><input id="noteIn" autocomplete="off"></label>
+  <div id="pad"></div>
+</div>
+<div id="scrim"></div>
+<div id="sheet"><div class="grab"></div><h3><span id="shT"></span><span class="close" id="shX">✕</span></h3><div class="srch" id="shS"></div><div id="opts"></div></div>
+<div id="fx"></div>
+<div id="sync" style="position:fixed;left:0;top:0;width:8px;height:8px;background:#fff;z-index:9"></div>
+<script>
+// ---------------------------------------------------------------- params, tokens, presets
+const P = Object.fromEntries(new URLSearchParams(location.search));
+const M = P.m || 'amount', RTL = P.rtl === '1', PROBE = P.probe !== '0', AR = P.digits === 'ar';
+if (RTL) { document.documentElement.dir = 'rtl'; document.documentElement.lang = 'ar' }
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const D = ms => RM ? 0 : ms;
+const E = { surface: 'cubic-bezier(.16,1,.3,1)', content: 'cubic-bezier(.22,.61,.36,1)', exit: 'cubic-bezier(.55,.085,.68,.53)',
+  move: 'cubic-bezier(.645,.045,.355,1)', out: 'cubic-bezier(.23,1,.32,1)', over: 'cubic-bezier(.34,1.56,.64,1)', ease: 'ease' };
+const PRESETS = {
+  // r: instant | count | fade | glyph ; enter: blur | roll | fade ; flip: re-centre/separator FLIP ; spark ; fit: shrink | wrap | clip
+  amount: { A: { r: 'instant', fit: 'clip' }, C: { r: 'count', fit: 'clip' }, B: { r: 'fade', fit: 'clip' },
+    D: { r: 'glyph', enter: 'blur', flip: '0', spark: '0', fit: 'clip' }, E: { r: 'glyph', enter: 'blur', flip: '1', spark: '0', fit: 'clip' },
+    F: { r: 'glyph', enter: 'blur', flip: '1', spark: '1', fit: 'clip' }, G: { r: 'glyph', enter: 'roll', flip: '1', spark: '0', fit: 'clip' },
+    H: { r: 'glyph', enter: 'fade', flip: '1', spark: '0', fit: 'clip' },
+    I: { r: 'glyph', enter: 'blur', flip: '1', ride: '1', spark: '0', fit: 'clip' },
+    J: { r: 'glyph', enter: 'blur', flip: '1', ride: '1', sepk: 'left', spark: '0', fit: 'clip' },
+    W: { r: 'glyph', enter: 'blur', flip: '1', ride: '1', sepk: 'left', spark: '1', fit: 'lead' } },
+  // swap: fade (fadeThrough out-in) | cross (in-place per-line) | fly (cross + avatar flight) ; seq: tap | dis | mid | after ; h: snap | anim | fixed
+  pick: { A: { swap: 'fade', seq: 'tap', hold: '0', h: 'snap' }, B: { swap: 'cross', seq: 'tap', hold: '0', h: 'snap' },
+    C: { swap: 'fade', seq: 'after', hold: '0', h: 'snap' }, D: { swap: 'cross', seq: 'mid', hold: '0', h: 'snap' },
+    E: { swap: 'cross', seq: 'mid', hold: '0', h: 'fixed' }, F: { swap: 'cross', seq: 'mid', hold: '0', h: 'anim' },
+    G: { swap: 'fly', seq: 'dis', hold: '0', h: 'fixed' }, H: { swap: 'cross', seq: 'mid', hold: '350', h: 'fixed' },
+    W: { swap: 'cross', seq: 'mid', hold: '150', h: 'fixed', xd: '90' } },
+  // trig: key | d200 | d300 | d500 | blur ; swap: swap (success-morph swap) | fade (fadeThrough) | cross | pop ; cls: prefix | word
+  note: { A: { trig: 'key', swap: 'swap', cls: 'prefix' }, B: { trig: 'key', swap: 'fade', cls: 'prefix' },
+    C: { trig: 'd200', swap: 'swap', cls: 'prefix' }, D: { trig: 'd300', swap: 'swap', cls: 'prefix' }, E: { trig: 'd500', swap: 'swap', cls: 'prefix' },
+    F: { trig: 'blur', swap: 'swap', cls: 'prefix' }, G: { trig: 'd300', swap: 'pop', cls: 'prefix' }, H: { trig: 'd300', swap: 'cross', cls: 'prefix' },
+    I: { trig: 'd300', swap: 'pop', cls: 'word' }, J: { trig: 'key', swap: 'pop', cls: 'word' },
+    W: { trig: 'd300', swap: 'pop', cls: 'word' } } };
+const V = { ...{ edur: '240', fdur: '270', xd: '60', ride: '0', sdl: '0', sex: '0' }, ...PRESETS[M][P.v || 'W'], ...P };
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const rect = el => el.getBoundingClientRect();
+const T = RTL ? { send: 'إرسال', bal: 'الرصيد', cap: 'بدون رسوم · يصل فوراً', to: 'إلى', pay: 'الدفع عبر', note: 'ملاحظة', chooseTo: 'اختر المستلم', choosePay: 'اختر طريقة الدفع',
+  sendTo: 'إرسال إلى', payWith: 'الدفع عبر', search: 'الاسم أو المعرّف أو الهاتف', notePh: 'أضف ملاحظة' }
+  : { send: 'Send', bal: 'Balance', cap: 'No fees · Arrives instantly', to: 'TO', pay: 'PAY WITH', note: 'NOTE', chooseTo: 'Choose recipient', choosePay: 'Choose payment method',
+  sendTo: 'Send to', payWith: 'Pay with', search: 'Name, $tag or phone', notePh: 'Add a note' };
+$('#ttl').textContent = T.send; $('#balL').textContent = T.bal; $('#capT').textContent = T.cap; $('#lTo').textContent = T.to; $('#lPay').textContent = T.pay; $('#lNote').textContent = T.note; $('#noteIn').placeholder = T.notePh;
+
+// ---------------------------------------------------------------- per-frame probe
+const LOG = []; window.__log = LOG; let REC = false;
+window.__mark = m => LOG.push({ t: performance.now(), mark: m });
+window.__counters = { morphs: 0, iconSwaps: 0, sparks: 0, renders: 0 };
+function eo(el) { let o = 1; for (let e = el; e && e.nodeType === 1; e = e.parentElement) { const cs = getComputedStyle(e);
+  if (cs.display === 'none' || cs.visibility === 'hidden') return 0; o *= +cs.opacity; if (o < .005) return 0 } return o }
+const r2 = n => Math.round(n * 100) / 100;
+const blurOf = el => { const m = /blur\(([\d.]+)px\)/.exec(getComputedStyle(el).filter); return m ? +m[1] : 0 };
+function frame() {
+  if (REC) { const f = { t: performance.now() };
+    if (PROBE) f.x = EXTRA[M](); else if (M === 'amount') f.fxn = $('#fx').childElementCount;
+    LOG.push(f) }
+  requestAnimationFrame(frame) }
+requestAnimationFrame(frame);
+const EXTRA = {
+  amount: () => { const S = curScale(), out = { gl: [], s: r2(S) };
+    if (V.r === 'glyph') for (const g of $$('#scaler .g')) { const gi = g.firstChild, r = rect(gi), o = eo(gi);
+      out.gl.push([g.dataset.k, gi.textContent, r2(r.x), r2(r.width), r2(o), r2(new DOMMatrix(getComputedStyle(gi).transform).a), r2(blurOf(gi)), g.classList.contains('gone') ? 1 : 0, r2(r.y)]) }
+    else { const n = $('#scaler .num'); if (n) { const r = rect(n); out.gl.push(['all', n.textContent, r2(r.x), r2(r.width), r2(eo(n)), 1, r2(blurOf(n)), 0, r2(r.y)]) } }
+    out.fxn = $('#fx').childElementCount; return out },
+  pick: () => { const o = {}; for (const id of ['toRow', 'payRow']) { const row = $('#' + id), rr = rect(row);
+      o[id] = { h: row.offsetHeight, y: r2(rr.y), L: [...row.querySelectorAll('.layer')].map(l => { const a = l.querySelector('.l1'), ic = l.querySelector('.ic'), ra = rect(a), ri = rect(ic);
+        return [l.dataset.id, r2(eo(a)), r2(ra.x), r2(ra.y), r2(ra.width), r2(eo(ic)), r2(ri.x), r2(ri.y), r2(ri.width), a.scrollWidth > a.clientWidth + 1 ? 1 : 0, r2(blurOf(l))] }) } }
+    const sh = rect($('#sheet')); o.sheetY = r2(sh.y); o.scrim = r2(+getComputedStyle($('#scrim')).opacity)
+    const fl = $('#fx .flyc'); if (fl) { const r = rect(fl); o.fly = [r2(r.x), r2(r.y), r2(r.width), r2(eo(fl))] }
+    const ch = $('#opts .opt.sel .chk'); o.chk = ch ? r2(eo(ch)) : 0
+    return o },
+  note: () => ({ val: $('#noteIn').value, ic: $$('#nic .ico').map(i => { const r = rect(i), m = new DOMMatrix(getComputedStyle(i).transform); return [i.dataset.i, r2(eo(i)), r2(r.width), r2(Math.atan2(m.b, m.a) * 180 / Math.PI)] }) })
+};
+
+// ================================================================ 1. AMOUNT
+const scaler = $('#scaler'), wrapEl = $('#amtWrap');
+if (V.fit === 'clip') wrapEl.classList.add('clip'); if (V.fit === 'wrap') scaler.classList.add('wrap'); if (V.r === 'count') scaler.classList.add('tab');
+const DIG = '٠١٢٣٤٥٦٧٨٩', loc = c => AR ? (/\d/.test(c) ? DIG[+c] : c === ',' ? '٬' : c === '.' ? '٫' : c) : c;
+let val = '';                                     // raw typed value: digits and at most one '.'
+function glyphs(v) {                              // → [{k, c}] keyed so typed digits keep identity, separators keyed from the right
+  if (!v) return [{ k: 'cur', c: '$', ph: 1 }, { k: 'ph0', c: '0', ph: 1 }];
+  const [i, f] = v.split('.'), out = [{ k: 'cur', c: '$' }]; let di = 0;
+  for (let n = 0; n < i.length; n++) { const fromR = i.length - n; out.push({ k: 'd' + di++, c: i[n] }); if (fromR > 1 && (fromR - 1) % 3 === 0) out.push({ k: V.sepk === 'left' ? 'sL' + (di - 1) : 's' + (fromR - 1) / 3, c: ',' }) }   // sepk=left: a separator belongs to the digit before it, so it never slides across a digit
+  if (f !== undefined) { out.push({ k: 'dot', c: '.' }); for (const ch of f) out.push({ k: 'd' + di++, c: ch }) }
+  return out }
+const fmt = v => glyphs(v).map(g => loc(g.c)).join('');
+window.__fmt = v => fmt(v);
+function press(key) {
+  let n = val; if (key === 'del') n = n.slice(0, -1);
+  else if (key === '.') { if (!n.includes('.')) n = (n || '0') + '.' }
+  else { const [i, f] = n.split('.'); if (f !== undefined ? f.length >= 2 : (i.length >= 7 || (key === '0' && !n))) { window.__mark('key:ignored'); return } n += key }
+  if (n === '0.' && key === 'del') n = '';
+  const old = val; val = n; window.__mark('key:' + key + ':' + val); renderAmt(old, n, key === 'del') }
+let curS = 1; const curScale = () => { const s = getComputedStyle(scaler).scale; return s === 'none' ? 1 : +s.split(' ')[0] };
+const txOf = el => { const t = getComputedStyle(el).translate; return t === 'none' ? 0 : parseFloat(t) };
+let fadeBusy = false, fadePending = null, countAnim = null;
+function renderAmt(old, v, del) {
+  window.__counters.renders++; $('#amtSR').textContent = fmt(v);
+  if (V.r === 'instant') { scaler.innerHTML = `<span class="num g${v ? '' : ' ph'}"><span class="gi">${fmt(v)}</span></span>`; scaler.firstChild.textContent = fmt(v); return fit() }
+  if (V.r === 'count') {                          // web.md count-up recipe: 500 ms ease-out roll, tabular nums
+    const a = +(old || 0), b = +(v || 0), dec = (v.split('.')[1] ?? '').length, t0 = performance.now(), n = scaler.querySelector('.num') || mk();
+    function mk() { scaler.innerHTML = '<span class="num"></span>'; return scaler.firstChild }
+    const show = x => { n.textContent = '$' + loc(x.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec })).replace(/,/g, loc(',')); n.classList.toggle('ph', !v) };
+    if (countAnim) cancelAnimationFrame(countAnim); const from = n.dataset.cur ? +n.dataset.cur : a;
+    (function step() { const k = Math.min(1, (performance.now() - t0) / D(500 || 1)), e = 1 - Math.pow(1 - k, 3), x = from + (b - from) * (isNaN(e) ? 1 : e);
+      n.dataset.cur = x; show(k >= 1 || RM ? b : Math.round(x * 10 ** dec) / 10 ** dec); if (k < 1 && !RM) countAnim = requestAnimationFrame(step); else { countAnim = null; if (!v) n.textContent = '$0' } })(); return }
+  if (V.r === 'fade') {                           // skill fadeThrough / skeleton-to-content: out-in 260 ms, blur bridge
+    let n = scaler.querySelector('.num'); if (!n) { scaler.innerHTML = '<span class="num"></span>'; n = scaler.firstChild; n.textContent = fmt(v); return }
+    fadePending = v; if (fadeBusy) return; fadeBusy = true;
+    const go = async () => { await n.animate([{ opacity: 1, filter: 'blur(0)' }, { opacity: 0, filter: 'blur(6px)' }], { duration: D(260), easing: 'ease', fill: 'forwards' }).finished;
+      n.textContent = fmt(fadePending); n.classList.toggle('ph', !fadePending); fit(); fadePending = null;
+      await n.animate([{ opacity: 0, filter: 'blur(6px)', transform: 'scale(.99)' }, { opacity: 1, filter: 'blur(0)', transform: 'none' }], { duration: D(260), easing: E.out, fill: 'forwards' }).finished;
+      if (fadePending != null) return go(); fadeBusy = false };
+    return go() }
+  // ---- per-glyph keyed render
+  const want = glyphs(v), have = new Map($$('#scaler .g:not(.gone)').map(g => [g.dataset.k, g]));
+  const first = new Map(); for (const [k, g] of have) first.set(k, g.offsetLeft + txOf(g));
+  const keep = new Set(want.map(w => w.k)), entering = [], exits = [], oldKeys = [...have.keys()];
+  const leaving = k => !keep.has(k) || have.get(k).dataset.c !== want.find(w => w.k === k).c;
+  for (const [k, g] of have) if (leaving(k)) {    // exit: pinned where it is, out of layout
+    const i = oldKeys.indexOf(k), lk = oldKeys.slice(0, i).reverse().find(q => !leaving(q)), mid = oldKeys.slice(i + 1).some(q => !leaving(q)); exits.push([g, lk, mid]);
+    const x = g.offsetLeft + txOf(g); g.getAnimations().forEach(a => a.cancel()); g.classList.add('gone'); g.style.position = 'absolute'; g.style.left = x + 'px'; g.style.translate = 'none'; have.delete(k); first.delete(k);
+    g.firstChild.animate([{ opacity: 1, transform: 'none', filter: 'blur(0)' }, { opacity: 0, transform: 'scale(.6)', filter: V.enter === 'blur' ? 'blur(4px)' : 'blur(0)' }], { duration: D(/^s/.test(k) && V.sepk === 'left' ? +(V.sex ?? 50) : 140), easing: E.exit, fill: 'forwards' }).finished.then(() => g.remove(), () => {}) }
+  let prev = null;
+  for (const w of want) { let g = have.get(w.k);
+    if (!g) { g = document.createElement('span'); g.className = 'g'; g.dataset.k = w.k; g.dataset.c = w.c; g.innerHTML = `<span class="gi">${loc(w.c)}</span>`; entering.push(g) }
+    g.classList.toggle('ph', !!w.ph);
+    if (prev) prev.after(g); else scaler.prepend(g); prev = g }
+  fit();
+  const DX = new Map(), slide = (g, kf, extra) => { const a = g.animate(kf, { duration: D(+V.fdur), easing: E.content, ...extra }); a.id = 'flip'; return a };
+  if (V.flip === '1') for (const [k, g] of have) { const dx = first.get(k) - g.offsetLeft, sc = getComputedStyle(g).scale, sx = sc === 'none' ? 1 : +sc.split(' ')[0]; DX.set(k, dx);
+    g.getAnimations().filter(a => a.id === 'flip').forEach(a => a.cancel());
+    if (Math.abs(dx) > .5 || sx < .999) slide(g, [{ translate: dx + 'px 0', scale: sx + ' 1' }, { translate: '0 0', scale: '1 1' }]) }
+  if (V.flip === '1' && V.ride === '1') {          // new glyphs ride with their left neighbour; a mid-row insert (separator) grows into the gap as it opens
+    let lastDx; for (const w of want) { const g = scaler.querySelector(`.g[data-k="${w.k}"]:not(.gone)`);
+      if (!entering.includes(g)) { lastDx = DX.get(w.k); continue } if (!lastDx || Math.abs(lastDx) < .5) continue;
+      const mid = want.slice(want.indexOf(w) + 1).some(q => DX.has(q.k));
+      slide(g, mid ? [{ translate: lastDx + 'px 0', scale: '0 1' }, { translate: '0 0', scale: '1 1' }] : [{ translate: lastDx + 'px 0' }, { translate: '0 0' }]); g.style.transformOrigin = '0 50%' }
+    for (const [g, lk, mid] of exits) { const dl = DX.get(lk); if (!dl || Math.abs(dl) < .5) continue; g.style.transformOrigin = '0 50%';
+      slide(g, mid ? [{ translate: '0 0', scale: '1 1' }, { translate: -dl + 'px 0', scale: '0 1' }] : [{ translate: '0 0' }, { translate: -dl + 'px 0' }], { fill: 'forwards' }) } }
+  for (const g of entering) { const gi = g.firstChild, d = D(+V.edur), delay = !/^s/.test(g.dataset.k) ? 0 : V.sep === 'late' ? D(+V.fdur * .45) : V.sepk === 'left' ? D(+(V.sdl ?? 40)) : 0;   // a moved separator: old one gone (50 ms) before the new one shows
+    if (g.dataset.k === 'ph0' || g.dataset.k === 'cur') continue;   // the resting "$0" is a state, not news: no fade (a fade left a bare "$" for ~100 ms)
+    if (V.enter === 'blur') gi.animate([{ opacity: 0, transform: 'translateY(.16em) scale(.6)', filter: 'blur(6px)' }, { opacity: 1, offset: .55 }, { opacity: 1, transform: 'none', filter: 'blur(0)' }], { duration: d, delay, easing: E.out, fill: 'backwards' });
+    else if (V.enter === 'roll') { g.classList.add('roll'); gi.animate([{ transform: 'translateY(100%)' }, { transform: 'none' }], { duration: d, easing: E.out }).finished.then(() => g.classList.remove('roll'), () => {}) }
+    else gi.animate([{ opacity: 0 }, { opacity: 1 }], { duration: D(200), easing: 'ease' });
+    if (V.spark === '1' && !del && !RM && /^d\d/.test(g.dataset.k)) sparkle(gi) } }
+function fit() {                                   // auto-shrink: scale the row to the available width (animated with the re-centre)
+  if (V.fit !== 'shrink' && V.fit !== 'lead') return;
+  const natural = [...scaler.children].filter(g => !g.classList.contains('gone')).reduce((s, g) => s + g.offsetWidth, 0);
+  const full = (val.split('.')[1] ?? '').length >= 2, room = V.fit === 'lead' && !full ? 48 : 0;   // lead: keep room for the next digit
+  const s = Math.min(1, (350 - room) / natural); if (Math.abs(s - curS) < .001) return; const from = curScale(); curS = s;
+  scaler.getAnimations().forEach(a => a.cancel()); scaler.style.scale = s;
+  scaler.animate([{ scale: from }, { scale: s }], { duration: D(+V.fdur), easing: E.content }) }
+const SPK = ['#7aa2ff', '#b18cff', '#ffcf4a', '#5ad1e6', '#ff8fb1'];
+function sparkle(gi) { const r = rect(gi), cx = r.x + r.width / 2, cy = r.y + r.height / 2, fx = $('#fx'); window.__counters.sparks++;
+  const ring = document.createElement('div'); ring.className = 'ring'; ring.style.left = cx + 'px'; ring.style.top = cy + 'px'; fx.append(ring);
+  ring.animate([{ transform: 'scale(.3)', opacity: .9 }, { transform: 'scale(1.5)', opacity: 0 }], { duration: 320, easing: E.out }).finished.then(() => ring.remove());
+  for (let i = 0; i < 8; i++) { const p = document.createElement('div'), a = (i / 8) * Math.PI * 2 + Math.random() * .5, d = 22 + Math.random() * 16;
+    p.className = 'spk'; p.style.background = SPK[i % 5]; p.style.left = cx + 'px'; p.style.top = cy + 'px'; fx.append(p);
+    p.animate([{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: `translate(${Math.cos(a) * d}px,${Math.sin(a) * d - 8}px) scale(.3)`, opacity: 0 }], { duration: 520 + i * 10, easing: E.out }).finished.then(() => p.remove()) } }
+// keypad
+for (const k of ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'del']) { const b = document.createElement('button'); b.className = 'k'; b.dataset.k = k;
+  b.innerHTML = `<span class="hl"></span>${k === 'del' ? '⌫' : loc(k)}`; b.addEventListener('pointerdown', () => { keyLight(b); press(k) }); $('#pad').append(b) }
+function keyLight(b) { b.firstChild.animate([{ opacity: 1 }, { opacity: 0 }], { duration: D(260), easing: 'ease-out' }) }
+renderAmt('', '');
+if (M !== 'amount') { val = '1250'; renderAmt('', '1250') }
+
+// ================================================================ 2. PICKER → ROW
+const PEOPLE = [{ id: 'maya', n: 'Maya Chen', h: '@mayachen · Member', a: '👩🏻', bg: '#ffe0e6' }, { id: 'james', n: 'James Okafor', h: '@jokafor · Member', a: '👨🏾', bg: '#e3f0ff' },
+  { id: 'leo', n: 'Leo Park', h: '@leopark · Member', a: '🧑🏻', bg: '#fff1cc' }, { id: 'sofia', n: 'Sofia Ruiz', h: '@sofiar · Member', a: '👩🏽', bg: '#e6f7ea' },
+  { id: 'alex', n: 'Alexandria Konstantinopoulou-Whitfield', h: '@alexandria.konstantinopoulou · Member', a: null, ini: 'AK' }];
+const METHODS = [{ id: 'bal', n: 'Balance', h: '$4,820.50 available', a: '◎', bg: '#ffe7b8' }, { id: 'card', n: 'Debit Card •••• 4021', h: 'Instant · No fee', card: 1 },
+  { id: 'bank', n: 'Bank Account •• 7788', h: '1–2 business days', a: '🏦', bg: '#eceff3' }];
+if (RTL) { PEOPLE[0].n = 'مايا تشين'; PEOPLE[1].n = 'جيمس أوكافور'; METHODS[1].n = 'بطاقة خصم •••• 4021'; METHODS[1].h = 'فوري · بدون رسوم' }
+const icHTML = o => o.card ? '<span class="ic card"></span>' : o.a ? `<span class="ic" style="background:${o.bg}">${o.a}</span>` : `<span class="ic ini">${o.ini}</span>`;
+function layerHTML(o, kind) { if (!o) return `<div class="layer" data-id="ph"><span class="ic plus">+</span><div class="tx"><div class="l1 ph">${kind === 'to' ? T.chooseTo : T.choosePay}</div></div></div>`;
+  return `<div class="layer" data-id="${o.id}">${icHTML(o)}<div class="tx"><div class="l1">${o.n}</div><div class="l2">${o.h}</div></div></div>` }
+for (const [id, kind] of [['toRow', 'to'], ['payRow', 'pay']]) { const r = $('#' + id); r.querySelector('.cell').innerHTML = layerHTML(null, kind); if (V.h === 'fixed') r.classList.add('fixed');
+  r.addEventListener('click', () => openSheet(kind)) }
+const SH = { open: false, kind: null, anim: null, busy: false };
+function openSheet(kind) { if (SH.open) return; SH.open = true; SH.kind = kind; window.__mark('open:' + kind);
+  const list = kind === 'to' ? PEOPLE : METHODS, cur = $(`#${kind === 'to' ? 'toRow' : 'payRow'} .layer:last-child`)?.dataset.id;
+  $('#shT').textContent = kind === 'to' ? T.sendTo : T.payWith; $('#shS').textContent = T.search; $('#shS').style.display = kind === 'to' ? '' : 'none';
+  $('#opts').innerHTML = list.map(o => `<div class="opt${o.id === cur ? ' sel' : ''}" data-id="${o.id}">${icHTML(o)}<div class="tx"><div class="l1">${o.n}</div><div class="l2">${o.h}</div></div><span class="chk" style="opacity:${o.id === cur ? 1 : 0}">✓</span></div>`).join('');
+  $$('#opts .opt').forEach(el => el.addEventListener('click', () => choose(kind, el)));
+  SH.anim?.cancel(); $('#scrim').style.pointerEvents = 'auto';
+  SH.anim = $('#sheet').animate([{ transform: getComputedStyle($('#sheet')).transform === 'none' ? 'translateY(102%)' : getComputedStyle($('#sheet')).transform }, { transform: 'translateY(0)' }], { duration: D(340), easing: E.surface, fill: 'forwards' });
+  $('#scrim').animate([{ opacity: +getComputedStyle($('#scrim')).opacity }, { opacity: .35 }], { duration: D(340), fill: 'forwards' });
+  $('#app').animate([{ transform: 'scale(1)' }, { transform: 'scale(.98)' }], { duration: D(340), easing: E.surface, fill: 'forwards' }) }   // overlayRise: base recedes
+function closeSheet() { if (!SH.open) return null; SH.open = false; window.__mark('dismiss'); $('#scrim').style.pointerEvents = 'none';
+  SH.anim?.cancel(); SH.anim = $('#sheet').animate([{ transform: 'translateY(0)' }, { transform: 'translateY(102%)' }], { duration: D(255), easing: E.exit, fill: 'forwards' });   // 0.75× the rise
+  $('#scrim').animate([{ opacity: .35 }, { opacity: 0 }], { duration: D(255), fill: 'forwards' });
+  $('#app').animate([{ transform: 'scale(.98)' }, { transform: 'scale(1)' }], { duration: D(255), easing: E.out, fill: 'forwards' });
+  SH.anim.finished.then(() => window.__mark('sheetGone'), () => {}); return SH.anim }
+$('#shX').addEventListener('click', () => closeSheet()); $('#scrim').addEventListener('click', () => closeSheet());
+async function choose(kind, el) {
+  if (!SH.open || SH.busy) return; SH.busy = true; const id = el.dataset.id, o = (kind === 'to' ? PEOPLE : METHODS).find(x => x.id === id); window.__mark('tap:' + id);
+  $$('#opts .opt').forEach(x => { x.classList.toggle('sel', x === el); x.querySelector('.chk').style.opacity = x === el ? 1 : 0 });
+  el.querySelector('.chk').animate([{ transform: 'scale(.5)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], { duration: D(220), easing: E.over });
+  const src = rect(el.querySelector('.ic')), row = $('#' + (kind === 'to' ? 'toRow' : 'payRow'));
+  if (V.seq === 'tap') morph(row, o, kind, src);
+  if (+V.hold) await wait(D(+V.hold));
+  const a = closeSheet(); SH.busy = false;
+  if (V.seq === 'dis') morph(row, o, kind, src);
+  if (V.seq === 'mid') { await wait(D(120)); morph(row, o, kind, src) }
+  if (V.seq === 'after') { await a?.finished.catch(() => {}); morph(row, o, kind, src) } }
+function morph(row, o, kind, src) {
+  window.__counters.morphs++; window.__mark('morph:' + o.id); const cell = row.querySelector('.cell'), olds = [...cell.querySelectorAll('.layer:not(.out)')];
+  const h0 = row.offsetHeight, tmp = document.createElement('div'); tmp.innerHTML = layerHTML(o, kind); const nl = tmp.firstChild;
+  const heightAnim = () => { if (V.h !== 'anim') return; const h1 = row.offsetHeight; if (Math.abs(h1 - h0) < 1) return;
+    row.animate([{ height: h0 + 'px' }, { height: h1 + 'px' }], { duration: D(220), easing: E.content }) };
+  if (V.swap === 'fade') {                        // fadeThrough: out, then in (skeleton-to-content mechanics)
+    olds.forEach(l => { l.classList.add('out'); l.getAnimations().forEach(a => a.pause()) });
+    Promise.all(olds.map(l => l.animate([{ opacity: getComputedStyle(l).opacity, filter: 'blur(0)' }, { opacity: 0, filter: 'blur(6px)' }], { duration: D(260), easing: 'ease', fill: 'forwards' }).finished)).then(() => {
+      if (!nl.isConnected && cell.querySelector('.layer:last-child') !== nl) { olds.forEach(l => l.remove()); cell.append(nl); heightAnim();
+        nl.animate([{ opacity: 0, filter: 'blur(6px)', transform: 'scale(.99)' }, { opacity: 1, filter: 'blur(0)', transform: 'none' }], { duration: D(260), easing: E.out }).finished.then(() => window.__mark('settled'), () => {}) } }, () => {});
+    return }
+  // cross: in-place, per line; the new layer stacks in the same grid cell so the row never has an empty frame
+  olds.forEach(l => { l.classList.add('out'); l.getAnimations().forEach(a => a.cancel());
+    l.animate([{ opacity: 1 }, { opacity: 0 }], { duration: D(120), easing: E.exit, fill: 'forwards' }).finished.then(() => { l.remove(); if (V.h === 'anim') {} }, () => {}) });
+  cell.append(nl); heightAnim(); const xd = D(+V.xd), ic = nl.querySelector('.ic'), l1 = nl.querySelector('.l1'), l2 = nl.querySelector('.l2');
+  const icA = V.swap === 'fly' ? fly(src, ic) : ic.animate([{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'none' }], { duration: D(260), delay: xd, easing: E.over, fill: 'backwards' });
+  l1.animate([{ opacity: 0, transform: 'translateY(3px)' }, { opacity: 1, transform: 'none' }], { duration: D(200), delay: xd, easing: E.out, fill: 'backwards' });
+  const a2 = l2.animate([{ opacity: 0, transform: 'translateY(3px)' }, { opacity: 1, transform: 'none' }], { duration: D(200), delay: xd + D(50), easing: E.out, fill: 'backwards' });
+  Promise.all([icA.finished, a2.finished]).then(() => window.__mark('settled'), () => {}) }
+function fly(src, ic) {                            // shared element: the tapped avatar travels from the sheet into the row's icon slot
+  const dst = rect(ic), c = ic.cloneNode(true); c.classList.add('flyc'); c.style.position = 'absolute'; c.style.left = src.x + 'px'; c.style.top = src.y + 'px'; c.style.margin = 0; c.style.transformOrigin = '0 0';
+  $('#fx').append(c); ic.style.opacity = 0;
+  const a = c.animate([{ transform: 'none' }, { transform: `translate(${dst.x - src.x}px,${dst.y - src.y}px) scale(${dst.width / src.width})` }], { duration: D(320), easing: E.move, fill: 'forwards' });
+  a.finished.then(() => { ic.style.opacity = ''; c.remove() }, () => {}); return a }
+
+// ================================================================ 3. NOTE ICON FROM MEANING (app logic: keyword → emoji)
+const DICT = [['sushi', '🍣'], ['pizza', '🍕'], ['dinner', '🍕'], ['lunch', '🍕'], ['food', '🍕'], ['coffee', '☕'], ['rent', '🏠'], ['taxi', '🚕'], ['gift', '🎁'], ['movie', '🎬'],
+  ['عشاء', '🍕'], ['غداء', '🍕'], ['قهوة', '☕'], ['إيجار', '🏠'], ['هدية', '🎁']];
+const PENCIL = '✏️';
+function classify(txt) {                          // later, more specific words win; 'prefix' also matches the word being typed (≥3 letters)
+  const words = txt.toLowerCase().split(/\s+/).filter(Boolean); let hit = PENCIL;
+  words.forEach((w, i) => { const last = i === words.length - 1 && !/\s$/.test(txt);
+    for (const [k, e] of DICT) if (w === k || w === k + 's' || (V.cls === 'prefix' && last && w.length >= 3 && k.startsWith(w))) { hit = e; break } });
+  return hit }
+window.__classify = classify;
+const nic = $('#nic'); nic.innerHTML = `<span class="ico" data-i="${PENCIL}">${PENCIL}</span>`; let shownIcon = PENCIL, debT = null;
+function setIcon(e) {
+  if (e === shownIcon) return; shownIcon = e; window.__counters.iconSwaps++; window.__mark('icon:' + e);
+  const olds = [...nic.querySelectorAll('.ico:not(.out)')], n = document.createElement('span'); n.className = 'ico'; n.dataset.i = e; n.textContent = e;
+  olds.forEach(o => o.classList.add('out'));
+  const kill = (o, kf, opt) => { o.getAnimations().forEach(a => a.cancel()); return o.animate(kf, { fill: 'forwards', ...opt }).finished.then(() => o.remove(), () => {}) };
+  if (V.swap === 'swap' || V.swap === 'fade') {    // out-in, like Vue <Transition mode="out-in">
+    const [d, kfo, kfi] = V.swap === 'swap' ? [160, { opacity: 0, transform: 'scale(.8)' }, { opacity: 0, transform: 'scale(.8)' }] : [260, { opacity: 0, filter: 'blur(6px)' }, { opacity: 0, filter: 'blur(6px)', transform: 'scale(.99)' }];
+    n.style.opacity = 0; nic.append(n);
+    Promise.all(olds.map(o => kill(o, [{ opacity: getComputedStyle(o).opacity }, kfo], { duration: D(d), easing: 'ease' }))).then(() => { if (!n.isConnected) return; n.style.opacity = '';
+      n.animate([kfi, { opacity: 1, transform: 'none', filter: 'blur(0)' }], { duration: D(d), easing: E.out }) }) ; return }
+  nic.append(n);
+  if (V.swap === 'cross') { olds.forEach(o => kill(o, [{ opacity: getComputedStyle(o).opacity }, { opacity: 0 }], { duration: D(150) })); n.animate([{ opacity: 0 }, { opacity: 1 }], { duration: D(150) }); return }
+  // pop: old shrinks out fast, new pops in with overshoot and a small counter-rotation that settles (reel)
+  olds.forEach(o => kill(o, [{ opacity: getComputedStyle(o).opacity, transform: getComputedStyle(o).transform === 'none' ? 'none' : getComputedStyle(o).transform }, { opacity: 0, transform: 'scale(.3)' }], { duration: D(110), easing: E.exit }));
+  n.animate([{ opacity: 0, transform: 'scale(.4) rotate(-14deg)' }, { opacity: 1, transform: 'scale(1.15) rotate(4deg)', offset: .6 }, { opacity: 1, transform: 'scale(1) rotate(0)' }],
+    { duration: D(300), delay: D(50), easing: E.out, fill: 'backwards' }) }
+const noteIn = $('#noteIn');
+noteIn.addEventListener('input', () => { window.__mark('nk:' + noteIn.value); const e = classify(noteIn.value);
+  if (!noteIn.value) { clearTimeout(debT); return setIcon(PENCIL) }          // cleared → back to the pencil at once
+  if (V.trig === 'key') return setIcon(e);
+  if (V.trig === 'blur') return; clearTimeout(debT); debT = setTimeout(() => setIcon(classify(noteIn.value)), +V.trig.slice(1)) });
+noteIn.addEventListener('blur', () => { if (V.trig === 'blur') setIcon(classify(noteIn.value)) });
+
+// ================================================================ scripted scenarios (in-page: exact timing)
+const pressKey = k => { const b = $(`.k[data-k="${k}"]`); b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })) };
+async function typeKeys(seq, gap) { for (const k of seq) { pressKey(k); await wait(gap) } }
+async function typeNote(txt, char, spaceGap) { noteIn.focus(); for (const ch of txt) { noteIn.value += ch; noteIn.dispatchEvent(new Event('input')); await wait(ch === ' ' ? spaceGap : char) } }
+const tapEl = el => el.click();
+const opt = id => $(`#opts .opt[data-id="${id}"]`);
+const SC = {
+  // amount
+  type: async () => { window.__mark('go'); await typeKeys('1250', 500); await wait(900) },               // reel pace
+  fast: async () => { window.__mark('go'); await typeKeys('1250', 125); await wait(900) },               // 8 keys/s
+  long: async () => { window.__mark('go'); await typeKeys('9999999.99', 125); await wait(900) },
+  back: async () => { await typeKeys('1250', 60); await wait(900); window.__mark('go'); await typeKeys(['del', 'del', 'del', 'del'], 100); await wait(900) },
+  // pick
+  pick: async () => { tapEl($('#' + (P.kind === 'pay' ? 'payRow' : 'toRow'))); await wait(700); window.__mark('go'); tapEl(opt(P.kind === 'pay' ? 'card' : (P.who || 'maya'))); await wait(1300) },
+  repick: async () => { tapEl($('#toRow')); await wait(600); tapEl(opt('maya')); await wait(D(+V.hold) + 300); tapEl($('#toRow')); await wait(450); window.__mark('go'); tapEl(opt('james')); await wait(1300) },
+  cancel: async () => { tapEl($('#toRow')); await wait(600); window.__mark('go'); tapEl($('#shX')); await wait(900) },
+  // note
+  reel: async () => { window.__mark('go'); await typeNote('Dinner at Nori', 100, 140); window.__mark('last'); await wait(1200) },
+  human: async () => { window.__mark('go'); await typeNote('Dinner at Nori sushi', 170, 380); window.__mark('last'); await wait(1200) },
+  lunar: async () => { window.__mark('go'); await typeNote('Lunar new year gift', 170, 380); window.__mark('last'); await wait(1200) },
+  arabic: async () => { window.__mark('go'); await typeNote('عشاء مع سارة', 170, 380); window.__mark('last'); await wait(1200) },
+  rental: async () => { window.__mark('go'); await typeNote('Rental car', 170, 380); window.__mark('last'); await wait(1200) },
+  slow: async () => { window.__mark('go'); await typeNote('Lunar new year gift', 260, 450); window.__mark('last'); await wait(1200) },
+  rentalSlow: async () => { window.__mark('go'); await typeNote('Rental car', 260, 450); window.__mark('last'); await wait(1200) },
+  clear: async () => { await typeNote('Dinner at Nori', 60, 60); await wait(1100); window.__mark('go'); noteIn.value = ''; noteIn.dispatchEvent(new Event('input')); window.__mark('last'); await wait(900) },
+  blurOut: async () => { window.__mark('go'); await typeNote('Coffee', 170, 380); window.__mark('last'); await wait(400); noteIn.blur(); window.__mark('blurred'); await wait(900) },
+};
+window.__run = async name => { REC = true; $("#sync").style.background = "#000"; window.__mark("A"); await SC[name](); window.__mark('Z'); REC = false; return { counters: window.__counters, val, note: noteIn.value } };
+</script></body></html>

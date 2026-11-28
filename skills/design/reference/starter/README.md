@@ -14,7 +14,7 @@ house motion system. Sources: ui-polish `house-style.md`, animate
 | `fonts.css`, `tokens.css` | `src/styles/` | import both in the entry, after `vuetify/styles` |
 | `../fonts/web/` (folder) | `src/styles/fonts/` | the woff2 files `fonts.css` points at; nothing to install |
 | `house.js` | `src/plugins/` | `createVuetify({ theme: houseTheme, defaults: houseDefaults })`; `money()`; `checkHouseFonts()` |
-| `entrance.js` | `src/motion/` | `app.directive('enter', vEnter)` and `app.directive('travel-nav', vTravelNav)`; `switchTheme()` for the theme toggle |
+| `entrance.js` | `src/motion/` (needs `npm i gsap`; Flip ships in it) | `app.directive('enter', vEnter)` and `app.directive('travel-nav', vTravelNav)`; `switchTheme()` for the theme toggle |
 | `StatusPill.vue`, `Money.vue` | `src/components/` | `<StatusPill tone="good" icon="…">`, `<Money :value :currency :locale>` (Urbanist has no tabular figures; this aligns digits) |
 | `example/` | read, then adapt | shell (`App.vue`) and a list page (`OrdersPage.vue`) built on the kit |
 

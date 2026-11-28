@@ -85,7 +85,7 @@ html:has(.v-application.v-theme--dark),
   --house-gap: 16px;
   --house-pad: 22px;
   --house-gutter: 32px;
-  --house-font: 'Urbanist', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --house-font: 'Urbanist', 'Urbanist Fallback', 'IBM Plex Sans Arabic', system-ui, sans-serif;
 }
 @media (max-width: 834px) { :root { --house-gutter: 16px; --house-pad: 18px; --house-r-card: 20px; } }
 @media (max-width: 480px) { :root { --house-gutter: 14px; --house-gap: 12px; --house-pad: 16px; } }
@@ -215,9 +215,9 @@ body { margin: 0; background: transparent; }
   background: transparent; color: var(--house-on-feature);
 }
 .house-nav-selection {
-  position: absolute; inset-block-start: 0; inset-inline-start: 0; z-index: 0; height: 38px;
+  position: absolute; top: 0; left: 0; z-index: 0; height: 38px;   /* physical: vTravelNav measures from the left in both directions */
   border-radius: 11px; background: var(--house-feature); pointer-events: none; opacity: 0;
-  transition: transform 360ms cubic-bezier(.22,.61,.36,1), width 550ms cubic-bezier(.16,1,.3,1), height 550ms cubic-bezier(.16,1,.3,1), opacity 120ms ease-out;
+  transition: opacity 120ms ease-out;   /* travel and stretch are GSAP (entrance.js vTravelNav) */
 }
 .house-seg > :focus-visible { outline: 2px solid var(--house-accent); outline-offset: 2px; }
 
@@ -267,6 +267,12 @@ body { margin: 0; background: transparent; }
 .house-rows .is-end { text-align: end; }
 .house-rows tbody tr { transition: background-color 120ms; }
 .house-rows tbody tr:hover { background: var(--house-well); }
+/* Density toggle: set data-density on the table; the padding transition is the animation. */
+.house-rows td { transition: padding 300ms cubic-bezier(.645,.045,.355,1); }
+.house-rows[data-density="compact"] td { padding-block: 7px; }
+/* Selected = a lighter surface, never an accent tint. */
+.house-rows tbody tr.is-selected { background: var(--house-well); }
+.house-avatar img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
 .house-strong { font-weight: 600; }
 /* User data (names, addresses) wraps in cards and list rows. Clip only in a dense table cell,
    and then put the full text in title="". */

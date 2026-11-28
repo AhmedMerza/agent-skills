@@ -1,6 +1,6 @@
 # Vue 3 / Vuetify motion recipes
 
-Zero-dependency by default (WAAPI + CSS + Vue `<Transition>`). Where real spring physics or auto-FLIP helps, an optional lib is noted. Adapt selectors/refs to the real component. All examples assume `<script setup lang="ts">`.
+GSAP 3 + Flip is the required motion library on web (see SKILL.md, step 1). Recipes below written in WAAPI or CSS show the *technique* (keyframes, timing, choreography): port travel, staggers and sequences to `gsap.to/from` + `Flip` inside a reverted `gsap.context()`; keep CSS for hover/press, and WAAPI only for `::view-transition-*` pseudo-elements. Adapt selectors/refs to the real component. All examples assume `<script setup lang="ts">`.
 
 > **Reach for Vuetify's built-in transitions first.** Before hand-rolling any `<Transition>` below, check whether a Vuetify component already does it: `v-expand-transition` (height reveals), `v-fade-transition`, `v-scroll-x/y-transition`, and the `transition` prop on `v-dialog`/`v-menu`/`v-snackbar`/`v-expansion-panel`/etc. They keep motion consistent with the app and handle reduced-motion for you. Hand-roll only when the built-in can't express the choreography (overshoot, real travel, a secondary reaction) — then the recipes here apply.
 >
@@ -129,14 +129,18 @@ export function flyToTarget(sourceEl: HTMLElement, targetEl: HTMLElement, opts: 
   const dx = (t.left + t.width / 2) - (s.left + s.width / 2)
   const dy = (t.top + t.height / 2) - (s.top + s.height / 2)
 
-  const anim = clone.animate(
-    [
-      { transform: 'translate(0,0) scale(1)', opacity: 1, offset: 0 },
-      { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - 60}px) scale(0.7)`, opacity: 1, offset: 0.6 }, // arc up
-      { transform: `translate(${dx}px, ${dy}px) scale(0.25)`, opacity: 0.4, offset: 1 },
-    ],
-    { duration: DUR.fly, easing: EASE.inOut, fill: 'forwards' },
-  )
+  // Baked quadratic arc: control point at (target x, start y + 0.18·dy) swings it up the target's
+  // side; computed from rects, so RTL needs no mirroring. Ends AT the icon's size, fully opaque.
+  // Measured: the old 3-keyframe inOut moved 93 px/frame (strobes) and landed as a 40% ghost;
+  // this moves ≤48 px/frame and lands on the icon (error 0.2 px).
+  const end = t.width / s.width, frames = []
+  for (let i = 0; i <= 24; i++) {
+    const p = i / 24, cx = dx, cy = 0.18 * dy
+    const x = 2 * (1 - p) * p * cx + p * p * dx, y = 2 * (1 - p) * p * cy + p * p * dy
+    const sc = p < 0.14 ? 1 + 0.15 * (p / 0.14) : 1.15 + (end - 1.15) * ((p - 0.14) / 0.86) // pop out, then shrink
+    frames.push({ transform: `translate(${x}px, ${y}px) scale(${sc})`, offset: p })
+  }
+  const anim = clone.animate(frames, { duration: 680, easing: 'cubic-bezier(.45,0,.2,1)', fill: 'forwards' })
   return anim.finished.then(() => { clone.remove(); pop(targetEl) })
 }
 
@@ -151,9 +155,11 @@ function pop(el: HTMLElement) {
 ```ts
 // usage in a component
 const cartIcon = ref<HTMLElement>()
-function onAdd(e: MouseEvent) {
-  flyToTarget(e.currentTarget as HTMLElement, cartIcon.value!, { reduce: reduce.value })
-  cartCount.value++ // bump count; count-up combo can animate the number
+const productImg = ref<HTMLElement>() // fly the PRODUCT IMAGE (~72 px, born at the button), never the button:
+function onAdd(e: MouseEvent) {        // a 358 px button clone lands 2.2× the icon and leaves the screen for 19 frames
+  flyToTarget(productImg.value!, cartIcon.value!, { reduce: reduce.value })
+    .then(() => cartCount.value++)     // count on LANDING — at click the badge shows 611 ms before anything arrives
+  // meanwhile: button → green "✓ Added" (240 ms); badge pop re-starts from its current scale on a second add
 }
 ```
 
@@ -164,21 +170,32 @@ function onAdd(e: MouseEvent) {
 ```vue
 <script setup lang="ts">
 import { ref } from 'vue'
-type S = 'idle' | 'loading' | 'done'
+type S = 'idle' | 'loading' | 'done' | 'error'
 const state = ref<S>('idle')
+// Spinner only if still pending at 300 ms, then held ≥600 ms from when it became visible.
+// Measured: no delay flashes the spinner 67–100 ms on a fast (80 ms) response; a bare 600 ms
+// minimum adds 528 ms of fake waiting. Error is a STATE (message + shake, critically damped,
+// no celebration) — returning silently to idle left no error cue at all.
+defineProps<{ errorText: string }>() // localized by the caller; never a raw exception message
+const busy = ref(false) // disables the button from the FIRST tap — 'loading' only shows at 300 ms
 async function submit() {
-  state.value = 'loading'
-  try { await doThing(); state.value = 'done'; setTimeout(() => state.value = 'idle', 1600) }
-  catch { state.value = 'idle' }
+  if (busy.value) return; busy.value = true
+  let shownAt = 0
+  const t = setTimeout(() => { state.value = 'loading'; shownAt = performance.now() }, 300)
+  const hold = () => shownAt ? new Promise(r => setTimeout(r, Math.max(0, 600 - (performance.now() - shownAt)))) : null
+  try { await doThing(); clearTimeout(t); await hold(); state.value = 'done' }
+  catch { clearTimeout(t); await hold(); state.value = 'error' }
+  setTimeout(() => { state.value = 'idle'; busy.value = false }, state.value === 'done' ? 1600 : 2400)
 }
 </script>
 
 <template>
-  <button class="morph-btn" :data-state="state" :disabled="state !== 'idle'" @click="submit">
+  <button class="morph-btn" :data-state="state" :disabled="busy" @click="submit">
     <Transition name="swap" mode="out-in">
       <span v-if="state === 'idle'" key="i"><slot>Submit</slot></span>
       <span v-else-if="state === 'loading'" key="l" class="spinner" />
-      <svg v-else key="d" class="check" viewBox="0 0 24 24"><path d="M4 12 l5 5 L20 7" /></svg>
+      <svg v-else-if="state === 'done'" key="d" class="check" viewBox="0 0 24 24"><path d="M4 12 l5 5 L20 7" /></svg>
+      <span v-else key="e" role="alert">{{ errorText }}</span> <!-- never a check on failure -->
     </Transition>
   </button>
 </template>
@@ -186,6 +203,8 @@ async function submit() {
 <style scoped>
 .morph-btn { transition: background-color 240ms ease, transform var(--dur-release) var(--ease-overshoot); }
 .morph-btn[data-state="done"] { background: rgb(var(--v-theme-success)); }
+.morph-btn[data-state="error"] { background: rgb(var(--v-theme-error)); animation: shake 320ms cubic-bezier(.36,.07,.19,.97); } /* no overshoot, no confetti */
+@keyframes shake { 20% { translate: -6px } 40% { translate: 5px } 60% { translate: -3px } 80% { translate: 2px } }
 .swap-enter-active, .swap-leave-active { transition: opacity 160ms ease, transform 160ms var(--ease-out); }
 .swap-enter-from { opacity: 0; transform: scale(0.8); }
 .swap-leave-to   { opacity: 0; transform: scale(0.8); }
@@ -194,7 +213,7 @@ async function submit() {
 .check path { fill: none; stroke: #fff; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round;
   stroke-dasharray: 24; stroke-dashoffset: 24; animation: draw var(--dur-travel) var(--ease-out) forwards; }
 @keyframes draw { to { stroke-dashoffset: 0; } }
-@media (prefers-reduced-motion: reduce) { .check path { animation: none; stroke-dashoffset: 0; } .swap-enter-from,.swap-leave-to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .check path { animation: none; stroke-dashoffset: 0; } .swap-enter-from,.swap-leave-to { transform: none; } .morph-btn[data-state="error"] { animation: none; } }
 </style>
 ```
 
@@ -207,6 +226,10 @@ Vue's `<TransitionGroup>` gives FLIP **for free** via `*-move`.
 ```vue
 <template>
   <TransitionGroup name="stg" tag="div" class="list">
+    <!-- the --d stagger is for FIRST render only. A live-filtered list (search as you type) keys by
+         item, removes leaving rows instantly, fades entering rows 90 ms with no stagger and FLIPs
+         survivors 160 ms ease-out — measured: the stagger left 4 of 5 keystrokes never showing the
+         right list at 90 ms/key; this is correct within 90 ms every keystroke, 0 ms stale rows. -->
     <div v-for="(item, i) in items" :key="item.id" class="row" :style="{ '--d': `${i * 45}ms` }">
       {{ item.text }}
     </div>
@@ -575,7 +598,7 @@ const parts = computed(() => segment(props.text, props.by))
 </style>
 ```
 
-> **`by: 'char'` is LTR-only — gate it on locale. This is measured, not theoretical.** Arabic is cursive and contextually shaped, and per-character `inline-block` spans break it twice over: each letter falls back to its **isolated form** (joins vanish) and each span becomes its own **bidi run** (right-to-left order scrambles). Measured in Chrome against this app: `مرحبا بكم في أوريم` is **321.5px** intact vs **392.7px** split per character — +22%, visibly disconnected and mis-ordered. Split **per word** it measured 321.5px, a 0.0px delta. So `'word'`/`'line'` are safe in `ar`; `'char'` is a rendering bug there, not a style regression. `Intl.Segmenter` with `granularity: 'grapheme'` at least keeps combining marks and emoji intact — plain `[...str]` or `.split('')` does not.
+> **`by: 'char'` is LTR-only — gate it on locale. This is measured, not theoretical.** Arabic is cursive and contextually shaped, and per-character `inline-block` spans break it twice over: each letter falls back to its **isolated form** (joins vanish) and each span becomes its own **bidi run** (right-to-left order scrambles). Measured in Chrome against this app: a four-word Arabic welcome line is **321.5px** intact vs **392.7px** split per character — +22%, visibly disconnected and mis-ordered. Split **per word** it measured 321.5px, a 0.0px delta. So `'word'`/`'line'` are safe in `ar`; `'char'` is a rendering bug there, not a style regression. `Intl.Segmenter` with `granularity: 'grapheme'` at least keeps combining marks and emoji intact — plain `[...str]` or `.split('')` does not.
 > **Budget the total span, not the per-piece step.** 40 segments × 45ms is an 1800ms animation; the frequency budget (law 2) applies to the *last* piece landing, not the first.
 
 ---

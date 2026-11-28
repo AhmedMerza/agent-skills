@@ -83,7 +83,7 @@ Text at `margin-left: 0` looks indented due to letterform whitespace—use negat
 
 ### Touch Targets vs Visual Size
 
-Buttons can look small but need large touch targets (44px minimum). Use padding or pseudo-elements:
+Buttons can look small but need large touch targets (44×44 CSS px on web; Flutter uses Material's 48 dp). Use padding or pseudo-elements:
 
 ```css
 .icon-button {

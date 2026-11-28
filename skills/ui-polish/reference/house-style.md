@@ -2,7 +2,8 @@
 
 The complete default look for a **new** app, or one with no deliberate kit or tokens of its own.
 It does not need a user-supplied reference. An app that already has a consistent system keeps it
-(Build mode wins). The starter in the `design` skill is the canonical implementation; copy it
+only when the `design` Critique says "keep it"; a consistent but weak system gets this look on
+each newly built page (page-scoped tokens) plus a "needs your yes" for the global change. The starter in the `design` skill is the canonical implementation; copy it
 instead of improvising from framework defaults.
 
 | Layer | starter source |
@@ -103,9 +104,20 @@ Use when there is no sibling screen to match. Four sites the user picked share t
   14–18 tablet, 12–14 phone.
 - **Controls:** buttons 40–44 (primary CTA up to 52); chips 34–36; inputs 42–48; icon buttons
   36–52 with 17–22px icons; raise touch targets to ≥44 with `(pointer: coarse)`, not by width.
-- **Layout:** content grid 4 columns at 1440, 2–3 at 834, 1–2 at 390; KPI tiles ~320–340 × 135–140,
+- **Layout:** content grid 4 columns at 1440, 2–3 at 834, 1–2 at 390, more at ultra-wide (below); KPI tiles ~320–340 × 135–140,
   four across on desktop, two on phones; 4–5 tiles above the fold on desktop. Phone nav is a
   floating bottom pill (~64–66 high, ~10px from the edges); tablet uses a 60–80px icon rail.
+- **Ultra-wide (≥1920; check at 2560×1440):** a desktop layout designed at 1440 must fill a wide
+  screen with content, not margin. The user, 2026-11-19: "in ultra wide screen it becomes a lot of
+  empty spaces which is bad".
+  - Cap the *reading measure* (~75ch for copy), not the page. Page shells cap at ~1920–2200 or
+    not at all; the ground, full-bleed bands and hero imagery run to the edges.
+  - Grids add columns, never stretch tiles: `repeat(auto-fill, minmax(<min>, 1fr))`, so product
+    grids run 5–6 columns at 1920 and 6–8 at 2560, with each tile within ±15% of its 1440 size.
+  - Back-office: sidebar fixed, content fluid. At ≥1920 a dashboard gains a column (a side panel
+    such as latest orders or activity) rather than stretching its chart and cards.
+  - Fails: more than 25% of the 2560 width is empty side margin on a content page; a sparse row of
+    cards with a long blank tail; a small filter card alone in a tall empty column.
 - **Media:** product/photo cards 4:5 or 16:11, image 41–48% of the card height; on phones a
   horizontal card with a ~104px square thumb; hero/banner up to ~45–50% of viewport height.
   Real photos with explicit width/height and `object-fit: cover` — a fallback icon in a photo
