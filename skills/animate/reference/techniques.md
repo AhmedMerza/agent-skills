@@ -28,7 +28,7 @@ Two halves, both of which the combo library currently leaves implicit:
 
 **When NOT:** any text the user is trying to *read* right now; RTL text split by character (the split fights the shaping engine on Arabic — split by word or line instead, never by glyph); anything under reduced-motion (reveal it whole).
 
-> **RTL note — measured, not theoretical.** Arabic is cursive and contextually shaped. Splitting a word into per-character `inline-block` elements breaks it **two** ways at once: every letter falls back to its isolated form (so the joins vanish), **and** each element becomes its own bidi run, so the right-to-left order scrambles. Measured in Chrome on a real bilingual app: `مرحبا بكم في أوريم` renders **321.5px** intact and **392.7px** split per character — +22%, with visibly disconnected, mis-ordered glyphs. The same string split **per word** measured 321.5px — a 0.0px delta, identical rendering. **Per-character splitting is LTR-only; gate it on locale and use word or line granularity for `ar`.**
+> **RTL note — measured, not theoretical.** Arabic is cursive and contextually shaped. Splitting a word into per-character `inline-block` elements breaks it **two** ways at once: every letter falls back to its isolated form (so the joins vanish), **and** each element becomes its own bidi run, so the right-to-left order scrambles. Measured in Chrome on a real bilingual app: a four-word Arabic welcome line renders **321.5px** intact and **392.7px** split per character — +22%, with visibly disconnected, mis-ordered glyphs. The same string split **per word** measured 321.5px — a 0.0px delta, identical rendering. **Per-character splitting is LTR-only; gate it on locale and use word or line granularity for `ar`.**
 
 ---
 

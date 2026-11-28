@@ -32,6 +32,36 @@ contents ≤140 ms after the card, and let the surface's opacity reach 1 in ~250
 is on its travel/scale, not its opacity). Both mistakes were made by agents in the first two
 trials and read as a slow loader, not as choreography.
 
+**Detail screens and lists whose data arrives after mount** (an admin record detail, a search
+list). Measured on a real Flutter web build with a per-frame probe on every entrance, 250 ms mock
+latency, two runs each, against a "16 px rise, 500 ms ease-out-expo, opacity on the same curve,
+55 ms stagger, delays counted from each widget's mount" baseline that users reported as invisible:
+- **Opacity leads, travel trails.** Fade 180 ms ease-out; cards rise 28 px over 450 ms
+  ease-out-cubic from scale .98; text blocks 12 px over 380 ms. With opacity on the travel's expo
+  curve, an element was already 50 % visible with only 6.8 px of its 16 px left to travel, so it read
+  as a plain fade. The split fade left 10–14 px of travel visible on phone cards and 10–12 px on list
+  rows. A 40 px rise also reached ~10 px but settled 400 ms later.
+- **Beats count from the screen opening, not from mount, and a late response shifts the rest of
+  the sequence instead of collapsing onto it.** Mount-relative delays dropped four regions (figures,
+  people, timeline, issues) onto the ~100 ms after the response arrived. Rows likewise start at
+  arrival, 40 ms apart, as one unit per row (nesting row contents measured no better on a list).
+- **Draw-ins start once their card is readable** (stepper fill +110 ms, route +150 ms after the
+  card; on rows +120/+140): stepper 140 + 200 ms per step ease-in-out with each dot swelling 1.25 as
+  the fill reaches it; route line 600 ms (450 ms compact) with the vehicle riding the line's tip,
+  mirrored in RTL; the cash tile scales from .96 and its figure never counts. Started at mount, 69 %
+  of the draw had played before the card reached 90 % opacity; with the delay it was 1–3 %.
+- **A header that is on screen in both views does not re-enter on drill-in.** Fading it from 0 left
+  one blank frame on every open.
+- **Admin screens start content at +0, not +320.** The branded-header +320 exception cost
+  330–360 ms to first content on a detail (530–556 ms vs 150–200 ms) and made the order and
+  visibility no better.
+- Result: on desktop, everything was readable by 695–720 ms (baseline 896–944 ms) and settled by
+  780–821 ms (baseline ~1000 ms); ≤ 700 ms with zero latency (693/706 ms). First content came at
+  147–157 ms (baseline ~195 ms). Cost: the list was readable about 250 ms later (930–1077 ms vs 727–786 ms),
+  because the row steppers and routes now draw where they can be seen. A soft spring
+  (`cubic-bezier(.22,1.2,.36,1)`) on the cards measured within noise of the ease, so that choice is
+  taste. Reduced motion: an opacity-only fade, and draw-ins snap to their final value.
+
 Whole page settled by ~2 s; first content readable by ~0.6 s. **Never fade or rise a page, view,
 or grid container as one block** — the only whole-block motion is the fast *exit* of an old view.
 What keeps this calm is small travel and long decelerating eases, not stillness.
